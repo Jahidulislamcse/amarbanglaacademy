@@ -58,18 +58,18 @@
 <body class="bg-slate-50 text-slate-800 antialiased font-bangla flex flex-col min-h-screen" x-data="{ mobileMenuOpen: false }">
 
     <!-- Top Announcement Bar -->
-    <div class="bg-gradient-to-r from-emerald-800 via-teal-700 to-emerald-900 text-white text-xs sm:text-sm py-2 px-4 shadow-sm">
+    <div class="bg-gradient-to-r from-emerald-900 via-teal-800 to-slate-900 text-white text-xs sm:text-sm py-2 px-4 shadow-sm">
         <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
             <div class="flex items-center space-x-2 space-x-reverse">
                 <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-400 text-slate-900">
-                    <i class="fa-solid fa-bolt mr-1 text-xs"></i> স্পেশাল অফার
+                    <i class="fa-solid fa-fire mr-1 text-xs"></i> ১ম ব্যাচে ভর্তি চলছে
                 </span>
-                <span class="hidden sm:inline">নতুন লাইভ ব্যাচে ৬০% পর্যন্ত স্কলারশিপ চলছে!</span>
-                <span class="sm:hidden font-medium">লাইভ ব্যাচে ৬০% ছাড়!</span>
+                <span class="hidden sm:inline">ন্যাশনাল জার্নালিস্ট ক্লাবের পৃষ্ঠপোষকতায় “সাংবাদিকতা, আইন ও উপস্থাপনা” কোর্স — প্রথম ৫০ জনের জন্য মাত্র ৯৯৯ টাকা!</span>
+                <span class="sm:hidden font-medium">প্রথম ৫০ জনের জন্য কোর্স ফি মাত্র ৯৯৯ টাকা!</span>
             </div>
             <div class="flex items-center space-x-4 space-x-reverse text-emerald-100 text-xs">
                 <span class="flex items-center gap-1.5"><i class="fa-solid fa-phone text-amber-300"></i> হেল্পলাইন: +৮৮০ ১৭০০-০০০০০০</span>
-                <span class="hidden md:flex items-center gap-1.5"><i class="fa-solid fa-envelope text-amber-300"></i> support@amar-bangla.edu</span>
+                <span class="hidden md:flex items-center gap-1.5"><i class="fa-solid fa-envelope text-amber-300"></i> info@amarbanglaacademy.com</span>
             </div>
         </div>
     </div>
@@ -121,10 +121,10 @@
                 <!-- Action CTA & Student Portal -->
                 <div class="hidden sm:flex items-center gap-3">
                     <a href="{{ route('home') }}#course-curriculum" class="text-xs font-semibold text-slate-700 hover:text-emerald-700 px-3 py-2 rounded-lg border border-slate-200 hover:border-emerald-300 transition">
-                        <i class="fa-solid fa-list-check mr-1 text-emerald-600"></i> কারিকুলাম দেখুন
+                        <i class="fa-solid fa-list-check mr-1 text-emerald-600"></i> ১২টি মডিউল
                     </a>
-                    <a href="{{ route('courses.checkout', 'full-stack-laravel-react-mastery') }}" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-sm font-bold shadow-md shadow-emerald-600/25 hover:shadow-lg transition-all duration-200">
-                        <span>ভর্তি নিশ্চিত করুন</span>
+                    <a href="{{ route('courses.checkout', 'journalism-law-presentation') }}" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-sm font-bold shadow-md shadow-emerald-600/25 hover:shadow-lg transition-all duration-200">
+                        <span>ভর্তি নিশ্চিত করুন (৳৯৯৯)</span>
                         <i class="fa-solid fa-arrow-left text-xs rotate-180"></i>
                     </a>
                 </div>
@@ -166,8 +166,8 @@
                 <i class="fa-solid fa-chalkboard-user w-6 text-emerald-600"></i> মেন্টর ও ফ্যাকাল্টি
             </a>
             <div class="pt-4 border-t border-slate-100 flex flex-col gap-2">
-                <a href="{{ route('courses.checkout', 'full-stack-laravel-react-mastery') }}" class="w-full text-center py-3 rounded-xl bg-emerald-600 text-white font-bold shadow hover:bg-emerald-700 transition">
-                    ভর্তি নিশ্চিত করুন (বিকাশ / নগদ)
+                <a href="{{ route('courses.checkout', 'journalism-law-presentation') }}" class="w-full text-center py-3 rounded-xl bg-emerald-600 text-white font-bold shadow hover:bg-emerald-700 transition">
+                    ভর্তি নিশ্চিত করুন মাত্র ৯৯৯ টাকা (বিকাশ / নগদ)
                 </a>
             </div>
         </div>
@@ -231,12 +231,12 @@
 
                 <!-- Popular Courses -->
                 <div>
-                    <h3 class="text-white font-bold text-base mb-4 tracking-wide">জনপ্রিয় কোর্সসমূহ</h3>
+                    <h3 class="text-white font-bold text-base mb-4 tracking-wide">চলমান কোর্স</h3>
                     <ul class="space-y-2.5 text-sm">
-                        <li><a href="{{ route('courses.show', 'full-stack-laravel-react-mastery') }}" class="hover:text-emerald-400 transition">ফুল-স্ট্যাক লারাবেল ১২ ও রিয়্যাক্ট</a></li>
-                        <li><a href="{{ route('courses.show', 'python-django-machine-learning') }}" class="hover:text-emerald-400 transition">পাইথন ও মেশিন লার্নিং বুটক্যাম্প</a></li>
-                        <li><a href="{{ route('courses.show', 'ielts-spoken-english-masterclass') }}" class="hover:text-emerald-400 transition">আইইএলটিএস ও স্পোকেন ইংলিশ</a></li>
-                        <li><a href="{{ route('home') }}#all-courses" class="text-emerald-400 hover:underline inline-flex items-center gap-1 mt-1 font-semibold">সকল কোর্স দেখুন &rarr;</a></li>
+                        <li><a href="{{ route('courses.show', 'journalism-law-presentation') }}" class="hover:text-emerald-400 transition font-semibold text-white">সাংবাদিকতা, আইন ও উপস্থাপনা</a></li>
+                        <li><a href="{{ route('home') }}#course-curriculum" class="hover:text-emerald-400 transition">১২টি মডিউল কারিকুলাম</a></li>
+                        <li><a href="{{ route('home') }}#instructors" class="hover:text-emerald-400 transition">প্রশিক্ষক পরিচিতি</a></li>
+                        <li><a href="{{ route('home') }}#fees-payment" class="text-amber-400 hover:underline inline-flex items-center gap-1 mt-1 font-semibold">বিশেষ ছাড় মাত্র ৯৯৯ টাকা &rarr;</a></li>
                     </ul>
                 </div>
 

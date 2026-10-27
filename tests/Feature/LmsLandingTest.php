@@ -23,8 +23,9 @@ class LmsLandingTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('আমার বাংলা একাডেমি');
+        $response->assertSee('সাংবাদিকতা, আইন ও উপস্থাপনা');
         $response->assertSee('মডিউল');
-        $response->assertSee('ইন্সট্রাক্টর');
+        $response->assertSee('প্রশিক্ষকবৃন্দ');
         $response->assertSee('বিকাশ');
         $response->assertSee('Zoom');
     }
