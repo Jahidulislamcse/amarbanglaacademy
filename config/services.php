@@ -35,4 +35,14 @@ return [
         ],
     ],
 
+    'eps' => [
+        'base_url' => env('EPS_BASE_URL', env('EPSBaseURL', 'https://pgapi.eps.com.bd/v1')),
+        'merchant_id' => env('EPS_MERCHANT_ID', env('EPSMerchentID', env('EPSMerchantID'))),
+        'store_id' => env('EPS_STORE_ID', env('EPSStoreID')),
+        'username' => env('EPS_USERNAME', env('EPSUserName')),
+        'password' => env('EPS_PASSWORD', env('EPSPassword')),
+        'hash_key' => env('EPS_HASH_KEY', env('EPSHashkey', env('EPSHashKey'))),
+        'device_type_id' => env('EPS_DEVICE_TYPE_ID', env('EPSDeviceTypeID', 1)),
+    ],
+
 ];

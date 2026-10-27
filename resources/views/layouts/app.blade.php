@@ -125,6 +125,34 @@
             </div>
         @endif
 
+        @if(session('error'))
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+                <div class="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-circle-exclamation text-rose-600 text-xl"></i>
+                        <span class="font-semibold">{{ session('error') }}</span>
+                    </div>
+                    <button onclick="this.parentElement.remove()" class="text-rose-600 hover:text-rose-900">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+        @endif
+
+        @if(session('info'))
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+                <div class="p-4 rounded-xl bg-blue-50 border border-blue-200 text-blue-800 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-circle-info text-blue-600 text-xl"></i>
+                        <span class="font-semibold">{{ session('info') }}</span>
+                    </div>
+                    <button onclick="this.parentElement.remove()" class="text-blue-600 hover:text-blue-900">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+        @endif
+
         @yield('content')
     </main>
 

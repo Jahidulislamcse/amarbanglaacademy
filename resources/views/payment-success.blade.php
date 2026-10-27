@@ -48,7 +48,7 @@
                         </div>
                         <div>
                             <span class="block text-slate-400">পেমেন্ট মেথড:</span>
-                            <strong class="uppercase text-slate-800">{{ $payment->payment_method }}</strong>
+                            <strong class="uppercase text-slate-800">{{ $payment->payment_method === 'eps' ? 'EPS অনলাইন গেটওয়ে (স্বয়ংক্রিয়)' : strtoupper($payment->payment_method) }}</strong>
                         </div>
                         <div>
                             <span class="block text-slate-400">পরিশোধিত অর্থ:</span>
