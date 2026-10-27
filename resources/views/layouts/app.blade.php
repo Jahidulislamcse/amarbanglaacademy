@@ -74,101 +74,37 @@
         </div>
     </div>
 
-    <!-- Navigation Header -->
+    <!-- Clean Conversion Header (No Menu) -->
     <header class="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-xs">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-20">
+            <div class="flex items-center justify-between h-16 sm:h-20">
                 
-                <!-- Logo -->
-                <a href="{{ route('home') }}" class="flex items-center gap-3 group">
-                    <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-emerald-700 to-teal-500 flex items-center justify-center text-white shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform duration-200">
-                        <i class="fa-solid fa-graduation-cap text-2xl"></i>
+                <!-- Logo & Academy Name -->
+                <a href="{{ route('home') }}" class="flex items-center gap-2.5 sm:gap-3 group">
+                    <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-tr from-emerald-700 to-teal-500 flex items-center justify-center text-white shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform duration-200">
+                        <i class="fa-solid fa-graduation-cap text-xl sm:text-2xl"></i>
                     </div>
                     <div>
-                        <span class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 block leading-tight">
+                        <span class="text-lg sm:text-2xl font-bold tracking-tight text-slate-900 block leading-tight">
                             আমার বাংলা <span class="text-emerald-700">একাডেমি</span>
                         </span>
-                        <span class="text-[11px] font-medium text-slate-500 tracking-wide uppercase">Amar Bangla Academy LMS</span>
+                        <span class="text-[10px] sm:text-[11px] font-medium text-slate-500 tracking-wide uppercase">Amar Bangla Academy</span>
                     </div>
                 </a>
 
-                <!-- Desktop Navigation Links -->
-                <nav class="hidden lg:flex items-center space-x-1 space-x-reverse text-sm font-semibold text-slate-700">
-                    <a href="{{ route('home') }}" class="px-3.5 py-2 rounded-lg hover:text-emerald-700 hover:bg-emerald-50 transition {{ request()->routeIs('home') ? 'text-emerald-700 bg-emerald-50/80' : '' }}">
-                        <i class="fa-solid fa-house mr-1 text-xs"></i> হোম
+                <!-- Quick Action Contact & Enroll -->
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <a href="https://wa.me/8801700000000" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 sm:py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs sm:text-sm font-bold border border-emerald-200 transition">
+                        <i class="fa-brands fa-whatsapp text-emerald-600 text-sm sm:text-base"></i>
+                        <span class="hidden sm:inline">হেল্পলাইন / হোয়াটসঅ্যাপ</span>
+                        <span class="sm:hidden">হোয়াটসঅ্যাপ</span>
                     </a>
-                    <a href="{{ route('home') }}#featured-course" class="px-3.5 py-2 rounded-lg hover:text-emerald-700 hover:bg-emerald-50 transition">
-                        <i class="fa-solid fa-laptop-code mr-1 text-xs"></i> ফ্ল্যাগশিপ কোর্স
-                    </a>
-                    <a href="{{ route('home') }}#all-courses" class="px-3.5 py-2 rounded-lg hover:text-emerald-700 hover:bg-emerald-50 transition">
-                        <i class="fa-solid fa-book-open mr-1 text-xs"></i> সকল কোর্স
-                    </a>
-                    <a href="{{ route('live.classes') }}" class="px-3.5 py-2 rounded-lg hover:text-emerald-700 hover:bg-emerald-50 transition {{ request()->routeIs('live.classes') ? 'text-emerald-700 bg-emerald-50/80' : '' }}">
-                        <span class="relative flex h-2 w-2 mr-1 inline-block">
-                          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                          <span class="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
-                        </span>
-                        লাইভ ক্লাস (Zoom & Meet)
-                    </a>
-                    <a href="{{ route('exams.index') }}" class="px-3.5 py-2 rounded-lg hover:text-emerald-700 hover:bg-emerald-50 transition {{ request()->routeIs('exams.index') ? 'text-emerald-700 bg-emerald-50/80' : '' }}">
-                        <i class="fa-solid fa-clipboard-check mr-1 text-xs text-amber-500"></i> অনলাইন এক্সাম
-                    </a>
-                    <a href="{{ route('home') }}#instructors" class="px-3.5 py-2 rounded-lg hover:text-emerald-700 hover:bg-emerald-50 transition">
-                        <i class="fa-solid fa-chalkboard-user mr-1 text-xs"></i> মেন্টরবৃন্দ
-                    </a>
-                </nav>
-
-                <!-- Action CTA & Student Portal -->
-                <div class="hidden sm:flex items-center gap-3">
-                    <a href="{{ route('home') }}#course-curriculum" class="text-xs font-semibold text-slate-700 hover:text-emerald-700 px-3 py-2 rounded-lg border border-slate-200 hover:border-emerald-300 transition">
-                        <i class="fa-solid fa-list-check mr-1 text-emerald-600"></i> ১২টি মডিউল
-                    </a>
-                    <a href="{{ route('courses.checkout', 'journalism-law-presentation') }}" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-sm font-bold shadow-md shadow-emerald-600/25 hover:shadow-lg transition-all duration-200">
-                        <span>ভর্তি নিশ্চিত করুন (৳৯৯৯)</span>
-                        <i class="fa-solid fa-arrow-left text-xs rotate-180"></i>
+                    <a href="{{ route('courses.checkout', 'journalism-law-presentation') }}" class="inline-flex items-center gap-1.5 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs sm:text-sm font-extrabold shadow-md shadow-emerald-600/25 transition">
+                        <span>ভর্তি নিশ্চিত করুন</span>
+                        <i class="fa-solid fa-arrow-right text-[10px]"></i>
                     </a>
                 </div>
 
-                <!-- Mobile Menu Button -->
-                <div class="flex lg:hidden">
-                    <button @click="mobileMenuOpen = !mobileMenuOpen" type="button" class="p-2.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition focus:outline-none">
-                        <i :class="mobileMenuOpen ? 'fa-solid fa-xmark text-xl' : 'fa-solid fa-bars text-xl'"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Mobile Drawer Menu -->
-        <div x-show="mobileMenuOpen" 
-             x-transition:enter="transition ease-out duration-200"
-             x-transition:enter-start="opacity-0 -translate-y-2"
-             x-transition:enter-end="opacity-100 translate-y-0"
-             x-transition:leave="transition ease-in duration-150"
-             x-transition:leave-start="opacity-100 translate-y-0"
-             x-transition:leave-end="opacity-0 -translate-y-2"
-             class="lg:hidden border-b border-slate-200 bg-white px-4 pt-2 pb-6 space-y-2 shadow-lg">
-            <a @click="mobileMenuOpen = false" href="{{ route('home') }}" class="block px-3 py-2.5 rounded-lg text-base font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700">
-                <i class="fa-solid fa-house w-6 text-emerald-600"></i> হোম
-            </a>
-            <a @click="mobileMenuOpen = false" href="{{ route('home') }}#featured-course" class="block px-3 py-2.5 rounded-lg text-base font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700">
-                <i class="fa-solid fa-laptop-code w-6 text-emerald-600"></i> ফ্ল্যাগশিপ কোর্স বিস্তারিত
-            </a>
-            <a @click="mobileMenuOpen = false" href="{{ route('home') }}#course-curriculum" class="block px-3 py-2.5 rounded-lg text-base font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700">
-                <i class="fa-solid fa-list-check w-6 text-emerald-600"></i> মডিউল ও কারিকুলাম
-            </a>
-            <a @click="mobileMenuOpen = false" href="{{ route('live.classes') }}" class="block px-3 py-2.5 rounded-lg text-base font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700">
-                <i class="fa-solid fa-video w-6 text-rose-500"></i> লাইভ ক্লাস (Zoom ও Google Meet)
-            </a>
-            <a @click="mobileMenuOpen = false" href="{{ route('exams.index') }}" class="block px-3 py-2.5 rounded-lg text-base font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700">
-                <i class="fa-solid fa-clipboard-check w-6 text-amber-500"></i> অনলাইন এক্সাম ও সার্টিফিকেট
-            </a>
-            <a @click="mobileMenuOpen = false" href="{{ route('home') }}#instructors" class="block px-3 py-2.5 rounded-lg text-base font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700">
-                <i class="fa-solid fa-chalkboard-user w-6 text-emerald-600"></i> মেন্টর ও ফ্যাকাল্টি
-            </a>
-            <div class="pt-4 border-t border-slate-100 flex flex-col gap-2">
-                <a href="{{ route('courses.checkout', 'journalism-law-presentation') }}" class="w-full text-center py-3 rounded-xl bg-emerald-600 text-white font-bold shadow hover:bg-emerald-700 transition">
-                    ভর্তি নিশ্চিত করুন মাত্র ৯৯৯ টাকা (বিকাশ / নগদ)
-                </a>
             </div>
         </div>
     </header>
@@ -279,6 +215,23 @@
             </div>
         </div>
     </footer>
+
+    <!-- Floating Sticky Mobile Conversion Bar (Bottom) -->
+    <div class="fixed bottom-0 left-0 right-0 z-50 bg-slate-950/95 backdrop-blur-md border-t border-slate-700/80 p-3 sm:hidden shadow-2xl">
+        <div class="flex items-center justify-between gap-3">
+            <div>
+                <div class="flex items-baseline gap-1.5">
+                    <span class="text-xl font-black text-amber-400">৳৯৯৯</span>
+                    <span class="text-xs text-slate-400 line-through">৳৩,০০০</span>
+                </div>
+                <span class="text-[10px] text-emerald-400 font-semibold block leading-tight">প্রথম ৫০ জনের বিশেষ অফার</span>
+            </div>
+            <a href="{{ route('courses.checkout', 'journalism-law-presentation') }}" class="flex-1 max-w-[210px] text-center py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-xs shadow-lg shadow-emerald-600/40 flex items-center justify-center gap-1.5 transition">
+                <span>ভর্তি নিশ্চিত করুন</span>
+                <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </a>
+        </div>
+    </div>
 
     @stack('scripts')
 </body>
