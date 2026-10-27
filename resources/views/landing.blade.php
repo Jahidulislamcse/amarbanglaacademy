@@ -35,7 +35,7 @@
         </div>
 
         <!-- Hero Content Grid: Balanced for Desktop, Streamlined for Mobile -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
             
             <!-- Left Info Column -->
             <div class="lg:col-span-7 space-y-4 sm:space-y-6 text-center lg:text-left">
@@ -153,23 +153,39 @@
 
             </div>
 
-            <!-- Right Column: DESKTOP VIDEO SHOWCASE (Hidden on mobile, pristine on desktop with exact 16:9 width) -->
-            <div class="hidden lg:block lg:col-span-5">
-                <div class="relative w-full max-w-lg mx-auto rounded-3xl bg-slate-900 border-2 border-emerald-500/50 p-3.5 shadow-2xl ring-1 ring-emerald-500/30">
+            <!-- Right Column: DESKTOP VIDEO SHOWCASE & COMPLEMENTARY HIGHLIGHTS (Perfect Vertical Alignment) -->
+            <div class="hidden lg:block lg:col-span-5 space-y-3">
+                
+                <!-- Upper Portion: Batch Seat Counter & Live Urgency -->
+                <div class="p-3.5 rounded-2xl bg-slate-900/90 border border-amber-500/50 shadow-lg flex items-center justify-between gap-3 text-xs">
+                    <div class="flex items-center gap-2">
+                        <span class="relative flex h-2.5 w-2.5">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
+                        </span>
+                        <span class="text-amber-300 font-bold">১ম ব্যাচে আর মাত্র ১৮টি আসন অবশিষ্ট!</span>
+                    </div>
+                    <span class="px-2 py-0.5 rounded-md bg-emerald-900/90 text-emerald-300 font-mono text-[11px] font-bold border border-emerald-700">
+                        ৩২/৫০ সিট বুকড
+                    </span>
+                </div>
+
+                <!-- Middle Portion: Video Player Card (Exact 16:9 Aspect Ratio) -->
+                <div class="relative w-full rounded-2xl bg-slate-900 border-2 border-emerald-500/50 p-3 shadow-2xl ring-1 ring-emerald-500/30 space-y-2.5">
                     
                     <!-- Header Bar inside Video Frame -->
-                    <div class="flex items-center justify-between px-2 pb-2 text-xs">
+                    <div class="flex items-center justify-between px-1 text-xs">
                         <div class="flex items-center gap-2">
-                            <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping"></span>
+                            <span class="w-2 h-2 rounded-full bg-rose-500"></span>
                             <span class="text-xs font-bold text-white tracking-wide">কোর্সের অফিশিয়াল ভিডিও বার্তা</span>
                         </div>
-                        <span class="text-[11px] text-amber-400 font-mono bg-amber-950/80 px-2 py-0.5 rounded border border-amber-800 flex items-center gap-1">
+                        <span class="text-[10px] text-amber-400 font-mono bg-amber-950/80 px-2 py-0.5 rounded border border-amber-800 flex items-center gap-1">
                             <i class="fa-brands fa-facebook"></i> Reel
                         </span>
                     </div>
 
                     <!-- Embedded Facebook Reel / Video Player (Exact 16:9 Aspect Ratio) -->
-                    <div class="relative w-full aspect-video rounded-2xl overflow-hidden bg-black shadow-inner border border-slate-800">
+                    <div class="relative w-full aspect-video rounded-xl overflow-hidden bg-black shadow-inner border border-slate-800">
                         <iframe 
                             src="https://www.facebook.com/plugins/video.php?href=https%3A%2F%2Fwww.facebook.com%2Freel%2F1401194435417527%2F&show_text=false" 
                             class="w-full h-full border-0 absolute inset-0" 
@@ -181,18 +197,52 @@
                     </div>
 
                     <!-- Action Bar below video -->
-                    <div class="mt-3 space-y-2">
+                    <div>
                         <a href="https://www.facebook.com/reel/1401194435417527" target="_blank" rel="noopener noreferrer" 
                            class="w-full py-2.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center justify-center gap-2 shadow transition">
                             <i class="fa-brands fa-facebook text-base"></i>
                             <span>ফেসবুকে রিল ভিডিওটি দেখুন</span>
                         </a>
-                        <p class="text-[11px] text-slate-400 text-center leading-snug">
-                            সাংবাদিকতা শিখুন, আইন জানুন, আত্মবিশ্বাসের সঙ্গে উপস্থাপনা করুন।
-                        </p>
                     </div>
 
                 </div>
+
+                <!-- Lower Portion: Key Course Highlights & Quick Enroll -->
+                <div class="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl space-y-3 text-xs">
+                    <div class="grid grid-cols-2 gap-2 text-slate-300 text-[11px]">
+                        <div class="flex items-center gap-2 p-2 rounded-xl bg-slate-800/80 border border-slate-700/60">
+                            <i class="fa-solid fa-video text-rose-400 text-xs"></i>
+                            <span class="font-medium">১২টি লাইভ ক্লাস</span>
+                        </div>
+                        <div class="flex items-center gap-2 p-2 rounded-xl bg-slate-800/80 border border-slate-700/60">
+                            <i class="fa-solid fa-award text-amber-400 text-xs"></i>
+                            <span class="font-medium">অফিশিয়াল সার্টিফিকেট</span>
+                        </div>
+                        <div class="flex items-center gap-2 p-2 rounded-xl bg-slate-800/80 border border-slate-700/60">
+                            <i class="fa-solid fa-headset text-emerald-400 text-xs"></i>
+                            <span class="font-medium">২৪/৭ সাপোর্ট গ্রুপ</span>
+                        </div>
+                        <div class="flex items-center gap-2 p-2 rounded-xl bg-slate-800/80 border border-slate-700/60">
+                            <i class="fa-solid fa-play-circle text-teal-400 text-xs"></i>
+                            <span class="font-medium">ক্লাস রেকর্ডিং প্রদান</span>
+                        </div>
+                    </div>
+
+                    <div class="pt-2 flex items-center justify-between border-t border-slate-800 text-[11px]">
+                        <span class="text-slate-400">পেমেন্ট মেথড:</span>
+                        <span class="font-bold text-amber-300 flex items-center gap-1.5">
+                            <span class="text-pink-400">বিকাশ</span> • <span class="text-orange-400">নগদ</span> • <span class="text-purple-400">রকেট</span>
+                        </span>
+                    </div>
+
+                    <a href="{{ route('courses.checkout', $flagshipCourse->slug) }}" 
+                       class="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition hover:scale-[1.01]">
+                        <i class="fa-solid fa-lock text-xs"></i>
+                        <span>অনলাইনে ভর্তি নিশ্চিত করুন (৳৯৯৯)</span>
+                        <i class="fa-solid fa-arrow-right text-xs"></i>
+                    </a>
+                </div>
+
             </div>
 
         </div>
