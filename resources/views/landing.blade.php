@@ -57,9 +57,9 @@
                     একটি কোর্সেই সাংবাদিকতার তিনটি গুরুত্বপূর্ণ ক্ষেত্র শেখার সুযোগ: <strong class="text-amber-300 font-bold">সাংবাদিকতা</strong>, <strong class="text-emerald-300 font-bold">আইন</strong> এবং ক্যামেরার সামনে <strong class="text-teal-300 font-bold">উপস্থাপনা</strong>। সরাসরি গণমাধ্যম ও সুপ্রিম কোর্টের শীর্ষ বিশেষজ্ঞদের সাথে ১২টি ইন্টারঅ্যাক্টিভ লাইভ ক্লাস।
                 </p>
 
-                <!-- MOBILE ONLY: Video appears right here on mobile for instant high-converting engagement! -->
-                <div class="block lg:hidden my-6">
-                    <div class="w-full max-w-[340px] sm:max-w-[380px] mx-auto rounded-3xl bg-slate-900/90 border border-emerald-500/40 shadow-2xl p-3 ring-1 ring-emerald-500/20">
+                <!-- MOBILE ONLY: Video appears right here on mobile with EXACT 16:9 width and zero black bars -->
+                <div class="block lg:hidden my-5">
+                    <div class="w-full max-w-lg mx-auto rounded-2xl bg-slate-900 border border-emerald-500/50 shadow-2xl p-2.5 sm:p-3 ring-1 ring-emerald-500/20">
                         <div class="flex items-center justify-between px-2 pb-2 text-xs">
                             <span class="flex items-center gap-1.5 text-white font-bold text-xs">
                                 <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
@@ -70,10 +70,10 @@
                             </span>
                         </div>
                         
-                        <!-- Video Frame (9:16 Aspect Ratio) -->
-                        <div class="relative w-full aspect-[9/16] rounded-2xl overflow-hidden bg-black shadow-inner border border-slate-800">
+                        <!-- Exact Width 16:9 Video Frame (Matches Facebook native 56.2% padding) -->
+                        <div class="relative w-full aspect-video rounded-xl overflow-hidden bg-black shadow-inner border border-slate-800">
                             <iframe 
-                                src="https://www.facebook.com/plugins/video.php?height=580&href=https%3A%2F%2Fwww.facebook.com%2Freel%2F1401194435417527%2F&show_text=false&width=326&t=0" 
+                                src="https://www.facebook.com/plugins/video.php?href=https%3A%2F%2Fwww.facebook.com%2Freel%2F1401194435417527%2F&show_text=false" 
                                 class="w-full h-full border-0 absolute inset-0" 
                                 scrolling="no" 
                                 frameborder="0" 
@@ -153,9 +153,9 @@
 
             </div>
 
-            <!-- Right Column: DESKTOP VIDEO SHOWCASE (Hidden on mobile, pristine on desktop) -->
+            <!-- Right Column: DESKTOP VIDEO SHOWCASE (Hidden on mobile, pristine on desktop with exact 16:9 width) -->
             <div class="hidden lg:block lg:col-span-5">
-                <div class="relative w-full max-w-[380px] mx-auto rounded-3xl bg-slate-900 border-2 border-emerald-500/50 p-3.5 shadow-2xl ring-1 ring-emerald-500/30">
+                <div class="relative w-full max-w-lg mx-auto rounded-3xl bg-slate-900 border-2 border-emerald-500/50 p-3.5 shadow-2xl ring-1 ring-emerald-500/30">
                     
                     <!-- Header Bar inside Video Frame -->
                     <div class="flex items-center justify-between px-2 pb-2 text-xs">
@@ -168,10 +168,10 @@
                         </span>
                     </div>
 
-                    <!-- Embedded Facebook Reel / Video Player -->
-                    <div class="relative w-full aspect-[9/16] rounded-2xl overflow-hidden bg-black shadow-inner border border-slate-800">
+                    <!-- Embedded Facebook Reel / Video Player (Exact 16:9 Aspect Ratio) -->
+                    <div class="relative w-full aspect-video rounded-2xl overflow-hidden bg-black shadow-inner border border-slate-800">
                         <iframe 
-                            src="https://www.facebook.com/plugins/video.php?height=580&href=https%3A%2F%2Fwww.facebook.com%2Freel%2F1401194435417527%2F&show_text=false&width=326&t=0" 
+                            src="https://www.facebook.com/plugins/video.php?href=https%3A%2F%2Fwww.facebook.com%2Freel%2F1401194435417527%2F&show_text=false" 
                             class="w-full h-full border-0 absolute inset-0" 
                             scrolling="no" 
                             frameborder="0" 
