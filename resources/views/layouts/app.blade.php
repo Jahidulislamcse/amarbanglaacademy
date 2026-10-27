@@ -68,7 +68,10 @@
                 <span class="sm:hidden font-medium">প্রথম ৫০ জনের জন্য কোর্স ফি মাত্র ৯৯৯ টাকা!</span>
             </div>
             <div class="flex items-center space-x-4 space-x-reverse text-emerald-100 text-xs">
-                <span class="flex items-center gap-1.5"><i class="fa-solid fa-phone text-amber-300"></i> হেল্পলাইন: +৮৮০ ১৭০০-০০০০০০</span>
+                <a href="https://wa.me/8801711774263" target="_blank" class="flex items-center gap-1.5 hover:text-white transition">
+                    <i class="fa-brands fa-whatsapp text-emerald-400"></i>
+                    <span>হোয়াটসঅ্যাপ / হেল্পলাইন: <strong>01711-774263</strong></span>
+                </a>
                 <span class="hidden md:flex items-center gap-1.5"><i class="fa-solid fa-envelope text-amber-300"></i> info@amarbanglaacademy.com</span>
             </div>
         </div>
@@ -94,9 +97,9 @@
 
                 <!-- Quick Action Contact & Enroll -->
                 <div class="flex items-center gap-2 sm:gap-3">
-                    <a href="https://wa.me/8801700000000" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 sm:py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs sm:text-sm font-bold border border-emerald-200 transition">
+                    <a href="https://wa.me/8801711774263" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 sm:py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs sm:text-sm font-bold border border-emerald-200 transition">
                         <i class="fa-brands fa-whatsapp text-emerald-600 text-sm sm:text-base"></i>
-                        <span class="hidden sm:inline">হেল্পলাইন / হোয়াটসঅ্যাপ</span>
+                        <span class="hidden sm:inline">০১৭১১-৭৭৪২৬৩ (হোয়াটসঅ্যাপ)</span>
                         <span class="sm:hidden">হোয়াটসঅ্যাপ</span>
                     </a>
                     <a href="{{ route('courses.checkout', 'journalism-law-presentation') }}" class="inline-flex items-center gap-1.5 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs sm:text-sm font-extrabold shadow-md shadow-emerald-600/25 transition">
@@ -223,8 +226,12 @@
                         </span>
                     </div>
                     <div class="p-3 rounded-lg bg-slate-800 border border-slate-700 text-xs">
-                        <span class="text-emerald-400 font-semibold block mb-1"><i class="fa-solid fa-headset mr-1"></i> জরুরি সহায়তা</span>
-                        <span class="text-slate-300">সকাল ৯:০০ - রাত ১১:০০ টা</span>
+                        <span class="text-emerald-400 font-semibold block mb-1"><i class="fa-solid fa-headset mr-1"></i> জরুরি সহায়তা / হোয়াটসঅ্যাপ</span>
+                        <a href="https://wa.me/8801711774263" target="_blank" class="text-slate-200 font-bold hover:text-emerald-400 flex items-center gap-1.5 mt-0.5">
+                            <i class="fa-brands fa-whatsapp text-emerald-400"></i>
+                            <span>০১৭১১-৭৭৪২৬৩ (01711-774263)</span>
+                        </a>
+                        <span class="text-[11px] text-slate-400 block mt-1">সকাল ৯:০০ - রাত ১১:০০ টা</span>
                     </div>
                 </div>
 
@@ -243,6 +250,14 @@
             </div>
         </div>
     </footer>
+
+    <!-- Floating WhatsApp Button (Desktop & Tablet) -->
+    <a href="https://wa.me/8801711774263" target="_blank" 
+       class="hidden sm:inline-flex fixed bottom-6 right-6 z-40 items-center gap-2.5 px-4 py-3 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-2xl shadow-emerald-700/50 hover:scale-105 transition-all duration-200 group border border-emerald-400/40"
+       title="হোয়াটসঅ্যাপে সরাসরি যোগাযোগ করুন">
+        <i class="fa-brands fa-whatsapp text-xl text-white group-hover:scale-110 transition-transform"></i>
+        <span>হোয়াটসঅ্যাপ হেল্পলাইন</span>
+    </a>
 
     <!-- Floating Sticky Mobile Conversion Bar (Bottom) -->
     <div class="fixed bottom-0 left-0 right-0 z-50 bg-slate-950/95 backdrop-blur-md border-t border-slate-700/80 p-3 sm:hidden shadow-2xl">
