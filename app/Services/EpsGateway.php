@@ -65,6 +65,39 @@ class EpsGateway
         }
     }
 
+    public function getCallbackUrl(string $routeName): string
+    {
+        $url = route($routeName);
+        $parsed = parse_url($url);
+        $host = strtolower($parsed['host'] ?? '');
+
+        // 1. If current host is already amarbangla24.com.bd or any of its subdomains
+        if ($host === 'amarbangla24.com.bd' || str_ends_with($host, '.amarbangla24.com.bd')) {
+            return $url;
+        }
+
+        // 2. Custom Base URL from config
+        $callbackBase = rtrim($this->config['callback_base_url'] ?? '', '/');
+        if ($callbackBase) {
+            $path = $parsed['path'] ?? '/payment/eps/' . str_replace('eps.', '', $routeName);
+            return $callbackBase . $path;
+        }
+
+        // 3. Custom Domain from config
+        $callbackDomain = $this->config['callback_domain'] ?? null;
+        if ($callbackDomain) {
+            $scheme = $parsed['scheme'] ?? 'https';
+            $port = isset($parsed['port']) ? ':' . $parsed['port'] : '';
+            $path = $parsed['path'] ?? '/payment/eps/' . str_replace('eps.', '', $routeName);
+            return $scheme . '://' . $callbackDomain . $port . $path;
+        }
+
+        // 4. Fallback for localhost / local IP testing:
+        // EPS strictly whitelists amarbangla24.com.bd, so we rewrite the host to satisfy EPS domain whitelist
+        $path = $parsed['path'] ?? '/payment/eps/' . str_replace('eps.', '', $routeName);
+        return 'https://amarbangla24.com.bd' . $path;
+    }
+
     public function initialize(array $order): array
     {
         $baseUrl = $this->getBaseUrl();
@@ -96,9 +129,9 @@ class EpsGateway
             'ipAddress' => $ip,
             'version' => '1',
 
-            'successUrl' => route('eps.success'),
-            'failUrl' => route('eps.fail'),
-            'cancelUrl' => route('eps.cancel'),
+            'successUrl' => $this->getCallbackUrl('eps.success'),
+            'failUrl' => $this->getCallbackUrl('eps.fail'),
+            'cancelUrl' => $this->getCallbackUrl('eps.cancel'),
 
             'customerName' => $order['customer_name'] ?? 'Student',
             'customerEmail' => $order['customer_email'] ?? 'student@example.com',

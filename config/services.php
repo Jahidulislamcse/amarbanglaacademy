@@ -43,6 +43,8 @@ return [
         'password' => env('EPS_PASSWORD', env('EPSPassword')),
         'hash_key' => env('EPS_HASH_KEY', env('EPSHashkey', env('EPSHashKey'))),
         'device_type_id' => env('EPS_DEVICE_TYPE_ID', env('EPSDeviceTypeID', 1)),
+        'callback_domain' => env('EPS_CALLBACK_DOMAIN', env('EPSCallbackDomain')),
+        'callback_base_url' => env('EPS_CALLBACK_BASE_URL', env('EPSCallbackBaseURL')),
     ],
 
 ];
