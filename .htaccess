@@ -1,0 +1,17 @@
+<IfModule mod_rewrite.c>
+    <IfModule mod_negotiation.c>
+        Options -MultiViews -Indexes
+    </IfModule>
+
+    RewriteEngine On
+
+    # Deny direct access to sensitive configuration and system files
+    <FilesMatch "^\.(env|git|editorconfig|json|lock)$">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+
+    # Send Requests to /public
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^(.*)$ public/$1 [L,QSA]
+</IfModule>
