@@ -146,9 +146,18 @@
                 <!-- 3 Trainers Mini Preview -->
                 <div class="pt-3 border-t border-slate-800/80 flex flex-wrap items-center justify-center lg:justify-start gap-3 text-xs text-slate-300">
                     <span class="font-bold text-amber-400 uppercase text-[11px]">প্রশিক্ষকবৃন্দ:</span>
-                    <span class="flex items-center gap-1.5"><i class="fa-solid fa-user-check text-emerald-400"></i> সাংবাদিক নাজীর আহম্মেদ খান</span>
-                    <span class="flex items-center gap-1.5"><i class="fa-solid fa-scale-balanced text-teal-400"></i> ব্যারিস্টার মেহেদী হাসান</span>
-                    <span class="flex items-center gap-1.5"><i class="fa-solid fa-microphone text-rose-400"></i> আরিফ সরকার</span>
+                    <span class="flex items-center gap-1.5">
+                        <img src="{{ asset('images/instructors/nazir-ahmed-khan.jpg') }}" alt="নাজীর আহম্মেদ খান" class="w-5 h-5 rounded-full object-cover border border-emerald-400">
+                        <span>সাংবাদিক নাজীর আহম্মেদ খান</span>
+                    </span>
+                    <span class="flex items-center gap-1.5">
+                        <img src="{{ asset('images/instructors/mehedi-hasan.jpg') }}" alt="ব্যারিস্টার মেহেদী হাসান" class="w-5 h-5 rounded-full object-cover border border-teal-400">
+                        <span>ব্যারিস্টার মেহেদী হাসান</span>
+                    </span>
+                    <span class="flex items-center gap-1.5">
+                        <img src="{{ asset('images/instructors/arif-sarkar.jpg') }}" alt="আরিফ সরকার" class="w-5 h-5 rounded-full object-cover border border-rose-400">
+                        <span>আরিফ সরকার</span>
+                    </span>
                 </div>
 
             </div>
@@ -434,9 +443,9 @@
             <div class="bg-slate-50 rounded-2xl p-5 sm:p-6 border border-slate-200 hover:border-emerald-400 hover:shadow-lg transition-all duration-300 flex flex-col justify-between space-y-4">
                 <div class="space-y-3">
                     <div class="flex items-center gap-3.5">
-                        <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=400&q=80" 
+                        <img src="{{ asset('images/instructors/nazir-ahmed-khan.jpg') }}" 
                              alt="সাংবাদিক নাজীর আহম্মেদ খান" 
-                             class="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border-2 border-emerald-500 shadow-md flex-shrink-0">
+                             class="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover object-top border-2 border-emerald-500 shadow-md flex-shrink-0">
                         <div>
                             <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 uppercase">সাংবাদিকতা ও ক্রাইম</span>
                             <h3 class="text-base sm:text-lg font-bold text-slate-900 mt-0.5">সাংবাদিক নাজীর আহম্মেদ খান</h3>
@@ -459,9 +468,9 @@
             <div class="bg-slate-50 rounded-2xl p-5 sm:p-6 border border-slate-200 hover:border-emerald-400 hover:shadow-lg transition-all duration-300 flex flex-col justify-between space-y-4">
                 <div class="space-y-3">
                     <div class="flex items-center gap-3.5">
-                        <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80" 
+                        <img src="{{ asset('images/instructors/mehedi-hasan.jpg') }}" 
                              alt="ব্যারিস্টার মেহেদী হাসান" 
-                             class="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border-2 border-teal-500 shadow-md flex-shrink-0">
+                             class="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover object-top border-2 border-teal-500 shadow-md flex-shrink-0">
                         <div>
                             <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-teal-100 text-teal-800 uppercase">আইন ও সংবিধান</span>
                             <h3 class="text-base sm:text-lg font-bold text-slate-900 mt-0.5">ব্যারিস্টার মেহেদী হাসান</h3>
@@ -484,9 +493,9 @@
             <div class="bg-slate-50 rounded-2xl p-5 sm:p-6 border border-slate-200 hover:border-emerald-400 hover:shadow-lg transition-all duration-300 flex flex-col justify-between space-y-4">
                 <div class="space-y-3">
                     <div class="flex items-center gap-3.5">
-                        <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80" 
+                        <img src="{{ asset('images/instructors/arif-sarkar.jpg') }}" 
                              alt="আরিফ সরকার" 
-                             class="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border-2 border-rose-500 shadow-md flex-shrink-0">
+                             class="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover object-top border-2 border-rose-500 shadow-md flex-shrink-0">
                         <div>
                             <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 uppercase">উপস্থাপনা ও ভয়েস</span>
                             <h3 class="text-base sm:text-lg font-bold text-slate-900 mt-0.5">আরিফ সরকার</h3>

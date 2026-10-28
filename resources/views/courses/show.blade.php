@@ -33,7 +33,7 @@
                 <div class="pt-2 flex flex-wrap items-center gap-4 text-xs text-slate-300">
                     @foreach($course->instructors as $inst)
                         <div class="flex items-center gap-2">
-                            <img src="{{ $inst->avatar }}" alt="{{ $inst->name }}" class="w-8 h-8 rounded-full object-cover border border-emerald-400">
+                            <img src="{{ asset($inst->avatar) }}" alt="{{ $inst->name }}" class="w-8 h-8 rounded-full object-cover object-top border border-emerald-400">
                             <div>
                                 <span class="font-bold text-white block">{{ $inst->bangla_name ?? $inst->name }}</span>
                                 <span class="text-slate-400 text-[11px]">{{ $inst->title }}</span>
