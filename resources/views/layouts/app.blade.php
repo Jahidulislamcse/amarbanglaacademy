@@ -57,23 +57,35 @@
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased font-bangla flex flex-col min-h-screen" x-data="{ mobileMenuOpen: false }">
 
-    <!-- Top Announcement Bar -->
-    <div class="bg-gradient-to-r from-emerald-900 via-teal-800 to-slate-900 text-white text-xs sm:text-sm py-2 px-4 shadow-sm">
-        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
-            <div class="flex items-center space-x-2 space-x-reverse">
-                <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-400 text-slate-900">
-                    <i class="fa-solid fa-fire mr-1 text-xs"></i> ১ম ব্যাচে ভর্তি চলছে
+    <!-- Top Announcement Bar (Mobile Responsive & Properly Spaced) -->
+    <div class="bg-gradient-to-r from-emerald-950 via-teal-900 to-slate-950 text-white text-xs py-2 sm:py-2.5 px-3 sm:px-6 shadow-sm border-b border-emerald-800/40">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2.5 text-center sm:text-left">
+            
+            <!-- Left: Urgency Badge & Offer Text -->
+            <div class="flex items-center justify-center sm:justify-start gap-2.5 sm:gap-3 flex-wrap">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-black bg-amber-400 text-slate-950 shadow-xs flex-shrink-0">
+                    <i class="fa-solid fa-fire text-rose-600 text-[11px]"></i> ১ম ব্যাচে ভর্তি চলছে
                 </span>
-                <span class="hidden sm:inline">ন্যাশনাল জার্নালিস্ট ক্লাবের পৃষ্ঠপোষকতায় “সাংবাদিকতা, আইন ও উপস্থাপনা” কোর্স — প্রথম ৫০ জনের জন্য মাত্র ৯৯৯ টাকা!</span>
-                <span class="sm:hidden font-medium">প্রথম ৫০ জনের জন্য কোর্স ফি মাত্র ৯৯৯ টাকা!</span>
+                <span class="hidden md:inline text-xs font-medium text-slate-200">
+                    ন্যাশনাল জার্নালিস্ট ক্লাবের পৃষ্ঠপোষকতায় “সাংবাদিকতা, আইন ও উপস্থাপনা” কোর্স — প্রথম ৫০ জনের জন্য মাত্র ৯৯৯ টাকা!
+                </span>
+                <span class="md:hidden text-[11px] sm:text-xs font-semibold text-emerald-100">
+                    প্রথম ৫০ জনের বিশেষ অফার মাত্র ৯৯৯ টাকা!
+                </span>
             </div>
-            <div class="flex items-center space-x-4 space-x-reverse text-emerald-100 text-xs">
-                <a href="https://wa.me/8801711774263" target="_blank" class="flex items-center gap-1.5 hover:text-white transition">
-                    <i class="fa-brands fa-whatsapp text-emerald-400"></i>
-                    <span>হোয়াটসঅ্যাপ / হেল্পলাইন: <strong>01711-774263</strong></span>
+
+            <!-- Right: WhatsApp Helpline & Email -->
+            <div class="flex items-center justify-center sm:justify-end gap-3 sm:gap-4 text-emerald-100 text-[11px] sm:text-xs flex-wrap">
+                <a href="https://wa.me/8801711774263" target="_blank" class="inline-flex items-center gap-1.5 hover:text-white transition group bg-emerald-900/70 hover:bg-emerald-800/80 px-2.5 py-1 rounded-full border border-emerald-700/50">
+                    <i class="fa-brands fa-whatsapp text-emerald-300 text-sm group-hover:scale-110 transition-transform"></i>
+                    <span>হোয়াটসঅ্যাপ: <strong class="text-white font-mono font-bold tracking-wide">01711-774263</strong></span>
                 </a>
-                <span class="hidden md:flex items-center gap-1.5"><i class="fa-solid fa-envelope text-amber-300"></i> info@amarbanglaacademy.com</span>
+                <a href="mailto:info@amarbanglaacademy.com" class="hidden lg:inline-flex items-center gap-1.5 hover:text-white transition text-slate-300">
+                    <i class="fa-solid fa-envelope text-amber-300 text-[11px]"></i>
+                    <span>info@amarbanglaacademy.com</span>
+                </a>
             </div>
+
         </div>
     </div>
 
