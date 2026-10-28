@@ -219,6 +219,63 @@ class AdminPanelTest extends TestCase
         $this->assertStringContainsString('EPS990011', $response->streamedContent());
     }
 
+    public function test_pending_payments_are_not_shown_in_students_roster(): void
+    {
+        // 1. Pending registration (abandoned / incomplete)
+        $pendingEnrollment = Enrollment::create([
+            'course_id' => $this->course->id,
+            'student_name' => 'অসম্পূর্ণ ছাত্র',
+            'student_email' => 'incomplete@example.com',
+            'student_phone' => '01500000000',
+            'status' => 'pending',
+        ]);
+
+        Payment::create([
+            'enrollment_id' => $pendingEnrollment->id,
+            'course_id' => $this->course->id,
+            'student_name' => 'অসম্পূর্ণ ছাত্র',
+            'student_email' => 'incomplete@example.com',
+            'student_phone' => '01500000000',
+            'amount' => 999.00,
+            'payment_method' => 'eps',
+            'transaction_id' => 'EPS_PENDING_999',
+            'status' => 'pending',
+        ]);
+
+        // 2. Completed registration
+        $completedEnrollment = Enrollment::create([
+            'course_id' => $this->course->id,
+            'student_name' => 'সফল ছাত্র',
+            'student_email' => 'success@example.com',
+            'student_phone' => '01711223344',
+            'status' => 'active',
+        ]);
+
+        Payment::create([
+            'enrollment_id' => $completedEnrollment->id,
+            'course_id' => $this->course->id,
+            'student_name' => 'সফল ছাত্র',
+            'student_email' => 'success@example.com',
+            'student_phone' => '01711223344',
+            'amount' => 999.00,
+            'payment_method' => 'eps',
+            'transaction_id' => 'EPS_SUCCESS_111',
+            'status' => 'completed',
+        ]);
+
+        $response = $this->actingAs($this->admin)->get('/admin/students');
+        $response->assertStatus(200);
+        $response->assertSee('সফল ছাত্র');
+        $response->assertSee('EPS_SUCCESS_111');
+        $response->assertDontSee('অসম্পূর্ণ ছাত্র');
+        $response->assertDontSee('EPS_PENDING_999');
+
+        // Verify CSV export also excludes pending payments
+        $csvResponse = $this->actingAs($this->admin)->get('/admin/students/export');
+        $this->assertStringContainsString('সফল ছাত্র', $csvResponse->streamedContent());
+        $this->assertStringNotContainsString('অসম্পূর্ণ ছাত্র', $csvResponse->streamedContent());
+    }
+
     public function test_admin_can_logout(): void
     {
         $response = $this->actingAs($this->admin)->post('/admin/logout');

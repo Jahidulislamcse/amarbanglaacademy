@@ -66,21 +66,24 @@ class AdminController extends Controller
     }
 
     /**
-     * Purchased Students List & Dashboard
+     * Purchased Students List & Dashboard (Excludes pending payments)
      */
     public function students(Request $request)
     {
-        // 1. KPI Stats
+        // 1. KPI Stats (Strictly for completed course purchases)
+        $completedPayments = Payment::where('status', 'completed');
+
         $stats = [
-            'total_students' => Enrollment::count(),
-            'total_revenue' => Payment::where('status', 'completed')->sum('amount'),
-            'completed_count' => Payment::where('status', 'completed')->count(),
-            'pending_count' => Payment::where('status', 'pending')->count(),
-            'eps_count' => Payment::where('payment_method', 'eps')->count(),
+            'total_students' => (clone $completedPayments)->count(),
+            'total_revenue' => (clone $completedPayments)->sum('amount'),
+            'eps_count' => (clone $completedPayments)->where('payment_method', 'eps')->count(),
+            'mobile_count' => (clone $completedPayments)->whereIn('payment_method', ['bkash', 'nagad', 'rocket', 'card'])->count(),
         ];
 
-        // 2. Query builder with relations
-        $query = Payment::with(['enrollment', 'course'])->latest();
+        // 2. Query builder: strictly show completed payment registrations
+        $query = Payment::with(['enrollment', 'course'])
+            ->where('status', 'completed')
+            ->latest();
 
         // Search filter (name, phone, email, trxId, sender phone)
         if ($search = trim((string) $request->input('search'))) {
@@ -91,13 +94,6 @@ class AdminController extends Controller
                   ->orWhere('transaction_id', 'like', "%{$search}%")
                   ->orWhere('sender_phone', 'like', "%{$search}%");
             });
-        }
-
-        // Status filter
-        if ($status = $request->input('status')) {
-            if (in_array($status, ['completed', 'pending', 'failed', 'cancelled'])) {
-                $query->where('status', $status);
-            }
         }
 
         // Payment method filter
@@ -147,11 +143,13 @@ class AdminController extends Controller
     }
 
     /**
-     * Export Enrolled Students to CSV
+     * Export Enrolled Students to CSV (Excludes pending payments)
      */
     public function exportCsv(Request $request): StreamedResponse
     {
-        $query = Payment::with(['enrollment', 'course'])->latest();
+        $query = Payment::with(['enrollment', 'course'])
+            ->where('status', 'completed')
+            ->latest();
 
         if ($search = trim((string) $request->input('search'))) {
             $query->where(function ($q) use ($search) {
@@ -161,12 +159,6 @@ class AdminController extends Controller
                   ->orWhere('transaction_id', 'like', "%{$search}%")
                   ->orWhere('sender_phone', 'like', "%{$search}%");
             });
-        }
-
-        if ($status = $request->input('status')) {
-            if (in_array($status, ['completed', 'pending', 'failed', 'cancelled'])) {
-                $query->where('status', $status);
-            }
         }
 
         if ($method = $request->input('method')) {

@@ -23,11 +23,11 @@
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
             <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2.5">
-                <i class="fa-solid fa-users text-emerald-600"></i>
-                <span>ভর্তি হওয়া শিক্ষার্থীদের তালিকা</span>
+                <i class="fa-solid fa-graduation-cap text-emerald-600"></i>
+                <span>কোর্সে ভর্তি হওয়া শিক্ষার্থী তালিকা</span>
             </h1>
             <p class="text-xs sm:text-sm text-slate-500 mt-1">
-                “সাংবাদিকতা, আইন ও উপস্থাপনা” কোর্সে ভর্তি হওয়া শিক্ষার্থীদের পেমেন্ট ও যোগাযোগের রিয়েল-টাইম তালিকা
+                “সাংবাদিকতা, আইন ও উপস্থাপনা” কোর্সে সফল পেমেন্ট সম্পন্নকারী শিক্ষার্থীদের তালিকা ও যোগাযোগের তথ্য
             </p>
         </div>
 
@@ -47,9 +47,9 @@
         </div>
     </div>
 
-    <!-- KPI Metric Cards -->
-    <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
-        <!-- Total Students -->
+    <!-- KPI Metric Cards (Purchased Students Only) -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <!-- Total Enrolled Students -->
         <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3">
             <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl shrink-0">
                 <i class="fa-solid fa-user-graduate"></i>
@@ -71,36 +71,25 @@
             </div>
         </div>
 
-        <!-- Completed Payments -->
-        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3">
-            <div class="w-12 h-12 rounded-xl bg-green-50 text-green-600 flex items-center justify-center text-xl shrink-0">
-                <i class="fa-solid fa-circle-check"></i>
-            </div>
-            <div>
-                <div class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">সফল পেমেন্ট</div>
-                <div class="text-xl sm:text-2xl font-bold text-green-700 mt-0.5">{{ number_format($stats['completed_count']) }} <span class="text-xs font-normal text-slate-500">টি</span></div>
-            </div>
-        </div>
-
-        <!-- Pending Payments -->
-        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3">
-            <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl shrink-0">
-                <i class="fa-solid fa-clock"></i>
-            </div>
-            <div>
-                <div class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">অপেক্ষমাণ পেমেন্ট</div>
-                <div class="text-xl sm:text-2xl font-bold text-amber-700 mt-0.5">{{ number_format($stats['pending_count']) }} <span class="text-xs font-normal text-slate-500">টি</span></div>
-            </div>
-        </div>
-
         <!-- EPS Online Gateway -->
-        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3 col-span-2 lg:col-span-1">
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3">
             <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl shrink-0">
                 <i class="fa-solid fa-bolt"></i>
             </div>
             <div>
                 <div class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">EPS অনলাইন পেমেন্ট</div>
-                <div class="text-xl sm:text-2xl font-bold text-blue-700 mt-0.5">{{ number_format($stats['eps_count']) }} <span class="text-xs font-normal text-slate-500">টি</span></div>
+                <div class="text-xl sm:text-2xl font-bold text-blue-700 mt-0.5">{{ number_format($stats['eps_count']) }} <span class="text-xs font-normal text-slate-500">জন</span></div>
+            </div>
+        </div>
+
+        <!-- Mobile Banking & Others -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3">
+            <div class="w-12 h-12 rounded-xl bg-pink-50 text-pink-600 flex items-center justify-center text-xl shrink-0">
+                <i class="fa-solid fa-mobile-screen"></i>
+            </div>
+            <div>
+                <div class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">বিকাশ/নগদ/অন্যান্য</div>
+                <div class="text-xl sm:text-2xl font-bold text-slate-800 mt-0.5">{{ number_format($stats['mobile_count']) }} <span class="text-xs font-normal text-slate-500">জন</span></div>
             </div>
         </div>
     </div>
@@ -109,7 +98,7 @@
     <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
         <form method="GET" action="{{ route('admin.students') }}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-end">
             <!-- Search Input -->
-            <div class="lg:col-span-5">
+            <div class="lg:col-span-7">
                 <label for="search" class="block text-xs font-semibold text-slate-700 mb-1.5">
                     শিক্ষার্থী অনুসন্ধান
                 </label>
@@ -123,30 +112,15 @@
                 </div>
             </div>
 
-            <!-- Status Filter -->
-            <div class="lg:col-span-3">
-                <label for="status" class="block text-xs font-semibold text-slate-700 mb-1.5">
-                    পেমেন্ট স্ট্যাটাস
-                </label>
-                <select id="status" name="status"
-                    class="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition">
-                    <option value="">সকল স্ট্যাটাস</option>
-                    <option value="completed" {{ request('status') === 'completed' ? 'selected' : '' }}>সফল (Completed)</option>
-                    <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>অপেক্ষমাণ (Pending)</option>
-                    <option value="failed" {{ request('status') === 'failed' ? 'selected' : '' }}>ব্যর্থ (Failed)</option>
-                    <option value="cancelled" {{ request('status') === 'cancelled' ? 'selected' : '' }}>বাতিল (Cancelled)</option>
-                </select>
-            </div>
-
             <!-- Payment Method Filter -->
-            <div class="lg:col-span-2">
+            <div class="lg:col-span-3">
                 <label for="method" class="block text-xs font-semibold text-slate-700 mb-1.5">
                     পেমেন্ট মাধ্যম
                 </label>
                 <select id="method" name="method"
                     class="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition">
                     <option value="">সকল মাধ্যম</option>
-                    <option value="eps" {{ request('method') === 'eps' ? 'selected' : '' }}>EPS অনলাইন</option>
+                    <option value="eps" {{ request('method') === 'eps' ? 'selected' : '' }}>EPS অনলাইন গেটওয়ে</option>
                     <option value="bkash" {{ request('method') === 'bkash' ? 'selected' : '' }}>বিকাশ (bKash)</option>
                     <option value="nagad" {{ request('method') === 'nagad' ? 'selected' : '' }}>নগদ (Nagad)</option>
                     <option value="rocket" {{ request('method') === 'rocket' ? 'selected' : '' }}>রকেট (Rocket)</option>
@@ -161,7 +135,7 @@
                     <i class="fa-solid fa-filter text-xs"></i>
                     <span>ফিল্টার</span>
                 </button>
-                @if(request()->hasAny(['search', 'status', 'method', 'course_id']))
+                @if(request()->hasAny(['search', 'method', 'course_id']))
                     <a href="{{ route('admin.students') }}"
                         title="রিসেট"
                         class="bg-slate-100 hover:bg-slate-200 text-slate-600 py-2 px-3 rounded-xl text-xs sm:text-sm transition flex items-center justify-center border border-slate-200">
@@ -177,10 +151,10 @@
         <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
             <div>
                 <h2 class="font-bold text-slate-800 text-base flex items-center gap-2">
-                    <i class="fa-solid fa-graduation-cap text-emerald-600"></i>
-                    <span>শিক্ষার্থী তালিকা (মোট: {{ $payments->total() }})</span>
+                    <i class="fa-solid fa-circle-check text-green-600"></i>
+                    <span>সফল কোর্স ক্রয়ের শিক্ষার্থী তালিকা (মোট: {{ $payments->total() }})</span>
                 </h2>
-                <p class="text-xs text-slate-500 mt-0.5">কোর্সে ভর্তিকৃত শিক্ষার্থীদের সম্পূর্ণ বিবরণ ও ট্রানজেকশন</p>
+                <p class="text-xs text-slate-500 mt-0.5">পেমেন্ট সম্পন্নকারী সকল সক্রিয় শিক্ষার্থীর সম্পূর্ণ বিবরণ</p>
             </div>
             <div class="text-xs text-slate-500 bg-slate-50 px-3 py-1 rounded-lg border border-slate-200">
                 পেজ: {{ $payments->currentPage() }} / {{ $payments->lastPage() > 0 ? $payments->lastPage() : 1 }}
@@ -287,7 +261,7 @@
 
                                 <!-- Amount -->
                                 <td class="py-3.5 px-4 text-right">
-                                    <span class="font-bold text-sm text-slate-900 font-mono">
+                                    <span class="font-bold text-sm text-emerald-700 font-mono">
                                         ৳{{ number_format($payment->amount) }}
                                     </span>
                                 </td>
@@ -341,57 +315,22 @@
 
                                 <!-- Payment Status Badge -->
                                 <td class="py-3.5 px-4 text-center">
-                                    @if($payment->status === 'completed')
-                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-green-50 text-green-700 border border-green-200">
-                                            <i class="fa-solid fa-circle-check text-[10px]"></i>
-                                            <span>সফল</span>
-                                        </span>
-                                    @elseif($payment->status === 'pending')
-                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200 animate-pulse">
-                                            <i class="fa-solid fa-clock text-[10px]"></i>
-                                            <span>অপেক্ষমাণ</span>
-                                        </span>
-                                    @elseif($payment->status === 'failed')
-                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-red-50 text-red-700 border border-red-200">
-                                            <i class="fa-solid fa-circle-xmark text-[10px]"></i>
-                                            <span>ব্যর্থ</span>
-                                        </span>
-                                    @else
-                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
-                                            <span>{{ $payment->status }}</span>
-                                        </span>
-                                    @endif
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-green-50 text-green-700 border border-green-200">
+                                        <i class="fa-solid fa-circle-check text-[10px]"></i>
+                                        <span>পেমেন্ট সফল</span>
+                                    </span>
                                 </td>
 
                                 <!-- Actions -->
                                 <td class="py-3.5 px-4 text-center">
-                                    <div class="flex items-center justify-center gap-1.5">
-                                        <!-- View Details Modal Trigger -->
-                                        <button type="button"
-                                            @click="openDetails({{ $studentJson }})"
-                                            title="বিস্তারিত দেখুন"
-                                            class="inline-flex items-center gap-1 bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 text-xs font-semibold px-2.5 py-1 rounded-lg border border-slate-200 hover:border-emerald-200 transition">
-                                            <i class="fa-solid fa-eye text-xs"></i>
-                                            <span>বিস্তারিত</span>
-                                        </button>
-
-                                        <!-- Quick Approve if Pending -->
-                                        @if($payment->status === 'pending')
-                                            <form method="POST" action="{{ route('admin.payments.update-status', $payment->id) }}" class="inline">
-                                                @csrf
-                                                @method('PATCH')
-                                                <input type="hidden" name="status" value="completed">
-                                                <input type="hidden" name="notes" value="এডমিন দ্বারা ম্যানুয়াল অনুমোদন">
-                                                <button type="submit"
-                                                    onclick="return confirm('আপনি কি নিশ্চিত যে এই পেমেন্টটি অনুমোদন করবেন?')"
-                                                    title="অনুমোদন করুন"
-                                                    class="inline-flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold px-2.5 py-1 rounded-lg shadow-sm transition">
-                                                    <i class="fa-solid fa-check text-xs"></i>
-                                                    <span>অনুমোদন</span>
-                                                </button>
-                                            </form>
-                                        @endif
-                                    </div>
+                                    <!-- View Details Modal Trigger -->
+                                    <button type="button"
+                                        @click="openDetails({{ $studentJson }})"
+                                        title="বিস্তারিত দেখুন"
+                                        class="inline-flex items-center gap-1 bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 text-xs font-semibold px-2.5 py-1 rounded-lg border border-slate-200 hover:border-emerald-200 transition">
+                                        <i class="fa-solid fa-eye text-xs"></i>
+                                        <span>বিস্তারিত</span>
+                                    </button>
                                 </td>
                             </tr>
                         @endforeach
@@ -402,7 +341,7 @@
             <!-- Pagination Bar -->
             <div class="p-4 border-t border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600">
                 <div>
-                    মোট <span class="font-bold text-slate-800">{{ $payments->total() }}</span> জন শিক্ষার্থীর মধ্যে
+                    মোট <span class="font-bold text-slate-800">{{ $payments->total() }}</span> জন সফল শিক্ষার্থীর মধ্যে
                     <span class="font-bold text-slate-800">{{ $payments->firstItem() }}</span> থেকে
                     <span class="font-bold text-slate-800">{{ $payments->lastItem() }}</span> দেখানো হচ্ছে
                 </div>
@@ -414,17 +353,17 @@
             <!-- Empty State -->
             <div class="p-12 text-center">
                 <div class="w-16 h-16 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto text-2xl mb-3">
-                    <i class="fa-solid fa-user-slash"></i>
+                    <i class="fa-solid fa-user-check"></i>
                 </div>
-                <h3 class="text-base font-bold text-slate-700">কোনো শিক্ষার্থী বা পেমেন্ট রেকর্ড পাওয়া যায়নি</h3>
+                <h3 class="text-base font-bold text-slate-700">কোনো সফল শিক্ষার্থী রেকর্ড পাওয়া যায়নি</h3>
                 <p class="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-                    @if(request()->hasAny(['search', 'status', 'method']))
+                    @if(request()->hasAny(['search', 'method']))
                         আপনার সার্চ বা ফিল্টার শর্ত অনুযায়ী কোনো ফলাফল নেই। অনুগ্রহ করে অন্য কি-ওয়ার্ড বা ফিল্টার ট্রাই করুন।
                     @else
-                        এখনো কোনো শিক্ষার্থী কোর্সটিতে ভর্তি হননি। নতুন ভর্তির পর স্বয়ংক্রিয়ভাবে এখানে প্রদর্শিত হবে।
+                        এখনো কোনো শিক্ষার্থী কোর্সটির ফি সফলভাবে পরিশোধ করে ভর্তি সম্পন্ন করেননি। নতুন পেমেন্ট সফল হওয়ার সাথে সাথে স্বয়ংক্রিয়ভাবে এখানে প্রদর্শিত হবে।
                     @endif
                 </p>
-                @if(request()->hasAny(['search', 'status', 'method']))
+                @if(request()->hasAny(['search', 'method']))
                     <div class="mt-4">
                         <a href="{{ route('admin.students') }}" class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 hover:underline">
                             <i class="fa-solid fa-rotate-left"></i>
@@ -494,7 +433,7 @@
                         <div class="font-semibold text-slate-800 mt-0.5" x-text="selectedStudent?.course_title"></div>
                     </div>
                     <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                        <div class="text-[11px] text-slate-500">কোর্স ফি</div>
+                        <div class="text-[11px] text-slate-500">পরিশোধিত ফি</div>
                         <div class="font-bold text-emerald-700 text-base mt-0.5">৳<span x-text="selectedStudent?.amount"></span></div>
                     </div>
                     <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
@@ -507,11 +446,10 @@
                     </div>
                     <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
                         <div class="text-[11px] text-slate-500">পেমেন্ট স্ট্যাটাস</div>
-                        <div class="font-bold mt-0.5" :class="{
-                            'text-green-600': selectedStudent?.status === 'completed',
-                            'text-amber-600': selectedStudent?.status === 'pending',
-                            'text-red-600': selectedStudent?.status === 'failed'
-                        }" x-text="selectedStudent?.status?.toUpperCase()"></div>
+                        <div class="font-bold text-green-600 mt-0.5 flex items-center gap-1">
+                            <i class="fa-solid fa-circle-check text-xs"></i>
+                            <span>সফল (COMPLETED)</span>
+                        </div>
                     </div>
                     <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
                         <div class="text-[11px] text-slate-500">ভর্তির সময়</div>
@@ -525,24 +463,16 @@
                     <div class="text-xs text-slate-700 mt-0.5" x-text="selectedStudent?.notes"></div>
                 </div>
 
-                <!-- Update Status Form -->
+                <!-- Admin Remarks / Status Note Form -->
                 <div class="pt-4 border-t border-slate-200">
-                    <h4 class="font-bold text-slate-800 text-xs uppercase tracking-wider mb-2">স্ট্যাটাস পরিবর্তন করুন</h4>
+                    <h4 class="font-bold text-slate-800 text-xs uppercase tracking-wider mb-2">এডমিন নোট বা আপডেট</h4>
                     <form :action="selectedStudent?.update_url" method="POST" class="space-y-3">
                         @csrf
                         @method('PATCH')
+                        <input type="hidden" name="status" value="completed">
                         <div>
-                            <label class="block text-[11px] font-semibold text-slate-600 mb-1">নতুন স্ট্যাটাস</label>
-                            <select name="status" x-model="selectedStudent.status" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
-                                <option value="completed">সফল (Completed - ভর্তি সক্রিয়)</option>
-                                <option value="pending">অপেক্ষমাণ (Pending)</option>
-                                <option value="failed">ব্যর্থ (Failed)</option>
-                                <option value="cancelled">বাতিল (Cancelled)</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-[11px] font-semibold text-slate-600 mb-1">নোট (ঐচ্ছিক)</label>
-                            <input type="text" name="notes" placeholder="যেমন: bKash Trx ভেরিফাইড" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+                            <label class="block text-[11px] font-semibold text-slate-600 mb-1">অ্যাডমিন নোট (যেমন: ব্যাচ বা স্টুডেন্ট আইডি নোট)</label>
+                            <input type="text" name="notes" placeholder="নোট লিখুন..." class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
                         </div>
                         <button type="submit" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-sm transition">
                             সংরক্ষণ করুন
