@@ -37,6 +37,13 @@ class LmsSeeder extends Seeder
                 'password' => Hash::make('password123'),
             ]
         );
+        User::firstOrCreate(
+            ['email' => 'admin@amarbanglaacademy.com'],
+            [
+                'name' => 'Amar Bangla Academy Admin',
+                'password' => Hash::make('password123'),
+            ]
+        );
 
         // 2. Instructors (প্রশিক্ষকবৃন্দ)
         $nazir = Instructor::create([

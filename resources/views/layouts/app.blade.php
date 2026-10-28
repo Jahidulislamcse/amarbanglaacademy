@@ -258,6 +258,11 @@
                     </span>
                     <span>•</span>
                     <span>Laravel 12 LMS Edition</span>
+                    <span>•</span>
+                    <a href="{{ route('admin.login') }}" class="hover:text-emerald-400 text-slate-400 transition inline-flex items-center gap-1">
+                        <i class="fa-solid fa-lock text-[10px]"></i>
+                        <span>এডমিন</span>
+                    </a>
                 </div>
             </div>
         </div>

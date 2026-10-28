@@ -16,6 +16,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'payment/eps/*',
             'eps/*',
         ]);
+        $middleware->redirectGuestsTo(fn () => route('admin.login'));
+        $middleware->redirectUsersTo(fn () => route('admin.students'));
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
