@@ -11,13 +11,14 @@ use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 
 class LmsSeeder extends Seeder
 {
     public function run(): void
     {
-        // Disable foreign keys temporarily for clean reset
-        DB::statement('PRAGMA foreign_keys = OFF;');
+        // Disable foreign keys temporarily for clean reset (supports both MySQL and SQLite)
+        Schema::disableForeignKeyConstraints();
         DB::table('payments')->truncate();
         DB::table('enrollments')->truncate();
         DB::table('exams')->truncate();
@@ -26,7 +27,7 @@ class LmsSeeder extends Seeder
         DB::table('course_instructor')->truncate();
         DB::table('courses')->truncate();
         DB::table('instructors')->truncate();
-        DB::statement('PRAGMA foreign_keys = ON;');
+        Schema::enableForeignKeyConstraints();
 
         // 1. Create Demo Users
         User::firstOrCreate(
