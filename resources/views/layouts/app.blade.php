@@ -111,7 +111,7 @@
                 <div class="flex items-center gap-2 sm:gap-3">
                     <a href="https://wa.me/8801332549549" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 sm:py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs sm:text-sm font-bold border border-emerald-200 transition">
                         <i class="fa-brands fa-whatsapp text-emerald-600 text-sm sm:text-base"></i>
-                        <span class="hidden sm:inline">০১৭১১-৭৭৪২৬৩ (হোয়াটসঅ্যাপ)</span>
+                        <span class="hidden sm:inline">০১৩৩২-৫৪৯৫৪৯ (হোয়াটসঅ্যাপ)</span>
                         <span class="sm:hidden">হোয়াটসঅ্যাপ</span>
                     </a>
                     <a href="{{ route('courses.checkout', 'journalism-law-presentation') }}" class="inline-flex items-center gap-1.5 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs sm:text-sm font-extrabold shadow-md shadow-emerald-600/25 transition">

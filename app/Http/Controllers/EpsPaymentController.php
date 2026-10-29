@@ -276,7 +276,7 @@ class EpsPaymentController extends Controller
 
             if ($payment) {
                 return redirect()->route('payment.success', $payment->id)
-                    ->with('success', 'অভিনন্দন! আপনার EPS অনলাইন পেমেন্ট সফল হয়েছে এবং কোর্সে ভর্তি নিশ্চিত করা হয়েছে।');
+                    ->with('success', 'অভিনন্দন! আপনার EPS অনলাইন পেমেন্ট সফল হয়েছে এবং কোর্সে ভর্তি নিশ্চিত করা হয়েছে। ক্লাসের সব নোটিশ ও লাইভ ক্লাসের লিঙ্ক পেতে অনুগ্রহ করে WhatsApp গ্রুপে যুক্ত হন।');
             }
 
             return redirect()->route('home')->with('success', 'পেমেন্ট সফলভাবে যাচাই হয়েছে।');

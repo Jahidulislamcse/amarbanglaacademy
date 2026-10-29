@@ -174,7 +174,7 @@ class LmsController extends Controller
             ]);
 
         return redirect()->route('payment.success', $payment->id)
-            ->with('success', 'অভিনন্দন! আপনার ভর্তি ও পেমেন্ট সফলভাবে সম্পন্ন হয়েছে।');
+            ->with('success', 'অভিনন্দন! আপনার ভর্তি ও পেমেন্ট সফলভাবে সম্পন্ন হয়েছে। ক্লাসের সব নোটিশ ও লাইভ ক্লাসের লিঙ্ক পেতে অনুগ্রহ করে WhatsApp গ্রুপে যুক্ত হন।');
     }
 
     /**

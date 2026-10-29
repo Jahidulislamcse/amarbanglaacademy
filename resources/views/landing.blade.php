@@ -760,7 +760,7 @@
             </a>
             <a href="https://wa.me/8801332549549" target="_blank" class="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700 text-white font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2">
                 <i class="fa-brands fa-whatsapp text-emerald-400 text-base"></i>
-                <span>হোয়াটসঅ্যাপে কাউন্সেলিং নিন (০১৭১১-৭৭৪২৬৩)</span>
+                <span>হোয়াটসঅ্যাপে কাউন্সেলিং নিন (০১৩৩২-৫৪৯৫৪৯)</span>
             </a>
         </div>
     </div>

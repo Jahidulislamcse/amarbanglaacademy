@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('title', 'ভর্তি সফল হয়েছে - Amar Bangla Academy')
 
@@ -16,6 +16,26 @@
                 <p class="text-emerald-100 text-sm max-w-md mx-auto">
                     আমার বাংলা একাডেমির লাইভ ক্লাসরুমে আপনাকে স্বাগতম। আপনার পেমেন্ট সফলভাবে সংরক্ষিত হয়েছে।
                 </p>
+            </div>
+
+            <!-- Urgent WhatsApp Group Join Top Alert Bar -->
+            <div class="bg-emerald-900 text-white p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-3 border-b border-emerald-700/60">
+                <div class="flex items-center gap-3 text-center sm:text-left">
+                    <div class="w-10 h-10 rounded-full bg-emerald-800 flex items-center justify-center shrink-0 text-emerald-300 text-xl">
+                        <i class="fa-brands fa-whatsapp"></i>
+                    </div>
+                    <div>
+                        <span class="text-xs sm:text-sm font-bold block">লাইভ ক্লাসের লিঙ্ক ও নোটিশ পেতে WhatsApp গ্রুপে যুক্ত হন</span>
+                        <span class="text-[11px] text-emerald-300">যেকোনো জিজ্ঞাসা বা সহায়তার জন্য হেল্পলাইন: 01332-549549</span>
+                    </div>
+                </div>
+                <a href="https://chat.whatsapp.com/EeM7caaCmE79NR0BFdrwWh?s=sh&p=a&iam=2"
+                   target="_blank" rel="noopener noreferrer"
+                   class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs sm:text-sm shadow-md transition shrink-0 animate-pulse">
+                    <i class="fa-brands fa-whatsapp text-base"></i>
+                    <span>গ্রুপে যুক্ত হন</span>
+                    <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                </a>
             </div>
 
             <!-- Receipt & Details -->
@@ -56,19 +76,25 @@
                             </p>
                         </div>
                     </div>
-                    <div class="relative z-10 mt-5">
+                    <div class="relative z-10 mt-5 flex flex-col sm:flex-row gap-3">
                         <a href="https://chat.whatsapp.com/EeM7caaCmE79NR0BFdrwWh?s=sh&p=a&iam=2"
                            target="_blank" rel="noopener noreferrer" id="wa-group-join-btn"
-                           class="w-full flex items-center justify-center gap-3 py-4 px-5 rounded-2xl bg-white text-green-700 font-black text-base sm:text-lg shadow-xl hover:bg-green-50 transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.99] group border-2 border-white/80">
+                           class="flex-1 flex items-center justify-center gap-3 py-4 px-5 rounded-2xl bg-white text-green-700 font-black text-base sm:text-lg shadow-xl hover:bg-green-50 transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.99] group border-2 border-white/80">
                             <i class="fa-brands fa-whatsapp text-2xl text-green-500 group-hover:scale-110 transition-transform"></i>
                             <span>WhatsApp গ্রুপে যুক্ত হন</span>
                             <i class="fa-solid fa-arrow-right text-sm group-hover:translate-x-1 transition-transform"></i>
                         </a>
-                        <p class="text-center text-green-200 text-[11px] mt-2.5 flex items-center justify-center gap-1">
-                            <i class="fa-solid fa-lock text-[10px]"></i>
-                            <span>শুধুমাত্র ভর্তিকৃত শিক্ষার্থীদের জন্য নিরাপদ প্রাইভেট গ্রুপ &bull; সাপোর্ট: 01332-549549</span>
-                        </p>
+                        <a href="https://wa.me/8801332549549"
+                           target="_blank" rel="noopener noreferrer"
+                           class="flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl bg-emerald-900/60 hover:bg-emerald-900 text-white font-bold text-xs border border-emerald-400/40 shadow transition shrink-0">
+                            <i class="fa-brands fa-whatsapp text-emerald-300 text-lg"></i>
+                            <span>হেল্পলাইন: 01332-549549</span>
+                        </a>
                     </div>
+                    <p class="text-center text-green-200 text-[11px] mt-2.5 flex items-center justify-center gap-1">
+                        <i class="fa-solid fa-lock text-[10px]"></i>
+                        <span>শুধুমাত্র ভর্তিকৃত শিক্ষার্থীদের জন্য নিরাপদ প্রাইভেট গ্রুপ &bull; যেকোনো সহায়তায় WhatsApp হেল্পলাইন: 01332-549549</span>
+                    </p>
                 </div>
 
                 <!-- Live Zoom / Google Meet Access Box -->
