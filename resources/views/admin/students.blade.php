@@ -141,8 +141,23 @@
                         </div>
                     </div>
                 </div>
-                <div class="flex items-center gap-2 shrink-0">
-                    <form method="POST" action="{{ route('admin.payments.update-status', $pp->id) }}" onsubmit="return confirm('পেমেন্ট নিশ্চিত করবেন?')">
+                <div class="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
+                    @if(strtolower($pp->payment_method) === 'eps')
+                    <!-- Live EPS Verification Check -->
+                    <form method="POST" action="{{ route('admin.payments.verify-eps', $pp->id) }}">
+                        @csrf
+                        <button type="submit"
+                                title="EPS সার্ভার থেকে সরাসরি ভেরিফাই করুন টাকা জমা হয়েছে কিনা"
+                                class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm transition">
+                            <i class="fa-solid fa-arrows-rotate"></i>
+                            <span>EPS চেক</span>
+                        </button>
+                    </form>
+                    @endif
+
+                    <!-- Manual Approve -->
+                    <form method="POST" action="{{ route('admin.payments.update-status', $pp->id) }}"
+                          onsubmit="return confirm('সতর্কতা: আপনি কি নিশ্চিত যে শিক্ষার্থী ম্যানুয়ালি বা EPS-এ টাকা পাঠিয়েছেন? ব্যাংক/বিকাশে টাকা জমা না হলে এটি নিশ্চিত করবেন না।')">
                         @csrf @method('PATCH')
                         <input type="hidden" name="status" value="completed">
                         <input type="hidden" name="notes" value="Admin manually approved pending payment.">
@@ -150,7 +165,10 @@
                             <i class="fa-solid fa-circle-check"></i> পেমেন্ট নিশ্চিত করুন
                         </button>
                     </form>
-                    <form method="POST" action="{{ route('admin.payments.update-status', $pp->id) }}" onsubmit="return confirm('পেমেন্ট বাতিল করবেন?')">
+
+                    <!-- Reject / Cancel -->
+                    <form method="POST" action="{{ route('admin.payments.update-status', $pp->id) }}"
+                          onsubmit="return confirm('পেমেন্ট বাতিল করবেন?')">
                         @csrf @method('PATCH')
                         <input type="hidden" name="status" value="failed">
                         <input type="hidden" name="notes" value="Admin rejected pending payment.">
@@ -280,6 +298,7 @@
                                     'notes' => $payment->notes,
                                     'wa_url' => $waUrl,
                                     'update_url' => route('admin.payments.update-status', $payment->id),
+                                    'verify_eps_url' => route('admin.payments.verify-eps', $payment->id),
                                 ]), ENT_QUOTES, 'UTF-8');
                             @endphp
                             <tr class="hover:bg-slate-50/60 transition">
@@ -534,19 +553,45 @@
                     <div class="text-xs text-slate-700 mt-0.5" x-text="selectedStudent?.notes"></div>
                 </div>
 
+                <!-- EPS Live Gateway Verify Action Box -->
+                <div x-show="selectedStudent?.payment_method?.toLowerCase() === 'eps'" class="p-3.5 bg-blue-50 rounded-2xl border border-blue-200 flex items-center justify-between gap-3">
+                    <div>
+                        <div class="text-xs font-bold text-blue-900 flex items-center gap-1.5">
+                            <i class="fa-solid fa-bolt text-blue-600"></i>
+                            <span>EPS লাইভ ভেরিফিকেশন</span>
+                        </div>
+                        <div class="text-[11px] text-blue-700 mt-0.5">ব্যাংক/বিকাশ গেটওয়ে থেকে সরাসরি ট্রানজেকশন স্ট্যাটাস চেক করুন</div>
+                    </div>
+                    <form :action="selectedStudent?.verify_eps_url" method="POST">
+                        @csrf
+                        <button type="submit" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm transition">
+                            <i class="fa-solid fa-arrows-rotate"></i>
+                            <span>EPS চেক</span>
+                        </button>
+                    </form>
+                </div>
+
                 <!-- Admin Remarks / Status Note Form -->
                 <div class="pt-4 border-t border-slate-200">
-                    <h4 class="font-bold text-slate-800 text-xs uppercase tracking-wider mb-2">এডমিন নোট বা আপডেট</h4>
+                    <h4 class="font-bold text-slate-800 text-xs uppercase tracking-wider mb-2">স্ট্যাটাস ও এডমিন নোট আপডেট</h4>
                     <form :action="selectedStudent?.update_url" method="POST" class="space-y-3">
                         @csrf
                         @method('PATCH')
-                        <input type="hidden" name="status" value="completed">
                         <div>
-                            <label class="block text-[11px] font-semibold text-slate-600 mb-1">অ্যাডমিন নোট (যেমন: ব্যাচ বা স্টুডেন্ট আইডি নোট)</label>
-                            <input type="text" name="notes" placeholder="নোট লিখুন..." class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+                            <label class="block text-[11px] font-semibold text-slate-600 mb-1">পেমেন্ট ও ভর্তির স্ট্যাটাস</label>
+                            <select name="status" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+                                <option value="completed" :selected="selectedStudent?.status === 'completed'">সফল (Completed) — কোর্সে ভর্তি নিশ্চিত</option>
+                                <option value="pending" :selected="selectedStudent?.status === 'pending'">অপেক্ষমাণ (Pending) — এখনো যাচাই হয়নি</option>
+                                <option value="cancelled" :selected="selectedStudent?.status === 'cancelled'">বাতিল (Cancelled) — টাকা জমা হয়নি</option>
+                                <option value="failed" :selected="selectedStudent?.status === 'failed'">ব্যর্থ (Failed) — পেমেন্ট ফেইল</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-600 mb-1">অ্যাডমিন নোট / মন্তব্য</label>
+                            <input type="text" name="notes" placeholder="যেমন: EPS-এ টাকা পাওয়া যায়নি / ম্যানুয়ালি যাচাইকৃত..." class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
                         </div>
                         <button type="submit" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-sm transition">
-                            সংরক্ষণ করুন
+                            স্ট্যাটাস ও নোট সংরক্ষণ করুন
                         </button>
                     </form>
                 </div>

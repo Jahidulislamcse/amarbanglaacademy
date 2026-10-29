@@ -343,6 +343,60 @@ class AdminPanelTest extends TestCase
         $this->assertEquals(3, Payment::where('student_phone', '01816377601')->where('status', 'cancelled')->count());
     }
 
+    public function test_admin_can_verify_eps_payment_live_success(): void
+    {
+        $payment = Payment::create([
+            'course_id' => $this->course->id,
+            'student_name' => 'Md Shahadat',
+            'student_email' => 'shahadat@example.com',
+            'student_phone' => '01314818933',
+            'amount' => 999.00,
+            'payment_method' => 'eps',
+            'transaction_id' => 'CRS202610291335069958',
+            'status' => 'pending',
+        ]);
+
+        \Illuminate\Support\Facades\Http::fake([
+            '*/Auth/GetToken' => \Illuminate\Support\Facades\Http::response(['token' => 'mock_token'], 200),
+            '*/EPSEngine/CheckMerchantTransactionStatus*' => \Illuminate\Support\Facades\Http::response([
+                'Status' => 'SUCCESS',
+                'EPSCustomerTransactionId' => 'CUST_SUCCESS_789',
+            ], 200),
+        ]);
+
+        $response = $this->actingAs($this->admin)->post(route('admin.payments.verify-eps', $payment->id));
+        $response->assertSessionHas('success');
+
+        $this->assertEquals('completed', $payment->fresh()->status);
+    }
+
+    public function test_admin_can_verify_eps_payment_live_unpaid(): void
+    {
+        $payment = Payment::create([
+            'course_id' => $this->course->id,
+            'student_name' => 'Md Shahadat',
+            'student_email' => 'shahadat@example.com',
+            'student_phone' => '01314818933',
+            'amount' => 999.00,
+            'payment_method' => 'eps',
+            'transaction_id' => 'CRS202610291335069958_UNPAID',
+            'status' => 'pending',
+        ]);
+
+        \Illuminate\Support\Facades\Http::fake([
+            '*/Auth/GetToken' => \Illuminate\Support\Facades\Http::response(['token' => 'mock_token'], 200),
+            '*/EPSEngine/CheckMerchantTransactionStatus*' => \Illuminate\Support\Facades\Http::response([
+                'Status' => 'Initialize',
+            ], 200),
+        ]);
+
+        $response = $this->actingAs($this->admin)->post(route('admin.payments.verify-eps', $payment->id));
+        $response->assertSessionHas('error');
+
+        // Must still NOT be completed!
+        $this->assertNotEquals('completed', $payment->fresh()->status);
+    }
+
     public function test_admin_can_logout(): void
     {
         $response = $this->actingAs($this->admin)->post('/admin/logout');

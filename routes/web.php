@@ -47,6 +47,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/students/export', [AdminController::class, 'exportCsv'])->name('students.export');
         Route::post('/students/clean-duplicates', [AdminController::class, 'cleanDuplicates'])->name('students.clean-duplicates');
         Route::patch('/payments/{payment}/status', [AdminController::class, 'updateStatus'])->name('payments.update-status');
+        Route::post('/payments/{payment}/verify-eps', [AdminController::class, 'verifyEps'])->name('payments.verify-eps');
         Route::post('/logout', [AdminController::class, 'logout'])->name('logout');
         Route::get('/logout', [AdminController::class, 'logout']); // allow GET logout
     });

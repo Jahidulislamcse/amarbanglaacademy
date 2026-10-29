@@ -6,6 +6,7 @@ use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\Payment;
 use App\Models\User;
+use App\Services\EpsGateway;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -172,6 +173,39 @@ class AdminController extends Controller
         }
 
         return back()->with('success', 'পেমেন্ট ও ভর্তির স্ট্যাটাস সফলভাবে আপডেট করা হয়েছে।');
+    }
+
+    /**
+     * Live EPS Verification Check from EPS Server
+     */
+    public function verifyEps(Payment $payment, EpsGateway $eps)
+    {
+        if (strtolower($payment->payment_method) !== 'eps') {
+            return back()->with('error', 'শুধুমাত্র EPS অনলাইন পেমেন্টের ক্ষেত্রে সরাসরি ভেরিফিকেশন প্রযোজ্য।');
+        }
+
+        try {
+            $verify = $eps->verify($payment->transaction_id);
+            $status = strtolower($verify['Status'] ?? '');
+
+            if ($status === 'success') {
+                $payment->update([
+                    'status' => 'completed',
+                    'notes' => 'EPS Live Verified: SUCCESS. Customer Trx ID: ' . ($verify['EPSCustomerTransactionId'] ?? 'N/A'),
+                ]);
+
+                if ($payment->enrollment) {
+                    $payment->enrollment->update(['status' => 'active']);
+                }
+
+                return back()->with('success', 'EPS গেটওয়ে রিপোর্ট: পেমেন্ট সফল! শিক্ষার্থী নিশ্চিতভাবে ফি পরিশোধ করেছেন (Customer TrxID: ' . ($verify['EPSCustomerTransactionId'] ?? 'N/A') . ')।');
+            } else {
+                $rawStatus = $verify['Status'] ?? 'Initialize / Unpaid';
+                return back()->with('error', "EPS গেটওয়ে রিপোর্ট: টাকা এখনো জমা হয়নি! EPS স্ট্যাটাস: {$rawStatus} (Paid: NO)। শিক্ষার্থী গেটওয়েতে গিয়ে পেমেন্ট সম্পন্ন করেননি।");
+            }
+        } catch (\Throwable $e) {
+            return back()->with('error', 'EPS গেটওয়েতে সংযোগ করতে সমস্যা হয়েছে: ' . $e->getMessage());
+        }
     }
 
     /**
