@@ -105,6 +105,8 @@ class AdminPanelTest extends TestCase
         $response->assertSee('EPS12345678');
         $response->assertSee('EPS অনলাইন');
         $response->assertSee('৳999');
+        $response->assertSee('openStudentModal(' . $payment->id . ')', false);
+        $response->assertSee('studentDetailModal');
     }
 
     public function test_admin_can_search_students(): void

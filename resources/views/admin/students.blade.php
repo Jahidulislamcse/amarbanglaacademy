@@ -3,21 +3,7 @@
 @section('title', 'ভর্তি হওয়া শিক্ষার্থী তালিকা - আমার বাংলা একাডেমি এডমিন')
 
 @section('content')
-<div x-data="{
-    detailModalOpen: false,
-    selectedStudent: null,
-    copiedTrxId: null,
-    openDetails(student) {
-        this.selectedStudent = student;
-        this.detailModalOpen = true;
-    },
-    copyToClipboard(text, id) {
-        navigator.clipboard.writeText(text).then(() => {
-            this.copiedTrxId = id;
-            setTimeout(() => { this.copiedTrxId = null; }, 2000);
-        });
-    }
-}" class="space-y-6">
+<div class="space-y-6">
 
     <!-- Page Header & Action Bar -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -280,26 +266,25 @@
                                 }
                                 $waText = urlencode("আসসালামু আলাইকুম " . $payment->student_name . ", আমার বাংলা একাডেমীর কোর্সে ভর্তির বিষয়ে আপনার সাথে যোগাযোগ করা হচ্ছে।");
                                 $waUrl = "https://wa.me/{$waPhone}?text={$waText}";
-
-                                $studentJson = htmlspecialchars(json_encode([
+                                $studentModalData = [
                                     'id' => $payment->id,
                                     'student_name' => $payment->student_name,
                                     'student_phone' => $payment->student_phone,
                                     'student_email' => $payment->student_email,
-                                    'course_title' => $payment->course?->bangla_title ?? $payment->course?->title ?? 'N/A',
+                                    'course_title' => $payment->course?->bangla_title ?? $payment->course?->title ?? 'সাংবাদিকতা, আইন ও উপস্থাপনা',
                                     'batch_no' => $payment->course?->batch_no ?? '১ম ব্যাচ',
-                                    'amount' => $payment->amount,
+                                    'amount' => number_format($payment->amount),
                                     'payment_method' => $payment->payment_method,
                                     'transaction_id' => $payment->transaction_id,
                                     'sender_phone' => $payment->sender_phone,
                                     'status' => $payment->status,
                                     'enrollment_status' => $payment->enrollment?->status ?? 'active',
                                     'created_at' => $payment->created_at ? $payment->created_at->format('d M Y, h:i A') : 'N/A',
-                                    'notes' => $payment->notes,
+                                    'notes' => $payment->notes ?? '',
                                     'wa_url' => $waUrl,
                                     'update_url' => route('admin.payments.update-status', $payment->id),
                                     'verify_eps_url' => route('admin.payments.verify-eps', $payment->id),
-                                ]), ENT_QUOTES, 'UTF-8');
+                                ];
                             @endphp
                             <tr class="hover:bg-slate-50/60 transition">
                                 <!-- Index -->
@@ -390,10 +375,10 @@
                                             {{ $payment->transaction_id }}
                                         </span>
                                         <button type="button"
-                                            @click="copyToClipboard('{{ $payment->transaction_id }}', {{ $payment->id }})"
+                                            onclick="copyTrxText('{{ $payment->transaction_id }}', this)"
                                             title="TrxID কপি করুন"
                                             class="text-slate-400 hover:text-emerald-600 p-0.5 transition">
-                                            <i :class="copiedTrxId === {{ $payment->id }} ? 'fa-solid fa-check text-emerald-600' : 'fa-regular fa-copy'" class="text-xs"></i>
+                                            <i class="fa-regular fa-copy text-xs"></i>
                                         </button>
                                     </div>
                                     @if($payment->sender_phone && $payment->sender_phone !== $payment->student_phone)
@@ -415,12 +400,15 @@
                                 <td class="py-3.5 px-4 text-center">
                                     <!-- View Details Modal Trigger -->
                                     <button type="button"
-                                        @click="openDetails({{ $studentJson }})"
+                                        onclick="openStudentModal({{ $payment->id }})"
                                         title="বিস্তারিত দেখুন"
-                                        class="inline-flex items-center gap-1 bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 text-xs font-semibold px-2.5 py-1 rounded-lg border border-slate-200 hover:border-emerald-200 transition">
+                                        class="inline-flex items-center gap-1 bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 text-xs font-semibold px-2.5 py-1 rounded-lg border border-slate-200 hover:border-emerald-200 transition cursor-pointer">
                                         <i class="fa-solid fa-eye text-xs"></i>
                                         <span>বিস্তারিত</span>
                                     </button>
+                                    <script id="student-data-{{ $payment->id }}" type="application/json">
+                                        {!! json_encode($studentModalData, JSON_UNESCAPED_UNICODE) !!}
+                                    </script>
                                 </td>
                             </tr>
                         @endforeach
@@ -465,34 +453,19 @@
         @endif
     </div>
 
-    <!-- Student Details Modal -->
-    <div x-show="detailModalOpen"
-         x-transition:enter="transition ease-out duration-200"
-         x-transition:enter-start="opacity-0"
-         x-transition:enter-end="opacity-100"
-         x-transition:leave="transition ease-in duration-150"
-         x-transition:leave-start="opacity-100"
-         x-transition:leave-end="opacity-0"
-         class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
-         style="display: none;">
+    <!-- Student Details Modal (Pure Vanilla JS - 100% resilient & no CDN dependency) -->
+    <div id="studentDetailModal"
+         class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
 
-        <div @click.away="detailModalOpen = false"
-             class="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200"
-             x-show="detailModalOpen"
-             x-transition:enter="transition ease-out duration-200 transform"
-             x-transition:enter-start="opacity-0 scale-95"
-             x-transition:enter-end="opacity-100 scale-100"
-             x-transition:leave="transition ease-in duration-150 transform"
-             x-transition:leave-start="opacity-100 scale-100"
-             x-transition:leave-end="opacity-0 scale-95">
+        <div class="relative bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200">
 
             <!-- Modal Header -->
             <div class="p-5 bg-gradient-to-r from-emerald-800 to-emerald-700 text-white flex items-center justify-between">
                 <div>
-                    <h3 class="font-bold text-lg" x-text="selectedStudent?.student_name"></h3>
+                    <h3 id="modal-student-name" class="font-bold text-lg"></h3>
                     <p class="text-xs text-emerald-200 mt-0.5">ভর্তি ও পেমেন্ট বিস্তারিত তথ্য</p>
                 </div>
-                <button type="button" @click="detailModalOpen = false" class="text-emerald-200 hover:text-white p-1 rounded-lg">
+                <button type="button" onclick="closeStudentModal()" class="text-emerald-200 hover:text-white p-1 rounded-lg">
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
@@ -503,9 +476,9 @@
                 <div class="flex items-center gap-2 p-3 bg-emerald-50 rounded-2xl border border-emerald-100">
                     <div class="flex-1">
                         <div class="text-[11px] text-slate-500">মোবাইল নম্বর</div>
-                        <div class="font-bold text-slate-900 font-mono text-sm" x-text="selectedStudent?.student_phone"></div>
+                        <div id="modal-student-phone" class="font-bold text-slate-900 font-mono text-sm"></div>
                     </div>
-                    <a :href="selectedStudent?.wa_url" target="_blank"
+                    <a id="modal-wa-link" href="#" target="_blank"
                        class="inline-flex items-center gap-1.5 bg-green-500 hover:bg-green-600 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-sm transition">
                         <i class="fa-brands fa-whatsapp text-sm"></i>
                         <span>WhatsApp এ মেসেজ</span>
@@ -516,45 +489,45 @@
                 <div class="grid grid-cols-2 gap-3">
                     <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
                         <div class="text-[11px] text-slate-500">ইমেইল ঠিকানা</div>
-                        <div class="font-semibold text-slate-800 break-all mt-0.5" x-text="selectedStudent?.student_email"></div>
+                        <div id="modal-student-email" class="font-semibold text-slate-800 break-all mt-0.5"></div>
                     </div>
                     <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
                         <div class="text-[11px] text-slate-500">ভর্তিকৃত কোর্স</div>
-                        <div class="font-semibold text-slate-800 mt-0.5" x-text="selectedStudent?.course_title"></div>
+                        <div id="modal-course-title" class="font-semibold text-slate-800 mt-0.5"></div>
                     </div>
                     <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
                         <div class="text-[11px] text-slate-500">পরিশোধিত ফি</div>
-                        <div class="font-bold text-emerald-700 text-base mt-0.5">৳<span x-text="selectedStudent?.amount"></span></div>
+                        <div class="font-bold text-emerald-700 text-base mt-0.5">৳<span id="modal-amount"></span></div>
                     </div>
                     <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
                         <div class="text-[11px] text-slate-500">পেমেন্ট মাধ্যম</div>
-                        <div class="font-semibold text-slate-800 uppercase mt-0.5" x-text="selectedStudent?.payment_method"></div>
+                        <div id="modal-payment-method" class="font-semibold text-slate-800 uppercase mt-0.5"></div>
                     </div>
                     <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 col-span-2">
                         <div class="text-[11px] text-slate-500">ট্রানজেকশন আইডি (Transaction ID)</div>
-                        <div class="font-mono font-bold text-slate-900 text-sm mt-0.5 select-all" x-text="selectedStudent?.transaction_id"></div>
+                        <div id="modal-transaction-id" class="font-mono font-bold text-slate-900 text-sm mt-0.5 select-all"></div>
                     </div>
                     <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
                         <div class="text-[11px] text-slate-500">পেমেন্ট স্ট্যাটাস</div>
-                        <div class="font-bold text-green-600 mt-0.5 flex items-center gap-1">
-                            <i class="fa-solid fa-circle-check text-xs"></i>
-                            <span>সফল (COMPLETED)</span>
+                        <div class="font-bold mt-0.5 flex items-center gap-1">
+                            <i class="fa-solid fa-circle-check text-xs text-green-600"></i>
+                            <span id="modal-status-text">সফল (COMPLETED)</span>
                         </div>
                     </div>
                     <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
                         <div class="text-[11px] text-slate-500">ভর্তির সময়</div>
-                        <div class="font-semibold text-slate-700 mt-0.5" x-text="selectedStudent?.created_at"></div>
+                        <div id="modal-created-at" class="font-semibold text-slate-700 mt-0.5"></div>
                     </div>
                 </div>
 
                 <!-- Notes / Remarks if any -->
-                <div class="p-3 bg-slate-50 rounded-xl border border-slate-100" x-show="selectedStudent?.notes">
+                <div id="modal-notes-box" class="p-3 bg-slate-50 rounded-xl border border-slate-100 hidden">
                     <div class="text-[11px] text-slate-500">পেমেন্ট নোট / ভেরিফিকেশন তথ্য</div>
-                    <div class="text-xs text-slate-700 mt-0.5" x-text="selectedStudent?.notes"></div>
+                    <div id="modal-notes" class="text-xs text-slate-700 mt-0.5"></div>
                 </div>
 
                 <!-- EPS Live Gateway Verify Action Box -->
-                <div x-show="selectedStudent?.payment_method?.toLowerCase() === 'eps'" class="p-3.5 bg-blue-50 rounded-2xl border border-blue-200 flex items-center justify-between gap-3">
+                <div id="modal-eps-box" class="p-3.5 bg-blue-50 rounded-2xl border border-blue-200 flex items-center justify-between gap-3 hidden">
                     <div>
                         <div class="text-xs font-bold text-blue-900 flex items-center gap-1.5">
                             <i class="fa-solid fa-bolt text-blue-600"></i>
@@ -562,7 +535,7 @@
                         </div>
                         <div class="text-[11px] text-blue-700 mt-0.5">ব্যাংক/বিকাশ গেটওয়ে থেকে সরাসরি ট্রানজেকশন স্ট্যাটাস চেক করুন</div>
                     </div>
-                    <form :action="selectedStudent?.verify_eps_url" method="POST">
+                    <form id="modal-eps-form" action="" method="POST">
                         @csrf
                         <button type="submit" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm transition">
                             <i class="fa-solid fa-arrows-rotate"></i>
@@ -574,21 +547,21 @@
                 <!-- Admin Remarks / Status Note Form -->
                 <div class="pt-4 border-t border-slate-200">
                     <h4 class="font-bold text-slate-800 text-xs uppercase tracking-wider mb-2">স্ট্যাটাস ও এডমিন নোট আপডেট</h4>
-                    <form :action="selectedStudent?.update_url" method="POST" class="space-y-3">
+                    <form id="modal-update-form" action="" method="POST" class="space-y-3">
                         @csrf
                         @method('PATCH')
                         <div>
                             <label class="block text-[11px] font-semibold text-slate-600 mb-1">পেমেন্ট ও ভর্তির স্ট্যাটাস</label>
-                            <select name="status" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
-                                <option value="completed" :selected="selectedStudent?.status === 'completed'">সফল (Completed) — কোর্সে ভর্তি নিশ্চিত</option>
-                                <option value="pending" :selected="selectedStudent?.status === 'pending'">অপেক্ষমাণ (Pending) — এখনো যাচাই হয়নি</option>
-                                <option value="cancelled" :selected="selectedStudent?.status === 'cancelled'">বাতিল (Cancelled) — টাকা জমা হয়নি</option>
-                                <option value="failed" :selected="selectedStudent?.status === 'failed'">ব্যর্থ (Failed) — পেমেন্ট ফেইল</option>
+                            <select id="modal-status-select" name="status" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+                                <option value="completed">সফল (Completed) — কোর্সে ভর্তি নিশ্চিত</option>
+                                <option value="pending">অপেক্ষমাণ (Pending) — এখনো যাচাই হয়নি</option>
+                                <option value="cancelled">বাতিল (Cancelled) — টাকা জমা হয়নি</option>
+                                <option value="failed">ব্যর্থ (Failed) — পেমেন্ট ফেইল</option>
                             </select>
                         </div>
                         <div>
                             <label class="block text-[11px] font-semibold text-slate-600 mb-1">অ্যাডমিন নোট / মন্তব্য</label>
-                            <input type="text" name="notes" placeholder="যেমন: EPS-এ টাকা পাওয়া যায়নি / ম্যানুয়ালি যাচাইকৃত..." class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+                            <input id="modal-notes-input" type="text" name="notes" placeholder="যেমন: EPS-এ টাকা পাওয়া যায়নি / ম্যানুয়ালি যাচাইকৃত..." class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
                         </div>
                         <button type="submit" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-sm transition">
                             স্ট্যাটাস ও নোট সংরক্ষণ করুন
@@ -600,4 +573,105 @@
     </div>
 
 </div>
+
+@push('scripts')
+<script>
+function openStudentModal(id) {
+    var script = document.getElementById('student-data-' + id);
+    if (!script) return;
+    try {
+        var data = JSON.parse(script.textContent);
+        document.getElementById('modal-student-name').textContent = data.student_name || '';
+        document.getElementById('modal-student-phone').textContent = data.student_phone || '';
+        document.getElementById('modal-student-email').textContent = data.student_email || '';
+        document.getElementById('modal-course-title').textContent = data.course_title || '';
+        document.getElementById('modal-amount').textContent = data.amount || '';
+        document.getElementById('modal-payment-method').textContent = (data.payment_method || '').toUpperCase();
+        document.getElementById('modal-transaction-id').textContent = data.transaction_id || '';
+        document.getElementById('modal-created-at').textContent = data.created_at || '';
+        document.getElementById('modal-wa-link').href = data.wa_url || '#';
+
+        var notesBox = document.getElementById('modal-notes-box');
+        if (data.notes && data.notes.trim() !== '') {
+            document.getElementById('modal-notes').textContent = data.notes;
+            notesBox.classList.remove('hidden');
+        } else {
+            notesBox.classList.add('hidden');
+        }
+
+        var epsBox = document.getElementById('modal-eps-box');
+        if ((data.payment_method || '').toLowerCase() === 'eps') {
+            epsBox.classList.remove('hidden');
+            document.getElementById('modal-eps-form').action = data.verify_eps_url || '';
+        } else {
+            epsBox.classList.add('hidden');
+        }
+
+        document.getElementById('modal-update-form').action = data.update_url || '';
+        document.getElementById('modal-status-select').value = data.status || 'completed';
+        document.getElementById('modal-notes-input').value = data.notes || '';
+
+        var statusBadgeText = document.getElementById('modal-status-text');
+        if (data.status === 'completed') {
+            statusBadgeText.textContent = 'সফল (COMPLETED)';
+            statusBadgeText.className = 'text-green-600 font-bold';
+        } else if (data.status === 'pending') {
+            statusBadgeText.textContent = 'অপেক্ষমাণ (PENDING)';
+            statusBadgeText.className = 'text-amber-600 font-bold';
+        } else if (data.status === 'cancelled') {
+            statusBadgeText.textContent = 'বাতিল (CANCELLED)';
+            statusBadgeText.className = 'text-red-600 font-bold';
+        } else {
+            statusBadgeText.textContent = (data.status || '').toUpperCase();
+            statusBadgeText.className = 'text-slate-600 font-bold';
+        }
+
+        var modal = document.getElementById('studentDetailModal');
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    } catch(e) {
+        console.error('Failed to parse student data', e);
+    }
+}
+
+function closeStudentModal() {
+    var modal = document.getElementById('studentDetailModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+}
+
+function copyTrxText(text, btn) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function() {
+            var icon = btn.querySelector('i');
+            if (icon) {
+                var orig = icon.className;
+                icon.className = 'fa-solid fa-check text-emerald-600 text-xs';
+                setTimeout(function() { icon.className = orig; }, 2000);
+            }
+        });
+    } else {
+        window.prompt('TrxID কপি করুন:', text);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    var modal = document.getElementById('studentDetailModal');
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeStudentModal();
+            }
+        });
+    }
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeStudentModal();
+        }
+    });
+});
+</script>
+@endpush
 @endsection
