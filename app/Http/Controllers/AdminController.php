@@ -8,6 +8,7 @@ use App\Models\Payment;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AdminController extends Controller
@@ -146,7 +147,101 @@ class AdminController extends Controller
             }
         }
 
+        // Auto-clean duplicates if payment was approved to completed
+        if ($validated['status'] === 'completed') {
+            Enrollment::where('course_id', $payment->course_id)
+                ->where('id', '!=', $payment->enrollment_id)
+                ->where('status', 'pending')
+                ->where(function ($q) use ($payment) {
+                    $q->where('student_email', $payment->student_email)
+                      ->orWhere('student_phone', $payment->student_phone);
+                })
+                ->delete();
+
+            Payment::where('course_id', $payment->course_id)
+                ->where('id', '!=', $payment->id)
+                ->where('status', 'pending')
+                ->where(function ($q) use ($payment) {
+                    $q->where('student_email', $payment->student_email)
+                      ->orWhere('student_phone', $payment->student_phone);
+                })
+                ->update([
+                    'status' => 'cancelled',
+                    'notes' => 'Auto-cancelled on admin approval of payment #' . $payment->id,
+                ]);
+        }
+
         return back()->with('success', 'পেমেন্ট ও ভর্তির স্ট্যাটাস সফলভাবে আপডেট করা হয়েছে।');
+    }
+
+    /**
+     * Clean duplicate pending enrollments and orphaned pending payments
+     */
+    public function cleanDuplicates()
+    {
+        $cleanedEnrollments = 0;
+        $cleanedPayments = 0;
+
+        // 1. Delete pending enrollments for students who already have an active enrollment in the same course
+        $activeStudents = Enrollment::where('status', 'active')->get(['id', 'course_id', 'student_email', 'student_phone']);
+
+        foreach ($activeStudents as $active) {
+            $duplicateEnrollments = Enrollment::where('course_id', $active->course_id)
+                ->where('id', '!=', $active->id)
+                ->where('status', 'pending')
+                ->where(function ($q) use ($active) {
+                    $q->where('student_email', $active->student_email)
+                      ->orWhere('student_phone', $active->student_phone);
+                })
+                ->get();
+
+            foreach ($duplicateEnrollments as $dup) {
+                Payment::where('enrollment_id', $dup->id)->update([
+                    'enrollment_id' => $active->id,
+                ]);
+
+                $dup->delete();
+                $cleanedEnrollments++;
+            }
+
+            // Cancel any orphaned pending payments for this active student
+            $dupPayments = Payment::where('course_id', $active->course_id)
+                ->where('status', 'pending')
+                ->where(function ($q) use ($active) {
+                    $q->where('student_email', $active->student_email)
+                      ->orWhere('student_phone', $active->student_phone);
+                })
+                ->update([
+                    'status' => 'cancelled',
+                    'notes' => 'Auto-cancelled: Student already has active enrollment #' . $active->id,
+                ]);
+
+            $cleanedPayments += $dupPayments;
+        }
+
+        // 2. For students with multiple pending enrollments (e.g. repeated click attempts),
+        // keep only the latest pending enrollment and delete older duplicate pending rows
+        $pendingGroups = Enrollment::where('status', 'pending')
+            ->select('course_id', 'student_phone', DB::raw('COUNT(*) as total'), DB::raw('MAX(id) as keep_id'))
+            ->groupBy('course_id', 'student_phone')
+            ->having('total', '>', 1)
+            ->get();
+
+        foreach ($pendingGroups as $group) {
+            $toDelete = Enrollment::where('course_id', $group->course_id)
+                ->where('student_phone', $group->student_phone)
+                ->where('status', 'pending')
+                ->where('id', '!=', $group->keep_id)
+                ->get();
+
+            foreach ($toDelete as $dup) {
+                Payment::where('enrollment_id', $dup->id)->update(['enrollment_id' => $group->keep_id]);
+                $dup->delete();
+                $cleanedEnrollments++;
+            }
+        }
+
+        return back()->with('success', "ডুপ্লিকেট পরিষ্কার সম্পন্ন! {$cleanedEnrollments}টি অতিরিক্ত পেন্ডিং রেজিস্ট্রেশন মুছে ফেলা হয়েছে এবং {$cleanedPayments}টি পেন্ডিং পেমেন্ট গোছানো হয়েছে।");
     }
 
     /**

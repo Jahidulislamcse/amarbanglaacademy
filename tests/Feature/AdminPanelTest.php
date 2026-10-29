@@ -284,6 +284,65 @@ class AdminPanelTest extends TestCase
         $this->assertStringNotContainsString('অসম্পূর্ণ ছাত্র', $csvResponse->streamedContent());
     }
 
+    public function test_admin_can_clean_duplicate_enrollments(): void
+    {
+        // Create 1 active enrollment
+        $active = Enrollment::create([
+            'course_id' => $this->course->id,
+            'student_name' => 'শাহামির আহমেদ',
+            'student_email' => 'shuvo@example.com',
+            'student_phone' => '01816377601',
+            'status' => 'active',
+        ]);
+
+        Payment::create([
+            'enrollment_id' => $active->id,
+            'course_id' => $this->course->id,
+            'student_name' => 'শাহামির আহমেদ',
+            'student_email' => 'shuvo@example.com',
+            'student_phone' => '01816377601',
+            'amount' => 999.00,
+            'payment_method' => 'eps',
+            'transaction_id' => 'TX_ACT_1',
+            'status' => 'completed',
+        ]);
+
+        // Create 3 duplicate pending enrollments for the same student
+        for ($i = 1; $i <= 3; $i++) {
+            $dup = Enrollment::create([
+                'course_id' => $this->course->id,
+                'student_name' => 'শাহামির আহমেদ',
+                'student_email' => 'shuvo@example.com',
+                'student_phone' => '01816377601',
+                'status' => 'pending',
+            ]);
+
+            Payment::create([
+                'enrollment_id' => $dup->id,
+                'course_id' => $this->course->id,
+                'student_name' => 'শাহামির আহমেদ',
+                'student_email' => 'shuvo@example.com',
+                'student_phone' => '01816377601',
+                'amount' => 999.00,
+                'payment_method' => 'eps',
+                'transaction_id' => 'TX_DUP_' . $i,
+                'status' => 'pending',
+            ]);
+        }
+
+        $this->assertEquals(4, Enrollment::where('student_phone', '01816377601')->count());
+
+        $response = $this->actingAs($this->admin)->post(route('admin.students.clean-duplicates'));
+        $response->assertSessionHas('success');
+
+        // Only 1 enrollment should remain for this student
+        $this->assertEquals(1, Enrollment::where('student_phone', '01816377601')->count());
+        $this->assertEquals('active', Enrollment::where('student_phone', '01816377601')->first()->status);
+
+        // Duplicate pending payments should be cancelled
+        $this->assertEquals(3, Payment::where('student_phone', '01816377601')->where('status', 'cancelled')->count());
+    }
+
     public function test_admin_can_logout(): void
     {
         $response = $this->actingAs($this->admin)->post('/admin/logout');

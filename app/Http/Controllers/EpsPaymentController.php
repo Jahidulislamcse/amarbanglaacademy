@@ -26,21 +26,79 @@ class EpsPaymentController extends Controller
         ]);
 
         $amount = (float) $course->effective_price;
+
+        // 0. If student already has an active enrollment in this course, redirect to their existing receipt
+        $activeEnrollment = Enrollment::where('course_id', $course->id)
+            ->where('status', 'active')
+            ->where(function ($q) use ($validated) {
+                $q->where('student_email', $validated['student_email'])
+                  ->orWhere('student_phone', $validated['student_phone']);
+            })
+            ->latest()
+            ->first();
+
+        if ($activeEnrollment) {
+            $completedPayment = Payment::where('enrollment_id', $activeEnrollment->id)
+                ->where('status', 'completed')
+                ->latest()
+                ->first();
+
+            if ($completedPayment) {
+                return redirect()->route('payment.success', $completedPayment->id)
+                    ->with('info', 'আপনি ইতিমধ্যে এই কোর্সে সফলভাবে ভর্তি হয়েছেন!');
+            }
+        }
+
         $transactionId = 'CRS' . now()->format('YmdHis') . random_int(1000, 9999);
 
         try {
             DB::beginTransaction();
 
-            // 1. Create a pending enrollment
-            $enrollment = Enrollment::create([
-                'course_id' => $course->id,
-                'student_name' => $validated['student_name'],
-                'student_email' => $validated['student_email'],
-                'student_phone' => $validated['student_phone'],
-                'status' => 'pending',
-                'enrolled_at' => now(),
-                'expires_at' => now()->addMonths(12),
-            ]);
+            // 1. Reuse existing pending enrollment if available, avoiding duplicate rows
+            $enrollment = Enrollment::where('course_id', $course->id)
+                ->where('status', 'pending')
+                ->where(function ($q) use ($validated) {
+                    $q->where('student_email', $validated['student_email'])
+                      ->orWhere('student_phone', $validated['student_phone']);
+                })
+                ->latest()
+                ->first();
+
+            if ($enrollment) {
+                $enrollment->update([
+                    'student_name' => $validated['student_name'],
+                    'student_email' => $validated['student_email'],
+                    'student_phone' => $validated['student_phone'],
+                ]);
+            } else {
+                $enrollment = Enrollment::create([
+                    'course_id' => $course->id,
+                    'student_name' => $validated['student_name'],
+                    'student_email' => $validated['student_email'],
+                    'student_phone' => $validated['student_phone'],
+                    'status' => 'pending',
+                    'enrolled_at' => now(),
+                    'expires_at' => now()->addMonths(12),
+                ]);
+            }
+
+            // Remove any extra duplicate pending enrollments for this student
+            Enrollment::where('course_id', $course->id)
+                ->where('id', '!=', $enrollment->id)
+                ->where('status', 'pending')
+                ->where(function ($q) use ($validated) {
+                    $q->where('student_email', $validated['student_email'])
+                      ->orWhere('student_phone', $validated['student_phone']);
+                })
+                ->delete();
+
+            // Cancel older pending payments for this enrollment so only 1 active pending exists
+            Payment::where('enrollment_id', $enrollment->id)
+                ->where('status', 'pending')
+                ->update([
+                    'status' => 'cancelled',
+                    'notes' => 'Superseded by newer payment initiation.',
+                ]);
 
             // 2. Create a pending payment record
             $payment = Payment::create([
@@ -163,6 +221,29 @@ class EpsPaymentController extends Controller
                         'enrolled_at' => now(),
                     ]);
                 }
+
+                // Auto-cancel any other pending payment attempts for this student in this course
+                Payment::where('course_id', $payment->course_id)
+                    ->where('id', '!=', $payment->id)
+                    ->where('status', 'pending')
+                    ->where(function ($q) use ($payment) {
+                        $q->where('student_email', $payment->student_email)
+                          ->orWhere('student_phone', $payment->student_phone);
+                    })
+                    ->update([
+                        'status' => 'cancelled',
+                        'notes' => 'Auto-cancelled: Student completed payment #' . $payment->id,
+                    ]);
+
+                // Delete any duplicate pending enrollments for this student in this course
+                Enrollment::where('course_id', $payment->course_id)
+                    ->where('id', '!=', $payment->enrollment_id)
+                    ->where('status', 'pending')
+                    ->where(function ($q) use ($payment) {
+                        $q->where('student_email', $payment->student_email)
+                          ->orWhere('student_phone', $payment->student_phone);
+                    })
+                    ->delete();
             } elseif ($sessionData) {
                 // Recover from session if payment record was missing
                 $enrollment = Enrollment::find($sessionData['enrollment_id']) ?? Enrollment::create([

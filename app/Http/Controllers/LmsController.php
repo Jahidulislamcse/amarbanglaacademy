@@ -83,16 +83,67 @@ class LmsController extends Controller
             ? strtoupper($validated['transaction_id']) 
             : strtoupper(substr($validated['payment_method'], 0, 2)) . rand(10000000, 99999999);
 
-        // Create enrollment
-        $enrollment = Enrollment::create([
-            'course_id' => $course->id,
-            'student_name' => $validated['student_name'],
-            'student_email' => $validated['student_email'],
-            'student_phone' => $validated['student_phone'],
-            'status' => 'active',
-            'enrolled_at' => now(),
-            'expires_at' => now()->addMonths(12),
-        ]);
+        // 1. Check if student already has active enrollment in this course
+        $activeEnrollment = Enrollment::where('course_id', $course->id)
+            ->where('status', 'active')
+            ->where(function ($q) use ($validated) {
+                $q->where('student_email', $validated['student_email'])
+                  ->orWhere('student_phone', $validated['student_phone']);
+            })
+            ->latest()
+            ->first();
+
+        if ($activeEnrollment) {
+            $existingPayment = Payment::where('enrollment_id', $activeEnrollment->id)
+                ->where('status', 'completed')
+                ->latest()
+                ->first();
+
+            if ($existingPayment) {
+                return redirect()->route('payment.success', $existingPayment->id)
+                    ->with('info', 'আপনি ইতিমধ্যে এই কোর্সে সফলভাবে ভর্তি হয়েছেন!');
+            }
+        }
+
+        // 2. Reuse pending enrollment if one exists, avoiding duplicate rows
+        $enrollment = Enrollment::where('course_id', $course->id)
+            ->where('status', 'pending')
+            ->where(function ($q) use ($validated) {
+                $q->where('student_email', $validated['student_email'])
+                  ->orWhere('student_phone', $validated['student_phone']);
+            })
+            ->latest()
+            ->first();
+
+        if ($enrollment) {
+            $enrollment->update([
+                'student_name' => $validated['student_name'],
+                'student_email' => $validated['student_email'],
+                'student_phone' => $validated['student_phone'],
+                'status' => 'active',
+                'enrolled_at' => now(),
+            ]);
+        } else {
+            $enrollment = Enrollment::create([
+                'course_id' => $course->id,
+                'student_name' => $validated['student_name'],
+                'student_email' => $validated['student_email'],
+                'student_phone' => $validated['student_phone'],
+                'status' => 'active',
+                'enrolled_at' => now(),
+                'expires_at' => now()->addMonths(12),
+            ]);
+        }
+
+        // Remove any other extra pending duplicate enrollments for this student
+        Enrollment::where('course_id', $course->id)
+            ->where('id', '!=', $enrollment->id)
+            ->where('status', 'pending')
+            ->where(function ($q) use ($validated) {
+                $q->where('student_email', $validated['student_email'])
+                  ->orWhere('student_phone', $validated['student_phone']);
+            })
+            ->delete();
 
         // Create payment record
         $payment = Payment::create([
@@ -108,6 +159,19 @@ class LmsController extends Controller
             'status' => 'completed',
             'notes' => 'Instant online payment verified successfully.',
         ]);
+
+        // Cancel previous pending payments for this student
+        Payment::where('course_id', $course->id)
+            ->where('id', '!=', $payment->id)
+            ->where('status', 'pending')
+            ->where(function ($q) use ($validated) {
+                $q->where('student_email', $validated['student_email'])
+                  ->orWhere('student_phone', $validated['student_phone']);
+            })
+            ->update([
+                'status' => 'cancelled',
+                'notes' => 'Auto-cancelled: Student completed payment #' . $payment->id,
+            ]);
 
         return redirect()->route('payment.success', $payment->id)
             ->with('success', 'অভিনন্দন! আপনার ভর্তি ও পেমেন্ট সফলভাবে সম্পন্ন হয়েছে।');

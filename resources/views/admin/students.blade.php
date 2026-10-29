@@ -32,6 +32,18 @@
         </div>
 
         <div class="flex items-center gap-2">
+            <!-- Clean Duplicates Button -->
+            <form method="POST" action="{{ route('admin.students.clean-duplicates') }}"
+                  onsubmit="return confirm('অতিরিক্ত ডুপ্লিকেট পেন্ডিং রেজিস্ট্রেশন মুছে পরিষ্কার করতে চান?')">
+                @csrf
+                <button type="submit"
+                        class="inline-flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 text-white font-semibold text-xs sm:text-sm px-3.5 py-2.5 rounded-xl shadow-sm transition"
+                        title="অতিরিক্ত ডুপ্লিকেট পেন্ডিং ডেটা পরিষ্কার করুন">
+                    <i class="fa-solid fa-broom"></i>
+                    <span>ডুপ্লিকেট ক্লিন</span>
+                </button>
+            </form>
+
             <!-- CSV Export Button -->
             <a href="{{ route('admin.students.export', request()->query()) }}"
                class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-sm transition">

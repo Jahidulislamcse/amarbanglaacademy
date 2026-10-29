@@ -8,10 +8,18 @@
     manualMethod: 'bkash',
     senderNumber: '',
     transactionId: '',
+    isSubmitting: false,
     simulateAutoTrx() {
         if(!this.transactionId) {
             this.transactionId = this.manualMethod.toUpperCase().substring(0,2) + Math.floor(10000000 + Math.random() * 90000000);
         }
+    },
+    handleSubmit(e) {
+        if (this.isSubmitting) {
+            e.preventDefault();
+            return false;
+        }
+        this.isSubmitting = true;
     }
 }">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -32,6 +40,7 @@
         <!-- Checkout Form (Dynamic action based on paymentMode) -->
         <form :action="paymentMode === 'eps' ? '{{ route('eps.pay', $course->slug) }}' : '{{ route('courses.enroll', $course->slug) }}'" 
               method="POST" 
+              @submit="handleSubmit($event)"
               class="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
             @csrf
 
@@ -195,10 +204,18 @@
 
                     <!-- Submit / Pay Now Button -->
                     <button type="submit" 
-                            class="w-full py-4 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-800 text-white font-black text-sm sm:text-base shadow-lg shadow-emerald-600/30 hover:shadow-emerald-600/50 transition duration-200 flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-lock text-sm"></i>
-                        <span x-text="paymentMode === 'eps' ? 'EPS অনলাইন গেটওয়েতে পেমেন্ট করুন (৳{{ number_format($course->effective_price) }})' : 'ভর্তি নিশ্চিত করুন (৳{{ number_format($course->effective_price) }})'"></span>
-                        <i class="fa-solid fa-arrow-right text-xs"></i>
+                            :disabled="isSubmitting"
+                            :class="isSubmitting ? 'opacity-75 cursor-not-allowed pointer-events-none' : 'hover:from-emerald-700 hover:to-teal-800 hover:shadow-emerald-600/50'"
+                            class="w-full py-4 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white font-black text-sm sm:text-base shadow-lg shadow-emerald-600/30 transition duration-200 flex items-center justify-center gap-2">
+                        <span x-show="!isSubmitting" class="inline-flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-lock text-sm"></i>
+                            <span x-text="paymentMode === 'eps' ? 'EPS অনলাইন গেটওয়েতে পেমেন্ট করুন (৳{{ number_format($course->effective_price) }})' : 'ভর্তি নিশ্চিত করুন (৳{{ number_format($course->effective_price) }})'"></span>
+                            <i class="fa-solid fa-arrow-right text-xs"></i>
+                        </span>
+                        <span x-show="isSubmitting" class="inline-flex items-center justify-center gap-2" style="display: none;">
+                            <i class="fa-solid fa-circle-notch fa-spin text-base"></i>
+                            <span>অনুগ্রহ করে অপেক্ষা করুন, সংযোগ তৈরি হচ্ছে...</span>
+                        </span>
                     </button>
 
                     <div class="flex items-center justify-center gap-4 text-[11px] text-slate-500 pt-1">

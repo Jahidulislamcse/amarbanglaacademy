@@ -140,4 +140,76 @@ class EpsPaymentTest extends TestCase
             'status' => 'cancelled',
         ]);
     }
+
+    public function test_repeated_eps_pay_requests_reuse_pending_enrollment_without_creating_duplicates(): void
+    {
+        $course = Course::first();
+
+        Http::fake([
+            '*/Auth/GetToken' => Http::response(['token' => 'mock_jwt_token', 'status' => 'true'], 200),
+            '*/EPSEngine/InitializeEPS' => Http::response([
+                'RedirectURL' => 'https://sandboxpg.epay.com.bd/checkout/test-session-123',
+                'Status' => 'SUCCESS',
+            ], 200),
+        ]);
+
+        $data = [
+            'student_name' => 'Shahamir Shuvo',
+            'student_email' => 'shuvo@example.com',
+            'student_phone' => '01816377601',
+        ];
+
+        // First click
+        $this->post(route('eps.pay', $course->slug), $data);
+
+        // Second click 1 second later
+        $this->post(route('eps.pay', $course->slug), $data);
+
+        // Third click
+        $this->post(route('eps.pay', $course->slug), $data);
+
+        // MUST only have 1 enrollment in the database!
+        $this->assertEquals(1, Enrollment::where('student_phone', '01816377601')->count());
+
+        // Older pending payment attempts must be cancelled so only 1 active pending exists
+        $this->assertEquals(1, Payment::where('student_phone', '01816377601')->where('status', 'pending')->count());
+        $this->assertEquals(2, Payment::where('student_phone', '01816377601')->where('status', 'cancelled')->count());
+    }
+
+    public function test_already_active_student_redirects_to_receipt_instead_of_duplicate_enrollment(): void
+    {
+        $course = Course::first();
+
+        $active = Enrollment::create([
+            'course_id' => $course->id,
+            'student_name' => 'Active Student',
+            'student_email' => 'active@example.com',
+            'student_phone' => '01899999999',
+            'status' => 'active',
+        ]);
+
+        $payment = Payment::create([
+            'enrollment_id' => $active->id,
+            'course_id' => $course->id,
+            'student_name' => 'Active Student',
+            'student_email' => 'active@example.com',
+            'student_phone' => '01899999999',
+            'amount' => 999.00,
+            'payment_method' => 'eps',
+            'transaction_id' => 'TX_ACTIVE_ALREADY',
+            'status' => 'completed',
+        ]);
+
+        // Attempting to pay again for the same course
+        $response = $this->post(route('eps.pay', $course->slug), [
+            'student_name' => 'Active Student',
+            'student_email' => 'active@example.com',
+            'student_phone' => '01899999999',
+        ]);
+
+        $response->assertRedirect(route('payment.success', $payment->id));
+
+        // Still exactly 1 enrollment!
+        $this->assertEquals(1, Enrollment::where('student_phone', '01899999999')->count());
+    }
 }
