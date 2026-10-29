@@ -265,10 +265,18 @@ class AdminPanelTest extends TestCase
 
         $response = $this->actingAs($this->admin)->get('/admin/students');
         $response->assertStatus(200);
+
+        // Completed student appears in the main enrolled roster
         $response->assertSee('সফল ছাত্র');
         $response->assertSee('EPS_SUCCESS_111');
-        $response->assertDontSee('অসম্পূর্ণ ছাত্র');
-        $response->assertDontSee('EPS_PENDING_999');
+
+        // Pending student appears in the pending-approval section (for admin review)
+        // but must NOT appear in the main completed student roster table
+        $response->assertSee('EPS_PENDING_999');         // visible in pending panel
+        $response->assertSee('অসম্পূর্ণ ছাত্র');          // visible in pending panel
+
+        // Verify the pending section label is present
+        $response->assertSee('অনুমোদনের অপেক্ষায়');
 
         // Verify CSV export also excludes pending payments
         $csvResponse = $this->actingAs($this->admin)->get('/admin/students/export');

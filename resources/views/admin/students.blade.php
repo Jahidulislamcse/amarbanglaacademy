@@ -94,6 +94,65 @@
         </div>
     </div>
 
+        <!-- PENDING PAYMENTS ALERT - Students who paid but status not confirmed -->
+    @if($pendingPayments->isNotEmpty())
+    <div class="bg-amber-50 border border-amber-300 rounded-2xl p-5 shadow-sm">
+        <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-lg shrink-0">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div>
+                <h2 class="text-base font-bold text-amber-900">
+                    &#9888; {{ $pendingPayments->count() }}টি পেমেন্ট অনুমোদনের অপেক্ষায়
+                </h2>
+                <p class="text-xs text-amber-700 mt-0.5">
+                    এই শিক্ষার্থীরা পেমেন্ট শুরু করেছেন কিন্তু স্ট্যাটাস <strong>pending</strong> রয়েছে।
+                    পেমেন্ট যাচাই করে নিশ্চিত করুন অথবা বাতিল করুন।
+                </p>
+            </div>
+        </div>
+        <div class="space-y-3">
+            @foreach($pendingPayments as $pp)
+            <div class="bg-white rounded-xl border border-amber-200 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="flex items-start gap-3">
+                    <div class="w-9 h-9 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-sm font-bold shrink-0">
+                        {{ strtoupper(substr($pp->student_name, 0, 1)) }}
+                    </div>
+                    <div class="min-w-0">
+                        <p class="font-bold text-slate-900 text-sm">{{ $pp->student_name }}</p>
+                        <p class="text-xs text-slate-500">{{ $pp->student_email }} &bull; {{ $pp->student_phone }}</p>
+                        <div class="flex flex-wrap gap-2 mt-1">
+                            <span class="text-[11px] bg-slate-100 text-slate-600 rounded px-1.5 py-0.5 font-mono">TrxID: {{ $pp->transaction_id }}</span>
+                            <span class="text-[11px] bg-blue-50 text-blue-700 rounded px-1.5 py-0.5 font-semibold uppercase">{{ $pp->payment_method }}</span>
+                            <span class="text-[11px] bg-emerald-50 text-emerald-700 rounded px-1.5 py-0.5 font-bold">৳{{ number_format($pp->amount) }}</span>
+                            <span class="text-[11px] text-slate-400">{{ $pp->created_at ? $pp->created_at->format('d M Y, h:i A') : '' }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                    <form method="POST" action="{{ route('admin.payments.update-status', $pp->id) }}" onsubmit="return confirm('পেমেন্ট নিশ্চিত করবেন?')">
+                        @csrf @method('PATCH')
+                        <input type="hidden" name="status" value="completed">
+                        <input type="hidden" name="notes" value="Admin manually approved pending payment.">
+                        <button type="submit" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition">
+                            <i class="fa-solid fa-circle-check"></i> পেমেন্ট নিশ্চিত করুন
+                        </button>
+                    </form>
+                    <form method="POST" action="{{ route('admin.payments.update-status', $pp->id) }}" onsubmit="return confirm('পেমেন্ট বাতিল করবেন?')">
+                        @csrf @method('PATCH')
+                        <input type="hidden" name="status" value="failed">
+                        <input type="hidden" name="notes" value="Admin rejected pending payment.">
+                        <button type="submit" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-100 hover:bg-red-200 text-red-700 text-xs font-bold transition">
+                            <i class="fa-solid fa-xmark"></i> বাতিল
+                        </button>
+                    </form>
+                </div>
+            </div>
+            @endforeach
+        </div>
+    </div>
+    @endif
+
     <!-- Search & Filter Card -->
     <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
         <form method="GET" action="{{ route('admin.students') }}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-end">

@@ -285,8 +285,8 @@
                     <p class="text-slate-600 leading-relaxed">
                         সরাসরি আমাদের হেল্পলাইনে কথা বলতে কল বা হোয়াটসঅ্যাপ করুন:
                     </p>
-                    <a href="https://wa.me/8801711774263" target="_blank" class="inline-flex items-center gap-1.5 text-emerald-700 font-bold hover:underline">
-                        <i class="fa-brands fa-whatsapp text-emerald-600 text-sm"></i> ০১৭১১-৭৭৪২৬৩ (01711-774263)
+                    <a href="https://wa.me/8801332549549" target="_blank" class="inline-flex items-center gap-1.5 text-emerald-700 font-bold hover:underline">
+                        <i class="fa-brands fa-whatsapp text-emerald-600 text-sm"></i> ০১৭১১-৭৭৪২৬৩ (01332-549549)
                     </a>
                 </div>
             </div>

@@ -78,9 +78,16 @@ class AdminController extends Controller
             'total_revenue' => (clone $completedPayments)->sum('amount'),
             'eps_count' => (clone $completedPayments)->where('payment_method', 'eps')->count(),
             'mobile_count' => (clone $completedPayments)->whereIn('payment_method', ['bkash', 'nagad', 'rocket', 'card'])->count(),
+            'pending_count' => Payment::where('status', 'pending')->count(),
         ];
 
-        // 2. Query builder: strictly show completed payment registrations
+        // 2a. Pending payments needing admin review / manual approval
+        $pendingPayments = Payment::with(['enrollment', 'course'])
+            ->where('status', 'pending')
+            ->latest()
+            ->get();
+
+        // 2b. Query builder: strictly show completed payment registrations
         $query = Payment::with(['enrollment', 'course'])
             ->where('status', 'completed')
             ->latest();
@@ -109,7 +116,7 @@ class AdminController extends Controller
         $payments = $query->paginate(15)->withQueryString();
         $courses = Course::all(['id', 'title', 'bangla_title']);
 
-        return view('admin.students', compact('payments', 'stats', 'courses'));
+        return view('admin.students', compact('payments', 'pendingPayments', 'stats', 'courses'));
     }
 
     /**

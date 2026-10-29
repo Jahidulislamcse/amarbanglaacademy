@@ -76,9 +76,9 @@
 
             <!-- Right: WhatsApp Helpline & Email -->
             <div class="flex items-center justify-center sm:justify-end gap-3 sm:gap-4 text-emerald-100 text-[11px] sm:text-xs flex-wrap">
-                <a href="https://wa.me/8801711774263" target="_blank" class="inline-flex items-center gap-1.5 hover:text-white transition group bg-emerald-900/70 hover:bg-emerald-800/80 px-2.5 py-1 rounded-full border border-emerald-700/50">
+                <a href="https://wa.me/8801332549549" target="_blank" class="inline-flex items-center gap-1.5 hover:text-white transition group bg-emerald-900/70 hover:bg-emerald-800/80 px-2.5 py-1 rounded-full border border-emerald-700/50">
                     <i class="fa-brands fa-whatsapp text-emerald-300 text-sm group-hover:scale-110 transition-transform"></i>
-                    <span>হোয়াটসঅ্যাপ: <strong class="text-white font-mono font-bold tracking-wide">01711-774263</strong></span>
+                    <span>হোয়াটসঅ্যাপ: <strong class="text-white font-mono font-bold tracking-wide">01332-549549</strong></span>
                 </a>
                 <a href="mailto:info@amarbanglaacademy.com" class="hidden lg:inline-flex items-center gap-1.5 hover:text-white transition text-slate-300">
                     <i class="fa-solid fa-envelope text-amber-300 text-[11px]"></i>
@@ -109,7 +109,7 @@
 
                 <!-- Quick Action Contact & Enroll -->
                 <div class="flex items-center gap-2 sm:gap-3">
-                    <a href="https://wa.me/8801711774263" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 sm:py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs sm:text-sm font-bold border border-emerald-200 transition">
+                    <a href="https://wa.me/8801332549549" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 sm:py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs sm:text-sm font-bold border border-emerald-200 transition">
                         <i class="fa-brands fa-whatsapp text-emerald-600 text-sm sm:text-base"></i>
                         <span class="hidden sm:inline">০১৭১১-৭৭৪২৬৩ (হোয়াটসঅ্যাপ)</span>
                         <span class="sm:hidden">হোয়াটসঅ্যাপ</span>
@@ -239,9 +239,9 @@
                     </div>
                     <div class="p-3 rounded-lg bg-slate-800 border border-slate-700 text-xs">
                         <span class="text-emerald-400 font-semibold block mb-1"><i class="fa-solid fa-headset mr-1"></i> জরুরি সহায়তা / হোয়াটসঅ্যাপ</span>
-                        <a href="https://wa.me/8801711774263" target="_blank" class="text-slate-200 font-bold hover:text-emerald-400 flex items-center gap-1.5 mt-0.5">
+                        <a href="https://wa.me/8801332549549" target="_blank" class="text-slate-200 font-bold hover:text-emerald-400 flex items-center gap-1.5 mt-0.5">
                             <i class="fa-brands fa-whatsapp text-emerald-400"></i>
-                            <span>০১৭১১-৭৭৪২৬৩ (01711-774263)</span>
+                            <span>০১৩৩২-৫৪৯৫৪৯ (01332-549549)</span>
                         </a>
                         <span class="text-[11px] text-slate-400 block mt-1">সকাল ৯:০০ - রাত ১১:০০ টা</span>
                     </div>
@@ -269,7 +269,7 @@
     </footer>
 
     <!-- Floating WhatsApp Button (Desktop & Tablet) -->
-    <a href="https://wa.me/8801711774263" target="_blank" 
+    <a href="https://wa.me/8801332549549" target="_blank" 
        class="hidden sm:inline-flex fixed bottom-6 right-6 z-40 items-center gap-2.5 px-4 py-3 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-2xl shadow-emerald-700/50 hover:scale-105 transition-all duration-200 group border border-emerald-400/40"
        title="হোয়াটসঅ্যাপে সরাসরি যোগাযোগ করুন">
         <i class="fa-brands fa-whatsapp text-xl text-white group-hover:scale-110 transition-transform"></i>
