@@ -65,116 +65,14 @@ class LmsController extends Controller
 
     /**
      * Process Online Payment & Instant Enrollment
+     * (Deprecated: System strictly uses official EPS Online Payment Gateway)
      */
     public function processPayment(Request $request, string $slug)
     {
         $course = Course::where('slug', $slug)->firstOrFail();
 
-        $validated = $request->validate([
-            'student_name' => 'required|string|max:100',
-            'student_email' => 'required|email|max:100',
-            'student_phone' => 'required|string|max:20',
-            'payment_method' => 'required|string|in:bkash,nagad,rocket,card',
-            'sender_phone' => 'nullable|string|max:20',
-            'transaction_id' => 'nullable|string|max:50',
-        ]);
-
-        $trxId = $validated['transaction_id'] 
-            ? strtoupper($validated['transaction_id']) 
-            : strtoupper(substr($validated['payment_method'], 0, 2)) . rand(10000000, 99999999);
-
-        // 1. Check if student already has active enrollment in this course
-        $activeEnrollment = Enrollment::where('course_id', $course->id)
-            ->where('status', 'active')
-            ->where(function ($q) use ($validated) {
-                $q->where('student_email', $validated['student_email'])
-                  ->orWhere('student_phone', $validated['student_phone']);
-            })
-            ->latest()
-            ->first();
-
-        if ($activeEnrollment) {
-            $existingPayment = Payment::where('enrollment_id', $activeEnrollment->id)
-                ->where('status', 'completed')
-                ->latest()
-                ->first();
-
-            if ($existingPayment) {
-                return redirect()->route('payment.success', $existingPayment->id)
-                    ->with('info', 'আপনি ইতিমধ্যে এই কোর্সে সফলভাবে ভর্তি হয়েছেন!');
-            }
-        }
-
-        // 2. Reuse pending enrollment if one exists, avoiding duplicate rows
-        $enrollment = Enrollment::where('course_id', $course->id)
-            ->where('status', 'pending')
-            ->where(function ($q) use ($validated) {
-                $q->where('student_email', $validated['student_email'])
-                  ->orWhere('student_phone', $validated['student_phone']);
-            })
-            ->latest()
-            ->first();
-
-        if ($enrollment) {
-            $enrollment->update([
-                'student_name' => $validated['student_name'],
-                'student_email' => $validated['student_email'],
-                'student_phone' => $validated['student_phone'],
-                'status' => 'active',
-                'enrolled_at' => now(),
-            ]);
-        } else {
-            $enrollment = Enrollment::create([
-                'course_id' => $course->id,
-                'student_name' => $validated['student_name'],
-                'student_email' => $validated['student_email'],
-                'student_phone' => $validated['student_phone'],
-                'status' => 'active',
-                'enrolled_at' => now(),
-                'expires_at' => now()->addMonths(12),
-            ]);
-        }
-
-        // Remove any other extra pending duplicate enrollments for this student
-        Enrollment::where('course_id', $course->id)
-            ->where('id', '!=', $enrollment->id)
-            ->where('status', 'pending')
-            ->where(function ($q) use ($validated) {
-                $q->where('student_email', $validated['student_email'])
-                  ->orWhere('student_phone', $validated['student_phone']);
-            })
-            ->delete();
-
-        // Create payment record
-        $payment = Payment::create([
-            'enrollment_id' => $enrollment->id,
-            'course_id' => $course->id,
-            'student_name' => $validated['student_name'],
-            'student_email' => $validated['student_email'],
-            'student_phone' => $validated['student_phone'],
-            'amount' => $course->effective_price,
-            'payment_method' => $validated['payment_method'],
-            'transaction_id' => $trxId,
-            'sender_phone' => $validated['sender_phone'] ?? $validated['student_phone'],
-            'status' => 'completed',
-            'notes' => 'Instant online payment verified successfully.',
-        ]);
-
-        // Cancel previous pending payments for this student
-        Payment::where('course_id', $course->id)
-            ->where('id', '!=', $payment->id)
-            ->where('status', 'pending')
-            ->where(function ($q) use ($validated) {
-                $q->where('student_email', $validated['student_email'])
-                  ->orWhere('student_phone', $validated['student_phone']);
-            })
-            ->update([
-                'status' => 'cancelled',
-                'notes' => 'Auto-cancelled: Student completed payment #' . $payment->id,
-            ]);
-
-        return redirect()->route('payment.success', $payment->id)
-            ->with('success', 'অভিনন্দন! আপনার ভর্তি ও পেমেন্ট সফলভাবে সম্পন্ন হয়েছে। ক্লাসের সব নোটিশ ও লাইভ ক্লাসের লিঙ্ক পেতে অনুগ্রহ করে WhatsApp গ্রুপে যুক্ত হন।');
+        return redirect()->route('courses.checkout', $course->slug)
+            ->with('info', 'ম্যানুয়াল পেমেন্ট অনুমোদিত নয়। অনুগ্রহ করে নিরাপদ EPS অনলাইন গেটওয়ের মাধ্যমে বিকাশ, নগদ বা কার্ড দিয়ে পেমেন্ট সম্পন্ন করুন।');
     }
 
     /**

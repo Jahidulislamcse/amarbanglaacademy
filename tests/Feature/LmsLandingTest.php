@@ -46,11 +46,11 @@ class LmsLandingTest extends TestCase
 
         $response = $this->get('/courses/' . $course->slug . '/checkout');
         $response->assertStatus(200);
-        $response->assertSee('পেমেন্ট মেথড');
+        $response->assertSee('EPS অনলাইন পেমেন্ট');
         $response->assertSee('বিকাশ');
     }
 
-    public function test_enrollment_and_payment_process(): void
+    public function test_legacy_manual_enroll_redirects_to_checkout(): void
     {
         $course = Course::first();
 
@@ -58,21 +58,9 @@ class LmsLandingTest extends TestCase
             'student_name' => 'Alim Hossain',
             'student_email' => 'alim@example.com',
             'student_phone' => '01712345678',
-            'payment_method' => 'bkash',
-            'sender_phone' => '01712345678',
-            'transaction_id' => 'BK12345678',
         ]);
 
-        $response->assertRedirect();
-        $this->assertDatabaseHas('enrollments', [
-            'course_id' => $course->id,
-            'student_email' => 'alim@example.com',
-        ]);
-        $this->assertDatabaseHas('payments', [
-            'course_id' => $course->id,
-            'transaction_id' => 'BK12345678',
-            'payment_method' => 'bkash',
-        ]);
+        $response->assertRedirect(route('courses.checkout', $course->slug));
     }
 
     public function test_live_classes_and_exams_pages_load(): void

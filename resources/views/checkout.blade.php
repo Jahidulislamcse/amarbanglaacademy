@@ -4,16 +4,7 @@
 
 @section('content')
 <div class="bg-slate-100 py-10 sm:py-14" x-data="{ 
-    paymentMode: 'eps', // 'eps' or 'manual'
-    manualMethod: 'bkash',
-    senderNumber: '',
-    transactionId: '',
     isSubmitting: false,
-    simulateAutoTrx() {
-        if(!this.transactionId) {
-            this.transactionId = this.manualMethod.toUpperCase().substring(0,2) + Math.floor(10000000 + Math.random() * 90000000);
-        }
-    },
     handleSubmit(e) {
         if (this.isSubmitting) {
             e.preventDefault();
@@ -37,8 +28,8 @@
             </p>
         </div>
 
-        <!-- Checkout Form (Dynamic action based on paymentMode) -->
-        <form :action="paymentMode === 'eps' ? '{{ route('eps.pay', $course->slug) }}' : '{{ route('courses.enroll', $course->slug) }}'" 
+        <!-- Checkout Form (Submits to EPS Online Payment Gateway) -->
+        <form action="{{ route('eps.pay', $course->slug) }}" 
               method="POST" 
               @submit="handleSubmit($event)"
               class="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
@@ -84,122 +75,56 @@
                     </div>
                 </div>
 
-                <!-- 2. Payment Gateway Mode Selector -->
+                <!-- 2. Payment Gateway Section (Official EPS Gateway) -->
                 <div class="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200 shadow-sm space-y-4">
                     <h3 class="font-bold text-base text-slate-900 flex items-center gap-2 pb-3 border-b border-slate-100">
                         <span class="w-6 h-6 rounded-full bg-emerald-600 text-white text-xs font-black flex items-center justify-center">২</span>
-                        <span>পেমেন্ট মেথড ও পদ্ধতি নির্বাচন করুন</span>
+                        <span>পেমেন্ট গেটওয়ে</span>
                     </h3>
 
-                    <!-- Payment Mode Switcher Tabs -->
-                    <div class="space-y-3">
-                        
-                        <!-- Option A: EPS Online Gateway (Recommended) -->
-                        <label @click="paymentMode = 'eps'" 
-                               class="block cursor-pointer p-4 rounded-xl border-2 transition relative"
-                               :class="paymentMode === 'eps' ? 'border-emerald-600 bg-emerald-50/50 shadow-xs' : 'border-slate-200 hover:border-slate-300 bg-white'">
-                            <div class="flex items-start justify-between gap-3">
-                                <div class="flex items-center gap-3">
-                                    <input type="radio" name="payment_mode_radio" value="eps" :checked="paymentMode === 'eps'" class="mt-0.5 text-emerald-600 focus:ring-emerald-500 h-4 w-4">
-                                    <div>
-                                        <div class="flex items-center gap-2 flex-wrap">
-                                            <span class="font-bold text-sm text-slate-900">EPS অনলাইন পেমেন্ট (স্বয়ংক্রিয়)</span>
-                                            <span class="text-[10px] font-extrabold uppercase bg-emerald-600 text-white px-2 py-0.5 rounded-full">দ্রুত ও নির্ভরযোগ্য</span>
-                                        </div>
-                                        <p class="text-xs text-slate-600 mt-0.5">
-                                            বিকাশ, নগদ, রকেট, উপাই, ডেবিট/ক্রেডিট কার্ড দিয়ে সাথে সাথে ইনস্ট্যান্ট পেমেন্ট
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Supported Gateways Badge Row -->
-                            <div class="mt-3 pt-3 border-t border-emerald-100/80 flex items-center gap-2 flex-wrap text-xs">
-                                <span class="px-2.5 py-1 rounded-md bg-pink-100 text-pink-800 font-bold text-[11px] flex items-center gap-1">
-                                    <span class="w-2 h-2 rounded-full bg-pink-600"></span> বিকাশ
-                                </span>
-                                <span class="px-2.5 py-1 rounded-md bg-orange-100 text-orange-800 font-bold text-[11px] flex items-center gap-1">
-                                    <span class="w-2 h-2 rounded-full bg-orange-600"></span> নগদ
-                                </span>
-                                <span class="px-2.5 py-1 rounded-md bg-purple-100 text-purple-800 font-bold text-[11px] flex items-center gap-1">
-                                    <span class="w-2 h-2 rounded-full bg-purple-600"></span> রকেট
-                                </span>
-                                <span class="px-2.5 py-1 rounded-md bg-blue-100 text-blue-800 font-bold text-[11px] flex items-center gap-1">
-                                    <i class="fa-solid fa-credit-card"></i> ভিসা / মাস্টারকার্ড
-                                </span>
-                            </div>
-                        </label>
-
-                        <!-- Option B: Manual Send Money & TrxID Entry -->
-                        <label @click="paymentMode = 'manual'" 
-                               class="block cursor-pointer p-4 rounded-xl border-2 transition"
-                               :class="paymentMode === 'manual' ? 'border-emerald-600 bg-emerald-50/50 shadow-xs' : 'border-slate-200 hover:border-slate-300 bg-white'">
+                    <!-- EPS Online Gateway Card -->
+                    <div class="p-4 rounded-xl border-2 border-emerald-600 bg-emerald-50/40 shadow-xs">
+                        <div class="flex items-start justify-between gap-3">
                             <div class="flex items-center gap-3">
-                                <input type="radio" name="payment_mode_radio" value="manual" :checked="paymentMode === 'manual'" class="text-emerald-600 focus:ring-emerald-500 h-4 w-4">
+                                <div class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-lg shrink-0">
+                                    <i class="fa-solid fa-bolt"></i>
+                                </div>
                                 <div>
-                                    <span class="font-bold text-sm text-slate-900 block">ম্যানুয়াল পেমেন্ট (TrxID সাবমিশন)</span>
-                                    <p class="text-xs text-slate-500 mt-0.5">
-                                        আপনি যদি আগেই টাকা পাঠিয়ে থাকেন তবে TrxID দিয়ে সাবমিট করুন
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <span class="font-bold text-sm text-slate-900">EPS অনলাইন পেমেন্ট (স্বয়ংক্রিয় ও নিরাপদ)</span>
+                                        <span class="text-[10px] font-extrabold uppercase bg-emerald-600 text-white px-2 py-0.5 rounded-full">অফিসিয়াল গেটওয়ে</span>
+                                    </div>
+                                    <p class="text-xs text-slate-600 mt-1">
+                                        বিকাশ, নগদ, রকেট, উপাই অথবা যেকোনো কার্ড দিয়ে সাথে সাথে ইনস্ট্যান্ট পেমেন্ট সম্পন্ন করুন।
                                     </p>
                                 </div>
                             </div>
-                        </label>
+                        </div>
 
+                        <!-- Supported Gateways Badge Row -->
+                        <div class="mt-3 pt-3 border-t border-emerald-200/60 flex items-center gap-2 flex-wrap text-xs">
+                            <span class="px-2.5 py-1 rounded-md bg-pink-100 text-pink-800 font-bold text-[11px] flex items-center gap-1">
+                                <span class="w-2 h-2 rounded-full bg-pink-600"></span> বিকাশ (bKash)
+                            </span>
+                            <span class="px-2.5 py-1 rounded-md bg-orange-100 text-orange-800 font-bold text-[11px] flex items-center gap-1">
+                                <span class="w-2 h-2 rounded-full bg-orange-600"></span> নগদ (Nagad)
+                            </span>
+                            <span class="px-2.5 py-1 rounded-md bg-purple-100 text-purple-800 font-bold text-[11px] flex items-center gap-1">
+                                <span class="w-2 h-2 rounded-full bg-purple-600"></span> রকেট (Rocket)
+                            </span>
+                            <span class="px-2.5 py-1 rounded-md bg-yellow-100 text-yellow-900 font-bold text-[11px] flex items-center gap-1">
+                                <span class="w-2 h-2 rounded-full bg-yellow-600"></span> উপায় (Upay)
+                            </span>
+                            <span class="px-2.5 py-1 rounded-md bg-blue-100 text-blue-800 font-bold text-[11px] flex items-center gap-1">
+                                <i class="fa-solid fa-credit-card"></i> ভিসা / মাস্টারকার্ড
+                            </span>
+                        </div>
                     </div>
 
-                    <!-- Dynamic Manual Payment Fields (shown only when paymentMode === 'manual') -->
-                    <div x-show="paymentMode === 'manual'" x-transition class="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 space-y-4">
-                        
-                        <!-- Manual Method Sub-selector -->
-                        <div class="grid grid-cols-3 gap-2">
-                            <label @click="manualMethod = 'bkash'" 
-                                   class="cursor-pointer border rounded-lg p-2 text-center text-xs font-bold transition"
-                                   :class="manualMethod === 'bkash' ? 'border-pink-600 bg-pink-100/60 text-pink-800' : 'border-slate-200 bg-white text-slate-700'">
-                                <input type="radio" name="payment_method" value="bkash" class="sr-only" :checked="manualMethod === 'bkash'">
-                                বিকাশ (Personal)
-                            </label>
-                            <label @click="manualMethod = 'nagad'" 
-                                   class="cursor-pointer border rounded-lg p-2 text-center text-xs font-bold transition"
-                                   :class="manualMethod === 'nagad' ? 'border-orange-500 bg-orange-100/60 text-orange-800' : 'border-slate-200 bg-white text-slate-700'">
-                                <input type="radio" name="payment_method" value="nagad" class="sr-only" :checked="manualMethod === 'nagad'">
-                                নগদ (Personal)
-                            </label>
-                            <label @click="manualMethod = 'rocket'" 
-                                   class="cursor-pointer border rounded-lg p-2 text-center text-xs font-bold transition"
-                                   :class="manualMethod === 'rocket' ? 'border-purple-600 bg-purple-100/60 text-purple-800' : 'border-slate-200 bg-white text-slate-700'">
-                                <input type="radio" name="payment_method" value="rocket" class="sr-only" :checked="manualMethod === 'rocket'">
-                                রকেট (Personal)
-                            </label>
-                        </div>
-
-                        <!-- Manual Number & Instructions -->
-                        <div class="p-3 bg-white rounded-lg border border-slate-200 space-y-2">
-                            <div class="flex items-center justify-between font-bold text-slate-800">
-                                <span>টাকা পাঠানোর নম্বর:</span>
-                                <strong class="text-emerald-700 text-sm select-all font-mono">01813-753610</strong>
-                            </div>
-                            <p class="text-[11px] text-slate-600 leading-relaxed">
-                                'Send Money' করে প্রাপ্ত <strong>Transaction ID (TrxID)</strong> নিচে লিখুন।
-                            </p>
-                        </div>
-
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div>
-                                <label class="block font-semibold text-slate-700 mb-1">প্রেরকের মোবাইল নম্বর</label>
-                                <input type="text" name="sender_phone" x-model="senderNumber" placeholder="01XXXXXXXXX" 
-                                       class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-1 focus:ring-emerald-500 text-xs">
-                            </div>
-                            <div>
-                                <div class="flex items-center justify-between mb-1">
-                                    <label class="block font-semibold text-slate-700">Transaction ID (TrxID)</label>
-                                    <button type="button" @click="simulateAutoTrx()" class="text-[10px] text-emerald-700 hover:underline font-semibold">
-                                        ডেমো TrxID
-                                    </button>
-                                </div>
-                                <input type="text" name="transaction_id" x-model="transactionId" placeholder="যেমন: 9J7X298" 
-                                       class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-1 focus:ring-emerald-500 text-xs font-mono uppercase">
-                            </div>
-                        </div>
+                    <!-- Payment Instruction Notice -->
+                    <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-600 flex items-start gap-2.5">
+                        <i class="fa-solid fa-circle-info text-emerald-600 text-sm mt-0.5 shrink-0"></i>
+                        <span>নিচের বাটনে ক্লিক করলে আপনাকে নিরাপদ <strong>EPS পেমেন্ট গেটওয়েতে</strong> নিয়ে যাওয়া হবে। সেখানে আপনার পছন্দের মাধ্যমে (বিকাশ/নগদ/কার্ড) পেমেন্ট সম্পন্ন করলেই কোর্সটিতে সরাসরি ভর্তি নিশ্চিত হয়ে যাবে।</span>
                     </div>
 
                     <!-- Submit / Pay Now Button -->
@@ -209,12 +134,12 @@
                             class="w-full py-4 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white font-black text-sm sm:text-base shadow-lg shadow-emerald-600/30 transition duration-200 flex items-center justify-center gap-2">
                         <span x-show="!isSubmitting" class="inline-flex items-center justify-center gap-2">
                             <i class="fa-solid fa-lock text-sm"></i>
-                            <span x-text="paymentMode === 'eps' ? 'EPS অনলাইন গেটওয়েতে পেমেন্ট করুন (৳{{ number_format($course->effective_price) }})' : 'ভর্তি নিশ্চিত করুন (৳{{ number_format($course->effective_price) }})'"></span>
+                            <span>নিরাপদ EPS গেটওয়েতে পেমেন্ট করুন (৳{{ number_format($course->effective_price) }})</span>
                             <i class="fa-solid fa-arrow-right text-xs"></i>
                         </span>
                         <span x-show="isSubmitting" class="inline-flex items-center justify-center gap-2" style="display: none;">
                             <i class="fa-solid fa-circle-notch fa-spin text-base"></i>
-                            <span>অনুগ্রহ করে অপেক্ষা করুন, সংযোগ তৈরি হচ্ছে...</span>
+                            <span>অনুগ্রহ করে অপেক্ষা করুন, EPS গেটওয়েতে সংযোগ তৈরি হচ্ছে...</span>
                         </span>
                     </button>
 
