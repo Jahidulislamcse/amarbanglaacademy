@@ -28,6 +28,66 @@
             </p>
         </div>
 
+        @if(session('eps_fallback'))
+        <!-- EPS Fallback Emergency Card (Shown when EPS fails or times out) -->
+        <div class="mb-8 p-5 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-400 text-amber-950 shadow-md">
+            <div class="flex items-start gap-3.5">
+                <div class="w-11 h-11 rounded-2xl bg-amber-500 text-white flex items-center justify-center text-xl shrink-0 shadow-sm">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div class="flex-1 space-y-2.5">
+                    <div>
+                        <h3 class="font-black text-base sm:text-lg text-amber-950">
+                            EPS অনলাইন গেটওয়েতে সাময়িক সংযোগ সমস্যা হয়েছে?
+                        </h3>
+                        <p class="text-xs text-amber-900 mt-0.5 leading-relaxed">
+                            চিন্তার কোনো কারণ নেই! আপনি সরাসরি নিচের <strong>বিকাশ</strong> অথবা <strong>নগদ</strong> পার্সোনাল নম্বরে কোর্স ফি (৳{{ number_format($course->effective_price) }}) Send Money করে আমাদের WhatsApp-এ TrxID পাঠিয়ে দিন। আমরা সাথে সাথে আপনার ভর্তি কনফার্ম করে দেব।
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                        <!-- bKash Personal -->
+                        <div class="bg-white p-3 rounded-xl border border-pink-300 flex items-center justify-between shadow-xs">
+                            <div>
+                                <span class="text-xs font-bold text-pink-700 flex items-center gap-1">
+                                    <span class="w-2 h-2 rounded-full bg-pink-600"></span> বিকাশ (Personal)
+                                </span>
+                                <div class="font-mono font-black text-slate-900 text-base sm:text-lg select-all">01813-753610</div>
+                            </div>
+                            <button type="button" onclick="navigator.clipboard.writeText('01813753610'); alert('বিকাশ নম্বর কপি হয়েছে: 01813753610');"
+                                    class="px-3 py-1.5 bg-pink-50 hover:bg-pink-100 text-pink-700 text-xs font-bold rounded-lg border border-pink-200 transition">
+                                কপি
+                            </button>
+                        </div>
+
+                        <!-- Nagad Personal -->
+                        <div class="bg-white p-3 rounded-xl border border-orange-300 flex items-center justify-between shadow-xs">
+                            <div>
+                                <span class="text-xs font-bold text-orange-700 flex items-center gap-1">
+                                    <span class="w-2 h-2 rounded-full bg-orange-600"></span> নগদ (Personal)
+                                </span>
+                                <div class="font-mono font-black text-slate-900 text-base sm:text-lg select-all">01712-168109</div>
+                            </div>
+                            <button type="button" onclick="navigator.clipboard.writeText('01712168109'); alert('নগদ নম্বর কপি হয়েছে: 01712168109');"
+                                    class="px-3 py-1.5 bg-orange-50 hover:bg-orange-100 text-orange-700 text-xs font-bold rounded-lg border border-orange-200 transition">
+                                কপি
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="pt-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                        <a href="https://wa.me/8801332549549?text={{ urlencode('আসসালামু আলাইকুম, আমি আমার বাংলা একাডেমীর সাংবাদিকতা কোর্সে ভর্তি হতে চাই। EPS গেটওয়েতে সমস্যা হওয়ায় বিকাশ/নগদে সেন্ড মানি করেছি।') }}"
+                           target="_blank"
+                           class="inline-flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-sm transition">
+                            <i class="fa-brands fa-whatsapp text-lg"></i>
+                            <span>টাকা পাঠিয়ে সরাসরি WhatsApp-এ TrxID পাঠান (01332-549549)</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endif
+
         <!-- Checkout Form (Submits to EPS Online Payment Gateway) -->
         <form action="{{ route('eps.pay', $course->slug) }}" 
               method="POST" 
@@ -155,6 +215,60 @@
                         </span>
                     </div>
 
+                    <!-- Emergency / Alternative Send Money Card (If EPS fails) -->
+                    <div class="mt-4 p-4 rounded-2xl bg-amber-50/80 border border-amber-300 text-xs text-amber-950 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="font-bold flex items-center gap-1.5 text-amber-900 text-xs sm:text-sm">
+                                <i class="fa-solid fa-circle-question text-amber-600"></i>
+                                <span>EPS গেটওয়েতে সমস্যা হলে বিকল্প উপায়</span>
+                            </span>
+                            <span class="text-[10px] bg-amber-200 text-amber-900 font-bold px-2 py-0.5 rounded-full">বিকল্প পদ্ধতি</span>
+                        </div>
+                        <p class="text-[11px] text-amber-900 leading-relaxed">
+                            কোনো কারণে EPS অনলাইন গেটওয়েতে সমস্যা হলে আপনি সরাসরি নিচের নম্বরে <strong>Send Money</strong> করে WhatsApp-এ যোগাযোগ করতে পারেন:
+                        </p>
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                            <!-- bKash Personal -->
+                            <div class="bg-white p-2.5 rounded-xl border border-pink-200 flex items-center justify-between shadow-xs">
+                                <div>
+                                    <div class="text-[10px] font-bold text-pink-700 flex items-center gap-1">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-pink-600"></span> বিকাশ (Personal)
+                                    </div>
+                                    <div class="font-mono font-bold text-slate-900 text-sm mt-0.5 select-all">01813-753610</div>
+                                </div>
+                                <button type="button" onclick="navigator.clipboard.writeText('01813753610'); alert('বিকাশ নম্বর কপি হয়েছে: 01813753610');"
+                                        class="px-2 py-1 rounded bg-pink-50 hover:bg-pink-100 text-pink-700 text-[10px] font-bold border border-pink-200 transition">
+                                    কপি
+                                </button>
+                            </div>
+
+                            <!-- Nagad Personal -->
+                            <div class="bg-white p-2.5 rounded-xl border border-orange-200 flex items-center justify-between shadow-xs">
+                                <div>
+                                    <div class="text-[10px] font-bold text-orange-700 flex items-center gap-1">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-orange-600"></span> নগদ (Personal)
+                                    </div>
+                                    <div class="font-mono font-bold text-slate-900 text-sm mt-0.5 select-all">01712-168109</div>
+                                </div>
+                                <button type="button" onclick="navigator.clipboard.writeText('01712168109'); alert('নগদ নম্বর কপি হয়েছে: 01712168109');"
+                                        class="px-2 py-1 rounded bg-orange-50 hover:bg-orange-100 text-orange-700 text-[10px] font-bold border border-orange-200 transition">
+                                    কপি
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="pt-1 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 bg-white/80 p-2.5 rounded-xl border border-amber-200">
+                            <span class="text-[11px] text-amber-900 font-semibold">টাকা পাঠিয়ে TrxID WhatsApp-এ দিন:</span>
+                            <a href="https://wa.me/8801332549549?text={{ urlencode('আসসালামু আলাইকুম, আমি আমার বাংলা একাডেমীর সাংবাদিকতা কোর্সে ভর্তি হতে চাই। EPS গেটওয়েতে সমস্যা হওয়ায় বিকাশ/নগদে সেন্ড মানি করেছি।') }}"
+                               target="_blank"
+                               class="inline-flex items-center justify-center gap-1.5 bg-green-600 hover:bg-green-700 text-white font-bold text-xs px-3 py-1.5 rounded-lg shadow-sm transition">
+                                <i class="fa-brands fa-whatsapp text-sm"></i>
+                                <span>WhatsApp (01332-549549)</span>
+                            </a>
+                        </div>
+                    </div>
+
                 </div>
 
             </div>
@@ -220,16 +334,25 @@
                 </div>
 
                 <!-- Support Box -->
-                <div class="p-4 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 text-xs text-emerald-950 space-y-1.5 shadow-xs">
+                <div class="p-4 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 text-xs text-emerald-950 space-y-2 shadow-xs">
                     <span class="font-bold flex items-center gap-1.5 text-emerald-900 text-sm">
                         <i class="fa-solid fa-headset text-emerald-600"></i> ভর্তি বা পেমেন্টে কোনো জিজ্ঞাসা?
                     </span>
-                    <p class="text-slate-600 leading-relaxed">
+                    <p class="text-slate-600 leading-relaxed text-[11px]">
                         সরাসরি আমাদের হেল্পলাইনে কথা বলতে কল বা হোয়াটসঅ্যাপ করুন:
                     </p>
                     <a href="https://wa.me/8801332549549" target="_blank" class="inline-flex items-center gap-1.5 text-emerald-700 font-bold hover:underline">
                         <i class="fa-brands fa-whatsapp text-emerald-600 text-sm"></i> ০১৩৩২-৫৪৯৫৪৯ (01332-549549)
                     </a>
+                    <div class="pt-2 border-t border-emerald-200/60 text-[11px] text-slate-700 space-y-1">
+                        <div class="font-bold text-slate-800 text-[11px]">EPS গেটওয়েতে সমস্যা হলে সেন্ড মানি করুন:</div>
+                        <div class="flex items-center justify-between">
+                            <span><strong class="text-pink-700">বিকাশ (Personal):</strong> 01813-753610</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span><strong class="text-orange-700">নগদ (Personal):</strong> 01712-168109</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 

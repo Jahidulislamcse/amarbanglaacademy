@@ -161,18 +161,10 @@ class EpsPaymentController extends Controller
                 $eps->clearTokenCache();
             } catch (\Throwable $ignore) {}
 
-            $msg = $e->getMessage();
-            $isTimeout = str_contains($msg, 'cURL error 28') 
-                || str_contains($msg, 'timed out') 
-                || str_contains($msg, 'Connection timed out');
-
-            if ($isTimeout) {
-                $userError = 'EPS পেমেন্ট গেটওয়ের সার্ভারে সংযোগ পেতে সাময়িক বিলম্ব হচ্ছে। অনুগ্রহ করে আর একবার চেষ্টা করুন অথবা আমাদের হেল্পলাইনে (০১৩৩২-৫৪৯৫৪৯) যোগাযোগ করুন।';
-            } else {
-                $userError = 'পেমেন্ট গেটওয়েতে সাময়িক সমস্যা হচ্ছে (' . $msg . ')। অনুগ্রহ করে কিছুক্ষণ পর আবার চেষ্টা করুন অথবা হেল্পলাইনে যোগাযোগ করুন।';
-            }
+            $userError = 'EPS পেমেন্ট গেটওয়েতে সাময়িক সমস্যা হচ্ছে। আপনি বিকল্প হিসেবে সরাসরি বিকাশ (01813-753610) বা নগদ (01712-168109) পার্সোনাল নম্বরে Send Money করে WhatsApp-এ (01332-549549) TrxID পাঠিয়ে দিন।';
 
             return redirect()->route('courses.checkout', $course->slug)
+                ->with('eps_fallback', true)
                 ->with('error', $userError);
         }
     }
@@ -219,7 +211,9 @@ class EpsPaymentController extends Controller
 
                 $slug = $payment?->course?->slug ?? $sessionData['course_slug'] ?? null;
                 $redirect = $slug ? route('courses.checkout', $slug) : route('home');
-                return redirect($redirect)->with('error', 'পেমেন্ট ভেরিফিকেশন সফল হয়নি। স্ট্যাটাস: ' . ($verify['Status'] ?? 'Failed'));
+                return redirect($redirect)
+                    ->with('eps_fallback', true)
+                    ->with('error', 'EPS পেমেন্ট ভেরিফিকেশন সফল হয়নি। আপনি যদি টাকা পাঠিয়ে থাকেন তবে বিকাশ (01813-753610) বা নগদ (01712-168109) TrxID সহ WhatsApp-এ (01332-549549) যোগাযোগ করুন।');
             }
 
             DB::beginTransaction();
@@ -317,16 +311,24 @@ class EpsPaymentController extends Controller
             ?? $request->input('MerchantTransactionId')
             ?? $request->input('merchantTransactionId');
 
+        $slug = null;
         if ($transactionId) {
-            Payment::where('transaction_id', $transactionId)->update([
-                'status' => 'failed',
-                'notes' => 'Payment failed at EPS gateway callback.',
-            ]);
+            $payment = Payment::where('transaction_id', $transactionId)->first();
+            if ($payment) {
+                $payment->update([
+                    'status' => 'failed',
+                    'notes' => 'Payment failed at EPS gateway callback.',
+                ]);
+                $slug = $payment->course?->slug;
+            }
             session()->forget('eps_pending_' . $transactionId);
         }
 
-        return redirect()->route('home')
-            ->with('error', 'EPS পেমেন্ট সম্পন্ন হয়নি বা বাতিল হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।');
+        $redirect = $slug ? route('courses.checkout', $slug) : route('home');
+
+        return redirect($redirect)
+            ->with('eps_fallback', true)
+            ->with('error', 'EPS পেমেন্ট সম্পন্ন হয়নি। বিকল্প হিসেবে বিকাশ (01813-753610) বা নগদ (01712-168109) পার্সোনাল নম্বরে Send Money করে WhatsApp-এ (01332-549549) যোগাযোগ করুন।');
     }
 
     /**
@@ -348,6 +350,7 @@ class EpsPaymentController extends Controller
         }
 
         return redirect()->route('home')
-            ->with('info', 'EPS পেমেন্ট বাতিল করা হয়েছে। আপনি যেকোনো সময় আবার ভর্তি প্রক্রিয়া সম্পন্ন করতে পারেন।');
+            ->with('eps_fallback', true)
+            ->with('info', 'EPS পেমেন্ট বাতিল করা হয়েছে। আপনি চাইলে সরাসরি বিকাশ (01813-753610) বা নগদ (01712-168109) পার্সোনাল নম্বরে Send Money করে WhatsApp-এ (01332-549549) যোগাযোগ করতে পারেন।');
     }
 }
