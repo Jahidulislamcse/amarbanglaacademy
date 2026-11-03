@@ -390,15 +390,34 @@ class AdminController extends Controller
     }
 
     /**
+     * Dedicated Live Meetings Management Dashboard
+     */
+    public function liveMeetings()
+    {
+        $primaryCourse = Course::first();
+        $totalStudents = Enrollment::where('status', 'active')->count();
+
+        return view('admin.live-meetings', compact('primaryCourse', 'totalStudents'));
+    }
+
+    /**
      * Update Live Class Meeting Link & Details
      */
     public function updateMeetingLink(Request $request, Course $course)
     {
+        $rawUrl = trim((string) $request->input('live_meeting_url'));
+        if (!empty($rawUrl) && !str_starts_with($rawUrl, 'http://') && !str_starts_with($rawUrl, 'https://')) {
+            $rawUrl = 'https://' . $rawUrl;
+            $request->merge(['live_meeting_url' => $rawUrl]);
+        }
+
         $validated = $request->validate([
             'live_meeting_url' => ['nullable', 'url', 'max:1000'],
             'live_meeting_id' => ['nullable', 'string', 'max:100'],
             'live_meeting_passcode' => ['nullable', 'string', 'max:100'],
             'live_class_topic' => ['nullable', 'string', 'max:255'],
+        ], [
+            'live_meeting_url.url' => 'সঠিক মিটিং লিংক প্রদান করুন (যেমন: https://zoom.us/j/... অথবা https://meet.google.com/...)।',
         ]);
 
         $course->update([
@@ -409,7 +428,7 @@ class AdminController extends Controller
             'is_live_now' => $request->boolean('is_live_now'),
         ]);
 
-        return back()->with('success', 'লাইভ ক্লাসের মিটিং লিংক ও বিবরণী সফলভাবে আপডেট করা হয়েছে। শিক্ষার্থীরা এখন তাদের প্যানেল থেকে এই ক্লাসে যোগ দিতে পারবে।');
+        return back()->with('success', 'লাইভ ক্লাসের মিটিং লিংক ও বিবরণী সফলভাবে সংরক্ষিত হয়েছে! শিক্ষার্থীরা এখন তাদের ড্যাশবোর্ড থেকে এক ক্লিকে সরাসরি যুক্ত হতে পারবে।');
     }
 
     /**

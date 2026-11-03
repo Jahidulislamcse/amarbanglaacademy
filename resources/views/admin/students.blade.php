@@ -169,107 +169,84 @@
     </div>
     @endif
 
-    <!-- Live Class & Meeting Link Management Card -->
-    <div class="bg-gradient-to-r from-slate-900 via-emerald-950 to-slate-900 rounded-2xl border border-emerald-800/40 p-5 shadow-lg text-white">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-emerald-800/50">
-            <div class="flex items-center gap-3">
-                <div class="w-11 h-11 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xl shrink-0 border border-emerald-500/30">
-                    <i class="fa-solid fa-video"></i>
-                </div>
-                <div>
-                    <div class="flex items-center gap-2">
-                        <h2 class="text-base font-bold text-white">লাইভ ক্লাস ও মিটিং লিংক ম্যানেজমেন্ট</h2>
-                        @if($primaryCourse?->is_live_now)
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-red-500 text-white animate-pulse">
-                                <span class="w-2 h-2 rounded-full bg-white"></span>
-                                লাইভ ক্লাস চলছে
-                            </span>
+    <!-- Live Class Active Status & Control Banner -->
+    @if($primaryCourse && $primaryCourse->live_meeting_url)
+        <div class="bg-gradient-to-r from-slate-900 via-emerald-950 to-slate-900 rounded-2xl border border-emerald-500/40 p-5 shadow-lg text-white">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="flex items-start gap-3.5">
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xl shrink-0 border border-emerald-500/30">
+                        @if(str_contains(strtolower($primaryCourse->live_meeting_url), 'zoom'))
+                            <i class="fa-solid fa-video text-blue-400"></i>
+                        @elseif(str_contains(strtolower($primaryCourse->live_meeting_url), 'meet.google'))
+                            <i class="fa-solid fa-chalkboard-user text-emerald-400"></i>
                         @else
-                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-slate-800 text-slate-300 border border-slate-700">
-                                লাইভ অফলাইন
-                            </span>
+                            <i class="fa-solid fa-video"></i>
                         @endif
                     </div>
-                    <p class="text-xs text-emerald-200/80 mt-0.5">
-                        এখানে জুম বা গুগল মিট লিংক দিলে সকল শিক্ষার্থী তাদের স্টুডেন্ট পোর্টাল থেকে এক ক্লিকে লাইভ ক্লাসে যুক্ত হতে পারবে
-                    </p>
+                    <div>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="text-xs font-bold text-emerald-300 uppercase tracking-wide">সক্রিয় লাইভ মিটিং:</span>
+                            @if($primaryCourse->is_live_now)
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-red-600 text-white animate-pulse">
+                                    <span class="w-2 h-2 rounded-full bg-white"></span>
+                                    লাইভ ক্লাস চলছে (LIVE NOW)
+                                </span>
+                            @else
+                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-slate-800 text-slate-300 border border-slate-700">
+                                    <i class="fa-solid fa-clock text-[9px]"></i>
+                                    শিডিউল করা (অফলাইন)
+                                </span>
+                            @endif
+                        </div>
+                        <h3 class="text-base sm:text-lg font-bold text-white mt-0.5">
+                            {{ $primaryCourse->live_class_topic ?: 'সাংবাদিকতা, আইন ও উপস্থাপনা — অনলাইন লাইভ সেশন' }}
+                        </h3>
+                        <div class="flex items-center gap-3 text-xs text-slate-300 mt-1 flex-wrap font-mono">
+                            <span class="text-emerald-300 truncate max-w-xs sm:max-w-md"><i class="fa-solid fa-link text-[10px] mr-1"></i> {{ $primaryCourse->live_meeting_url }}</span>
+                            @if($primaryCourse->live_meeting_id)
+                                <span><strong class="text-slate-400 font-sans">ID:</strong> {{ $primaryCourse->live_meeting_id }}</span>
+                            @endif
+                            @if($primaryCourse->live_meeting_passcode)
+                                <span><strong class="text-slate-400 font-sans">Pass:</strong> {{ $primaryCourse->live_meeting_passcode }}</span>
+                            @endif
+                        </div>
+                    </div>
                 </div>
-            </div>
-            @if($primaryCourse?->live_meeting_url)
-                <div class="flex items-center gap-2">
+
+                <!-- Quick Action Buttons -->
+                <div class="flex items-center gap-2 shrink-0 flex-wrap">
                     <a href="{{ $primaryCourse->live_meeting_url }}" target="_blank"
-                       class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md transition">
+                       class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow transition">
                         <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                        <span>মিটিং টেস্ট করুন</span>
+                        <span>মিটিং টেস্ট</span>
+                    </a>
+                    <a href="{{ route('admin.live-meetings') }}"
+                       class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold border border-emerald-700/60 shadow transition">
+                        <i class="fa-solid fa-gear"></i>
+                        <span>মিটিং ম্যানেজ করুন</span>
                     </a>
                 </div>
-            @endif
+            </div>
         </div>
-
-        <form method="POST" action="{{ route('admin.courses.update-meeting', $primaryCourse?->id ?? 1) }}" class="mt-4 grid grid-cols-1 md:grid-cols-12 gap-3.5">
-            @csrf
-            <!-- Live Meeting URL -->
-            <div class="md:col-span-6">
-                <label class="block text-xs font-medium text-emerald-200 mb-1">
-                    Zoom / Google Meet মিটিং লিঙ্ক <span class="text-emerald-400">*</span>
-                </label>
-                <div class="relative">
-                    <i class="fa-solid fa-link absolute left-3.5 top-3 text-slate-400 text-xs"></i>
-                    <input type="url" name="live_meeting_url" value="{{ old('live_meeting_url', $primaryCourse?->live_meeting_url) }}"
-                           placeholder="https://us05web.zoom.us/j/... অথবা https://meet.google.com/..."
-                           class="w-full pl-9 pr-3 py-2 text-xs bg-slate-800/90 border border-emerald-700/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+    @else
+        <!-- No Meeting Banner -->
+        <div class="bg-gradient-to-r from-emerald-950 via-slate-900 to-emerald-950 rounded-2xl border border-emerald-800/50 p-4 shadow-sm text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-lg shrink-0">
+                    <i class="fa-solid fa-video-slash"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-bold text-white">আজকের ক্লাসের জন্য কোনো মিটিং লিংক সক্রিয় নেই</h3>
+                    <p class="text-xs text-emerald-200/80">Zoom বা Google Meet লিংক সেট করলে শিক্ষার্থীরা তাদের পোর্টাল থেকে সরাসরি ক্লাসে ঢুকতে পারবে</p>
                 </div>
             </div>
-
-            <!-- Topic / Title -->
-            <div class="md:col-span-6">
-                <label class="block text-xs font-medium text-emerald-200 mb-1">
-                    আজকের ক্লাসের বিষয় / টপিক
-                </label>
-                <div class="relative">
-                    <i class="fa-solid fa-heading absolute left-3.5 top-3 text-slate-400 text-xs"></i>
-                    <input type="text" name="live_class_topic" value="{{ old('live_class_topic', $primaryCourse?->live_class_topic) }}"
-                           placeholder="যেমন: ওরিয়েন্টেশন ক্লাস / মডিউল ১: সাংবাদিকতার পরিচিতি"
-                           class="w-full pl-9 pr-3 py-2 text-xs bg-slate-800/90 border border-emerald-700/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400">
-                </div>
-            </div>
-
-            <!-- Meeting ID -->
-            <div class="md:col-span-4">
-                <label class="block text-xs font-medium text-emerald-200 mb-1">
-                    Meeting ID (ঐচ্ছিক)
-                </label>
-                <input type="text" name="live_meeting_id" value="{{ old('live_meeting_id', $primaryCourse?->live_meeting_id) }}"
-                       placeholder="যেমন: 852 1234 5678"
-                       class="w-full px-3 py-2 text-xs bg-slate-800/90 border border-emerald-700/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400">
-            </div>
-
-            <!-- Passcode -->
-            <div class="md:col-span-4">
-                <label class="block text-xs font-medium text-emerald-200 mb-1">
-                    Passcode / পাসকোড (ঐচ্ছিক)
-                </label>
-                <input type="text" name="live_meeting_passcode" value="{{ old('live_meeting_passcode', $primaryCourse?->live_meeting_passcode) }}"
-                       placeholder="যেমন: 123456"
-                       class="w-full px-3 py-2 text-xs bg-slate-800/90 border border-emerald-700/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400">
-            </div>
-
-            <!-- Live Now Toggle & Submit -->
-            <div class="md:col-span-4 flex items-center justify-between gap-3 pt-2 md:pt-5">
-                <label class="inline-flex items-center gap-2 cursor-pointer select-none">
-                    <input type="checkbox" name="is_live_now" value="1" {{ $primaryCourse?->is_live_now ? 'checked' : '' }}
-                           class="w-4 h-4 text-emerald-500 rounded bg-slate-800 border-emerald-700 focus:ring-emerald-400">
-                    <span class="text-xs font-bold text-white">এখন লাইভ চলছে</span>
-                </label>
-
-                <button type="submit"
-                        class="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold text-xs rounded-xl shadow-md transition">
-                    <i class="fa-solid fa-floppy-disk"></i>
-                    <span>মিটিং সেভ করুন</span>
-                </button>
-            </div>
-        </form>
-    </div>
+            <a href="{{ route('admin.live-meetings') }}"
+               class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black shadow transition shrink-0">
+                <i class="fa-solid fa-plus"></i>
+                <span>মিটিং লিংক সেট করুন</span>
+            </a>
+        </div>
+    @endif
 
     <!-- Search & Filter Card -->
     <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">

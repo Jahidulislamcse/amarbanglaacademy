@@ -37,6 +37,29 @@ class StudentAuthAndLmsTest extends TestCase
         $response2->assertStatus(200);
     }
 
+    public function test_front_page_shows_login_button(): void
+    {
+        $response = $this->get('/');
+        $response->assertStatus(200);
+        $response->assertSee('লগইন');
+        $response->assertSee('/login');
+    }
+
+    public function test_admin_can_view_live_meetings_page(): void
+    {
+        $this->course->update([
+            'live_meeting_url' => 'https://us05web.zoom.us/j/1234567890?pwd=test',
+            'live_class_topic' => 'আজকের লাইভ ক্লাস',
+            'is_live_now' => true,
+        ]);
+
+        $response = $this->actingAs($this->admin)->get(route('admin.live-meetings'));
+        $response->assertStatus(200);
+        $response->assertSee('লাইভ ক্লাস ও মিটিং রুম কন্ট্রোল');
+        $response->assertSee('https://us05web.zoom.us/j/1234567890?pwd=test');
+        $response->assertSee('আজকের লাইভ ক্লাস');
+    }
+
     public function test_admin_can_update_live_meeting_link(): void
     {
         $response = $this->actingAs($this->admin)->post(route('admin.courses.update-meeting', $this->course->id), [

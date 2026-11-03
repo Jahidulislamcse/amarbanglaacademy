@@ -74,8 +74,26 @@
                 </span>
             </div>
 
-            <!-- Right: WhatsApp Helpline & Email -->
-            <div class="flex items-center justify-center sm:justify-end gap-3 sm:gap-4 text-emerald-100 text-[11px] sm:text-xs flex-wrap">
+            <!-- Right: Student Login, WhatsApp Helpline & Email -->
+            <div class="flex items-center justify-center sm:justify-end gap-2.5 sm:gap-3 text-emerald-100 text-[11px] sm:text-xs flex-wrap">
+                @auth
+                    @if(auth()->user()->isAdmin())
+                        <a href="{{ route('admin.students') }}" class="inline-flex items-center gap-1 text-emerald-300 hover:text-white font-bold bg-slate-900/80 px-2.5 py-1 rounded-full border border-emerald-500/40">
+                            <i class="fa-solid fa-shield-halved text-emerald-400"></i>
+                            <span>এডমিন ড্যাশবোর্ড</span>
+                        </a>
+                    @else
+                        <a href="{{ route('student.dashboard') }}" class="inline-flex items-center gap-1 text-amber-300 hover:text-white font-bold bg-slate-900/80 px-2.5 py-1 rounded-full border border-amber-400/40">
+                            <i class="fa-solid fa-graduation-cap text-amber-400"></i>
+                            <span>আমার LMS ড্যাশবোর্ড</span>
+                        </a>
+                    @endif
+                @else
+                    <a href="{{ route('login') }}" class="inline-flex items-center gap-1 text-amber-300 hover:text-white font-bold bg-slate-900/80 px-2.5 py-1 rounded-full border border-amber-400/40">
+                        <i class="fa-solid fa-user-graduate text-amber-400"></i>
+                        <span>শিক্ষার্থী লগইন</span>
+                    </a>
+                @endauth
                 <a href="https://wa.me/8801332549549" target="_blank" class="inline-flex items-center gap-1.5 hover:text-white transition group bg-emerald-900/70 hover:bg-emerald-800/80 px-2.5 py-1 rounded-full border border-emerald-700/50">
                     <i class="fa-brands fa-whatsapp text-emerald-300 text-sm group-hover:scale-110 transition-transform"></i>
                     <span>হোয়াটসঅ্যাপ: <strong class="text-white font-mono font-bold tracking-wide">01332-549549</strong></span>
@@ -107,12 +125,32 @@
                     </div>
                 </a>
 
-                <!-- Quick Action Contact & Enroll -->
+                <!-- Quick Action Contact, Login & Enroll -->
                 <div class="flex items-center gap-2 sm:gap-3">
-                    <a href="https://wa.me/8801332549549" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 sm:py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs sm:text-sm font-bold border border-emerald-200 transition">
+                    <!-- Student Login Button (Clean, Visible & High Contrast) -->
+                    @auth
+                        @if(auth()->user()->isAdmin())
+                            <a href="{{ route('admin.students') }}" class="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-bold shadow-sm transition">
+                                <i class="fa-solid fa-shield-halved text-emerald-400"></i>
+                                <span>এডমিন প্যানেল</span>
+                            </a>
+                        @else
+                            <a href="{{ route('student.dashboard') }}" class="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs sm:text-sm font-bold shadow-sm transition">
+                                <i class="fa-solid fa-graduation-cap text-amber-300"></i>
+                                <span>আমার পোর্টাল</span>
+                            </a>
+                        @endif
+                    @else
+                        <a href="{{ route('login') }}" class="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-slate-100 hover:bg-emerald-50 text-slate-800 hover:text-emerald-700 border border-slate-300 hover:border-emerald-300 text-xs sm:text-sm font-bold shadow-xs transition">
+                            <i class="fa-solid fa-arrow-right-to-bracket text-emerald-600"></i>
+                            <span>লগইন</span>
+                        </a>
+                    @endauth
+
+                    <a href="https://wa.me/8801332549549" target="_blank" class="hidden md:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs sm:text-sm font-bold border border-emerald-200 transition">
                         <i class="fa-brands fa-whatsapp text-emerald-600 text-sm sm:text-base"></i>
-                        <span class="hidden sm:inline">০১৩৩২-৫৪৯৫৪৯ (হোয়াটসঅ্যাপ)</span>
-                        <span class="sm:hidden">হোয়াটসঅ্যাপ</span>
+                        <span class="hidden lg:inline">০১৩৩২-৫৪৯৫৪৯ (হোয়াটসঅ্যাপ)</span>
+                        <span class="lg:hidden">হোয়াটসঅ্যাপ</span>
                     </a>
                     <a href="{{ route('courses.checkout', 'journalism-law-presentation') }}" class="inline-flex items-center gap-1.5 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs sm:text-sm font-extrabold shadow-md shadow-emerald-600/25 transition">
                         <span>ভর্তি নিশ্চিত করুন</span>
@@ -200,6 +238,7 @@
                 <div>
                     <h3 class="text-white font-bold text-base mb-4 tracking-wide">সিস্টেম ফিচারস</h3>
                     <ul class="space-y-2.5 text-sm">
+                        <li><a href="{{ route('login') }}" class="text-amber-300 hover:text-white transition flex items-center gap-2 font-bold"><i class="fa-solid fa-graduation-cap text-xs text-amber-400"></i> শিক্ষার্থী লগইন পোর্টাল &rarr;</a></li>
                         <li><a href="{{ route('home') }}#course-curriculum" class="hover:text-emerald-400 transition flex items-center gap-2"><i class="fa-solid fa-angle-left text-xs rotate-180 text-emerald-500"></i> মডিউল ও লেকচার</a></li>
                         <li><a href="{{ route('live.classes') }}" class="hover:text-emerald-400 transition flex items-center gap-2"><i class="fa-solid fa-angle-left text-xs rotate-180 text-emerald-500"></i> জুম ও মিট লাইভ ক্লাস</a></li>
                         <li><a href="{{ route('exams.index') }}" class="hover:text-emerald-400 transition flex items-center gap-2"><i class="fa-solid fa-angle-left text-xs rotate-180 text-emerald-500"></i> লাইভ এক্সাম ও মক টেস্ট</a></li>

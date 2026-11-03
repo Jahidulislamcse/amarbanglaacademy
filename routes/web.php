@@ -58,6 +58,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::middleware('auth')->group(function () {
         Route::get('/', fn () => redirect()->route('admin.students'))->name('dashboard');
         Route::get('/students', [AdminController::class, 'students'])->name('students');
+        Route::get('/live-meetings', [AdminController::class, 'liveMeetings'])->name('live-meetings');
         Route::get('/students/export', [AdminController::class, 'exportCsv'])->name('students.export');
         Route::post('/students/clean-duplicates', [AdminController::class, 'cleanDuplicates'])->name('students.clean-duplicates');
         Route::patch('/payments/{payment}/status', [AdminController::class, 'updateStatus'])->name('payments.update-status');
