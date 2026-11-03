@@ -399,6 +399,81 @@ class AdminPanelTest extends TestCase
 
         // Must still NOT be completed!
         $this->assertNotEquals('completed', $payment->fresh()->status);
+        $this->assertEquals('cancelled', $payment->fresh()->status);
+    }
+
+    public function test_admin_can_destroy_payment_and_enrollment(): void
+    {
+        $user = User::factory()->create([
+            'role' => 'student',
+            'phone' => '01799887766',
+        ]);
+
+        $enrollment = Enrollment::create([
+            'user_id' => $user->id,
+            'course_id' => $this->course->id,
+            'student_name' => 'ডিলিট টেস্ট ছাত্র',
+            'student_email' => 'delete_me@example.com',
+            'student_phone' => '01799887766',
+            'status' => 'active',
+        ]);
+
+        $payment = Payment::create([
+            'enrollment_id' => $enrollment->id,
+            'course_id' => $this->course->id,
+            'student_name' => 'ডিলিট টেস্ট ছাত্র',
+            'student_email' => 'delete_me@example.com',
+            'student_phone' => '01799887766',
+            'amount' => 999.00,
+            'payment_method' => 'bkash',
+            'transaction_id' => 'TRX_TO_DELETE_99',
+            'status' => 'completed',
+        ]);
+
+        $response = $this->actingAs($this->admin)->delete(route('admin.payments.destroy', $payment->id));
+        $response->assertSessionHas('success');
+
+        $this->assertDatabaseMissing('payments', ['id' => $payment->id]);
+        $this->assertDatabaseMissing('enrollments', ['id' => $enrollment->id]);
+        $this->assertDatabaseMissing('users', ['id' => $user->id]);
+    }
+
+    public function test_admin_can_manually_create_student(): void
+    {
+        $payload = [
+            'student_name' => 'ম্যানুয়াল ছাত্র',
+            'student_phone' => '01911223344',
+            'student_email' => 'manual_student@example.com',
+            'course_id' => $this->course->id,
+            'amount' => 999,
+            'payment_method' => 'bkash',
+            'transaction_id' => 'BKMANUAL9988',
+            'sender_phone' => '01911223344',
+            'username' => '01911223344',
+            'password' => 'Pass#1234',
+            'notes' => 'অফিস ক্যাশ পেমেন্ট',
+        ];
+
+        $response = $this->actingAs($this->admin)->post(route('admin.students.store'), $payload);
+        $response->assertSessionHas('success');
+
+        $this->assertDatabaseHas('users', [
+            'username' => '01911223344',
+            'role' => 'student',
+            'plain_password' => 'Pass#1234',
+        ]);
+
+        $this->assertDatabaseHas('enrollments', [
+            'student_phone' => '01911223344',
+            'course_id' => $this->course->id,
+            'status' => 'active',
+        ]);
+
+        $this->assertDatabaseHas('payments', [
+            'transaction_id' => 'BKMANUAL9988',
+            'status' => 'completed',
+            'payment_method' => 'bkash',
+        ]);
     }
 
     public function test_admin_can_logout(): void

@@ -58,10 +58,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::middleware('auth')->group(function () {
         Route::get('/', fn () => redirect()->route('admin.students'))->name('dashboard');
         Route::get('/students', [AdminController::class, 'students'])->name('students');
+        Route::post('/students/store', [AdminController::class, 'storeStudent'])->name('students.store');
         Route::get('/live-meetings', [AdminController::class, 'liveMeetings'])->name('live-meetings');
         Route::get('/students/export', [AdminController::class, 'exportCsv'])->name('students.export');
         Route::post('/students/clean-duplicates', [AdminController::class, 'cleanDuplicates'])->name('students.clean-duplicates');
         Route::patch('/payments/{payment}/status', [AdminController::class, 'updateStatus'])->name('payments.update-status');
+        Route::delete('/payments/{payment}', [AdminController::class, 'destroyPayment'])->name('payments.destroy');
         Route::post('/payments/{payment}/verify-eps', [AdminController::class, 'verifyEps'])->name('payments.verify-eps');
         Route::post('/courses/{course}/update-meeting', [AdminController::class, 'updateMeetingLink'])->name('courses.update-meeting');
         Route::post('/students/{enrollment}/credentials', [AdminController::class, 'manageStudentAccount'])->name('students.credentials');

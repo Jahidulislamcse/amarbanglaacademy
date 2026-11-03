@@ -114,6 +114,18 @@
                 </span>
             </a>
 
+            <!-- Manual Student Enrollment Link -->
+            <a href="{{ route('admin.students', ['open_manual' => 1]) }}"
+               class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition group hover:bg-slate-800/80 hover:text-white text-emerald-300 border border-emerald-500/20 bg-emerald-950/30">
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-user-plus text-base text-emerald-400 group-hover:scale-110 transition-transform"></i>
+                    <span>+ ম্যানুয়াল ভর্তি</span>
+                </div>
+                <span class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-900/60 text-emerald-300 border border-emerald-700/50">
+                    এন্ট্রি
+                </span>
+            </a>
+
             <!-- Live Meeting Manager Link -->
             @php
                 $isMeeting = request()->routeIs('admin.live-meetings');

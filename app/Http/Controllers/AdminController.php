@@ -203,10 +203,59 @@ class AdminController extends Controller
                 return back()->with('success', 'EPS গেটওয়ে রিপোর্ট: পেমেন্ট সফল! শিক্ষার্থী নিশ্চিতভাবে ফি পরিশোধ করেছেন (Customer TrxID: ' . ($verify['EPSCustomerTransactionId'] ?? 'N/A') . ')।');
             } else {
                 $rawStatus = $verify['Status'] ?? 'Initialize / Unpaid';
-                return back()->with('error', "EPS গেটওয়ে রিপোর্ট: টাকা এখনো জমা হয়নি! EPS স্ট্যাটাস: {$rawStatus} (Paid: NO)। শিক্ষার্থী গেটওয়েতে গিয়ে পেমেন্ট সম্পন্ন করেননি।");
+
+                // Automatically update status to cancelled since EPS server confirmed payment is NOT successful
+                $payment->update([
+                    'status' => 'cancelled',
+                    'notes' => 'EPS Live Checked: Unpaid/Failed (Status: ' . $rawStatus . '). Automatically moved to cancelled.',
+                ]);
+
+                if ($payment->enrollment) {
+                    $payment->enrollment->update(['status' => 'cancelled']);
+                }
+
+                return back()->with('error', "EPS গেটওয়ে রিপোর্ট: টাকা এখনো জমা হয়নি! EPS স্ট্যাটাস: {$rawStatus} (Paid: NO)। এই পেমেন্টটি সফল তালিকা থেকে বাতিল (Cancelled) করা হয়েছে।");
             }
         } catch (\Throwable $e) {
             return back()->with('error', 'EPS গেটওয়েতে সংযোগ করতে সমস্যা হয়েছে: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Delete Payment and Student Enrollment Record
+     */
+    public function destroyPayment(Payment $payment)
+    {
+        $studentName = $payment->student_name;
+        $enrollment = $payment->enrollment;
+        $user = $enrollment?->user;
+
+        DB::beginTransaction();
+        try {
+            // Delete payment
+            $payment->delete();
+
+            // If enrollment has no other payments, delete enrollment
+            if ($enrollment) {
+                $otherPayments = Payment::where('enrollment_id', $enrollment->id)->count();
+                if ($otherPayments === 0) {
+                    $enrollment->delete();
+                }
+            }
+
+            // If linked user has no other enrollments and is student role, delete user
+            if ($user && $user->role === 'student') {
+                $otherEnrollments = Enrollment::where('user_id', $user->id)->count();
+                if ($otherEnrollments === 0) {
+                    $user->delete();
+                }
+            }
+
+            DB::commit();
+            return back()->with('success', "শিক্ষার্থী '{$studentName}'-এর ভর্তি ও পেমেন্ট রেকর্ড সফলভাবে মুছে ফেলা হয়েছে।");
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return back()->with('error', 'রেকর্ড মুছে ফেলতে সমস্যা হয়েছে: ' . $e->getMessage());
         }
     }
 
@@ -470,5 +519,127 @@ class AdminController extends Controller
         $loginId = $user->username ?: $user->phone ?: $user->email;
 
         return back()->with('success', "{$enrollment->student_name}-এর LMS অ্যাকাউন্ট তৈরি/আপডেট সম্পন্ন! ইউজার আইডি: {$loginId}, পাসওয়ার্ড: {$password}");
+    }
+
+    /**
+     * Manually Enroll and Create Student from Admin Panel
+     */
+    public function storeStudent(Request $request)
+    {
+        $validated = $request->validate([
+            'student_name' => ['required', 'string', 'max:100'],
+            'student_phone' => ['required', 'string', 'max:25'],
+            'student_email' => ['nullable', 'email', 'max:100'],
+            'course_id' => ['required', 'exists:courses,id'],
+            'amount' => ['required', 'numeric', 'min:0'],
+            'payment_method' => ['required', 'string', 'max:50'],
+            'transaction_id' => ['nullable', 'string', 'max:100'],
+            'sender_phone' => ['nullable', 'string', 'max:25'],
+            'username' => ['nullable', 'string', 'max:100'],
+            'password' => ['nullable', 'string', 'min:4', 'max:100'],
+            'notes' => ['nullable', 'string', 'max:500'],
+        ], [
+            'student_name.required' => 'শিক্ষার্থীর নাম প্রদান করুন।',
+            'student_phone.required' => 'শিক্ষার্থীর মোবাইল নম্বর প্রদান করুন।',
+            'course_id.required' => 'কোর্স নির্বাচন করুন।',
+            'amount.required' => 'পরিশোধিত টাকার পরিমাণ উল্লেখ করুন।',
+        ]);
+
+        $course = Course::findOrFail($validated['course_id']);
+        $rawPhone = trim($validated['student_phone']);
+        $cleanPhone = preg_replace('/[^0-9]/', '', $rawPhone);
+        
+        $email = trim($validated['student_email'] ?? '') ?: ($cleanPhone . '@student.amarbangla.edu');
+        $rawPassword = trim($validated['password'] ?? '') ?: ('AB2026#' . random_int(100, 999));
+        $username = trim($validated['username'] ?? '') ?: $rawPhone;
+        $trxId = trim($validated['transaction_id'] ?? '') ?: ('MANUAL' . now()->format('YmdHis') . random_int(10, 99));
+
+        try {
+            DB::beginTransaction();
+
+            // 1. Find or create User
+            $user = User::where('phone', $rawPhone)
+                ->orWhere('phone', $cleanPhone)
+                ->orWhere('email', $email)
+                ->first();
+
+            if (!$user) {
+                $user = new User();
+                $user->name = $validated['student_name'];
+                $user->email = $email;
+                $user->phone = $rawPhone;
+                $user->role = 'student';
+            }
+
+            $user->username = $username;
+            $user->password = Hash::make($rawPassword);
+            $user->plain_password = $rawPassword;
+            $user->save();
+
+            // 2. Find or create Enrollment
+            $enrollment = Enrollment::where('course_id', $course->id)
+                ->where(function ($q) use ($rawPhone, $cleanPhone, $email) {
+                    $q->where('student_phone', $rawPhone)
+                      ->orWhere('student_phone', $cleanPhone)
+                      ->orWhere('student_email', $email);
+                })
+                ->first();
+
+            if (!$enrollment) {
+                $enrollment = Enrollment::create([
+                    'user_id' => $user->id,
+                    'course_id' => $course->id,
+                    'student_name' => $validated['student_name'],
+                    'student_email' => $email,
+                    'student_phone' => $rawPhone,
+                    'status' => 'active',
+                    'enrolled_at' => now(),
+                    'expires_at' => now()->addMonths(12),
+                ]);
+            } else {
+                $enrollment->update([
+                    'user_id' => $user->id,
+                    'student_name' => $validated['student_name'],
+                    'student_email' => $email,
+                    'student_phone' => $rawPhone,
+                    'status' => 'active',
+                    'enrolled_at' => now(),
+                ]);
+            }
+
+            // 3. Create completed Payment record
+            Payment::create([
+                'enrollment_id' => $enrollment->id,
+                'course_id' => $course->id,
+                'student_name' => $validated['student_name'],
+                'student_email' => $email,
+                'student_phone' => $rawPhone,
+                'amount' => (float) $validated['amount'],
+                'payment_method' => $validated['payment_method'],
+                'transaction_id' => $trxId,
+                'sender_phone' => $validated['sender_phone'] ?: $rawPhone,
+                'status' => 'completed',
+                'notes' => $validated['notes'] ?: 'এডমিন প্যানেল থেকে ম্যানুয়ালি ভর্তি নিশ্চিতকৃত।',
+            ]);
+
+            // Auto-clean any other duplicate pending enrollments for this student
+            Enrollment::where('course_id', $course->id)
+                ->where('id', '!=', $enrollment->id)
+                ->where('status', 'pending')
+                ->where(function ($q) use ($rawPhone, $cleanPhone, $email) {
+                    $q->where('student_phone', $rawPhone)
+                      ->orWhere('student_phone', $cleanPhone)
+                      ->orWhere('student_email', $email);
+                })
+                ->delete();
+
+            DB::commit();
+
+            return back()->with('success', "শিক্ষার্থী {$validated['student_name']} সফলভাবে ম্যানুয়ালি ভর্তি করা হয়েছে! ইউজার আইডি: {$username}, পাসওয়ার্ড: {$rawPassword} (TrxID: {$trxId})");
+
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return back()->withInput()->with('error', 'শিক্ষার্থী ভর্তি করতে সমস্যা হয়েছে: ' . $e->getMessage());
+        }
     }
 }

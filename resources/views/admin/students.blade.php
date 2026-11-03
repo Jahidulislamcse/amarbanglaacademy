@@ -17,7 +17,13 @@
             </p>
         </div>
 
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            <!-- Manual Student Enrollment Trigger Button -->
+            <button type="button" onclick="openCreateStudentModal()"
+                    class="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-md shadow-emerald-600/20 transition cursor-pointer">
+                <i class="fa-solid fa-user-plus text-sm"></i>
+                <span>+ ম্যানুয়াল ভর্তি</span>
+            </button>
             <!-- Clean Duplicates Button -->
             <form method="POST" action="{{ route('admin.students.clean-duplicates') }}"
                   onsubmit="return confirm('অতিরিক্ত ডুপ্লিকেট পেন্ডিং রেজিস্ট্রেশন মুছে পরিষ্কার করতে চান?')">
@@ -382,6 +388,7 @@
                                     'login_portal_url' => $loginPortalUrl,
                                     'update_url' => route('admin.payments.update-status', $payment->id),
                                     'verify_eps_url' => route('admin.payments.verify-eps', $payment->id),
+                                    'delete_url' => route('admin.payments.destroy', $payment->id),
                                 ];
                             @endphp
                             <tr class="hover:bg-slate-50/60 transition">
@@ -516,11 +523,24 @@
                                         <!-- View Details Modal Trigger -->
                                         <button type="button"
                                             onclick="openStudentModal({{ $payment->id }})"
-                                            title="বিস্তারিত দেখুন"
+                                            title="বিস্তারিত দেখুন ও পরিচালনা করুন"
                                             class="inline-flex items-center gap-1 bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 text-xs font-semibold px-2.5 py-1 rounded-lg border border-slate-200 hover:border-emerald-200 transition cursor-pointer">
                                             <i class="fa-solid fa-eye text-xs"></i>
                                             <span>বিস্তারিত</span>
                                         </button>
+
+                                        @if(strtolower($payment->payment_method) === 'eps')
+                                            <!-- Live EPS Check -->
+                                            <form method="POST" action="{{ route('admin.payments.verify-eps', $payment->id) }}" class="inline">
+                                                @csrf
+                                                <button type="submit"
+                                                        title="EPS সার্ভার থেকে সরাসরি চেক করুন টাকা জমা হয়েছে কিনা"
+                                                        class="inline-flex items-center gap-1 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold px-2 py-1 rounded-lg border border-blue-200 transition">
+                                                    <i class="fa-solid fa-arrows-rotate text-xs"></i>
+                                                    <span>EPS চেক</span>
+                                                </button>
+                                            </form>
+                                        @endif
 
                                         @if($hasLms)
                                             <!-- Send Credentials via WhatsApp -->
@@ -540,6 +560,19 @@
                                                 <span>লগইন তৈরি</span>
                                             </button>
                                         @endif
+
+                                        <!-- Delete Student/Payment Record -->
+                                        <form method="POST" action="{{ route('admin.payments.destroy', $payment->id) }}" class="inline"
+                                              onsubmit="return confirm('সতর্কতা: আপনি কি নিশ্চিতভাবে {{ $payment->student_name }}-এর ভর্তি ও পেমেন্ট রেকর্ড স্থায়ীভাবে মুছে ফেলতে চান?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit"
+                                                    title="শিক্ষার্থীর রেকর্ড মুছে ফেলুন"
+                                                    class="inline-flex items-center gap-1 bg-rose-50 hover:bg-rose-100 text-rose-700 hover:text-rose-800 text-xs font-semibold px-2 py-1 rounded-lg border border-rose-200 transition">
+                                                <i class="fa-solid fa-trash-can text-xs"></i>
+                                                <span>ডিলিট</span>
+                                            </button>
+                                        </form>
                                     </div>
                                     <script id="student-data-{{ $payment->id }}" type="application/json">
                                         {!! json_encode($studentModalData, JSON_UNESCAPED_UNICODE) !!}
@@ -782,7 +815,219 @@
                         </button>
                     </form>
                 </div>
+
+                <!-- Delete Student Permanently Action -->
+                <div class="pt-3 border-t border-slate-200">
+                    <form id="modal-delete-form" action="" method="POST"
+                          onsubmit="return confirm('সতর্কতা: আপনি কি নিশ্চিতভাবে এই শিক্ষার্থীর সমস্ত রেকর্ড ও LMS অ্যাকাউন্ট স্থায়ীভাবে ডিলিট করতে চান? এই প্রক্রিয়াটি আর ফিরিয়ে আনা যাবে না।')">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit"
+                                class="w-full py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 hover:text-rose-800 font-bold rounded-xl text-xs border border-rose-200 transition flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-trash-can"></i>
+                            <span>এই শিক্ষার্থীর রেকর্ড স্থায়ীভাবে মুছে ফেলুন (Delete)</span>
+                        </button>
+                    </form>
+                </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Manual Create Student Modal (Pure Vanilla JS, high-contrast, responsive) -->
+    <div id="createStudentModal"
+         class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+
+        <div class="relative bg-white rounded-3xl shadow-2xl max-w-xl w-full overflow-hidden border border-slate-200">
+
+            <!-- Modal Header -->
+            <div class="p-5 bg-gradient-to-r from-emerald-800 via-teal-800 to-emerald-700 text-white flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-white/20 text-white flex items-center justify-center text-lg font-bold">
+                        <i class="fa-solid fa-user-plus"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-lg">নতুন শিক্ষার্থী ম্যানুয়ালি ভর্তি করুন</h3>
+                        <p class="text-xs text-emerald-200 mt-0.5">বিকাশ/নগদ/অফলাইনে ফি পরিশোধকারী শিক্ষার্থীদের সরাসরি এন্ট্রি</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeCreateStudentModal()" class="text-emerald-200 hover:text-white p-1 rounded-lg">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body / Form -->
+            <form action="{{ route('admin.students.store') }}" method="POST" class="p-6 space-y-4 max-h-[80vh] overflow-y-auto text-xs sm:text-sm">
+                @csrf
+
+                <!-- Section 1: শিক্ষার্থী মৌলিক তথ্য -->
+                <div class="space-y-3">
+                    <h4 class="font-bold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-1.5 pb-1 border-b border-slate-100">
+                        <i class="fa-solid fa-id-card text-emerald-600"></i>
+                        <span>শিক্ষার্থীর ব্যক্তিগত তথ্য</span>
+                    </h4>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">
+                                শিক্ষার্থীর পুরো নাম <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" name="student_name" required placeholder="যেমন: মো. সেলিম রানা"
+                                   class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">
+                                মোবাইল নম্বর (WhatsApp) <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" name="student_phone" required id="manual_student_phone"
+                                   oninput="syncManualUsername(this.value)"
+                                   placeholder="যেমন: 01789901188"
+                                   class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-mono">
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">
+                                ইমেইল ঠিকানা <span class="text-slate-400 font-normal">(ঐচ্ছিক)</span>
+                            </label>
+                            <input type="email" name="student_email" placeholder="example@gmail.com"
+                                   class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+                            <span class="text-[10px] text-slate-400">খালি রাখলে স্বয়ংক্রিয় ইমেইল তৈরি হবে</span>
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">
+                                কোর্সের নাম <span class="text-red-500">*</span>
+                            </label>
+                            <select name="course_id" required class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+                                @foreach($courses as $c)
+                                    <option value="{{ $c->id }}" {{ $c->id == ($primaryCourse->id ?? 1) ? 'selected' : '' }}>
+                                        {{ $c->bangla_title ?? $c->title }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: পেমেন্ট তথ্য -->
+                <div class="space-y-3 pt-2">
+                    <h4 class="font-bold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-1.5 pb-1 border-b border-slate-100">
+                        <i class="fa-solid fa-money-check-dollar text-emerald-600"></i>
+                        <span>পেমেন্ট ও ট্রানজেকশন তথ্য</span>
+                    </h4>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">
+                                পেমেন্ট মাধ্যম <span class="text-red-500">*</span>
+                            </label>
+                            <select name="payment_method" required class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+                                <option value="bkash">বিকাশ (bKash Send Money)</option>
+                                <option value="nagad">নগদ (Nagad Personal)</option>
+                                <option value="rocket">রকেট (Rocket)</option>
+                                <option value="bank">ব্যাংক ডিপোজিট</option>
+                                <option value="cash">ক্যাশ / সরাসরি পেমেন্ট</option>
+                                <option value="eps">EPS অনলাইন গেটওয়ে</option>
+                                <option value="card">কার্ড পেমেন্ট</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">
+                                পরিশোধিত ফি (টাকা) <span class="text-red-500">*</span>
+                            </label>
+                            <input type="number" name="amount" required value="{{ (int) ($primaryCourse?->effective_price ?? 999) }}"
+                                   class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-emerald-800">
+                        </div>
+
+                        <div>
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="block text-[11px] font-bold text-slate-700">
+                                    ট্রানজেকশন আইডি (TrxID)
+                                </label>
+                                <button type="button" onclick="generateManualTrxId()"
+                                        class="text-[10px] font-bold text-emerald-700 hover:text-emerald-800 underline">
+                                    + অটো TrxID
+                                </button>
+                            </div>
+                            <input type="text" name="transaction_id" id="manual_transaction_id" placeholder="যেমন: BK62940223"
+                                   class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-mono">
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">
+                                প্রেরক মোবাইল নম্বর <span class="text-slate-400 font-normal">(ঐচ্ছিক)</span>
+                            </label>
+                            <input type="text" name="sender_phone" placeholder="যদি অন্য নম্বর থেকে পাঠানো হয়"
+                                   class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-mono">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 3: LMS পোর্টাল লগইন ও ক্রেডেনশিয়ালস -->
+                <div class="space-y-3 pt-2">
+                    <div class="p-3.5 bg-emerald-50/70 border border-emerald-200 rounded-2xl space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h4 class="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                                <i class="fa-solid fa-key text-emerald-600"></i>
+                                <span>স্টুডেন্ট LMS পোর্টাল লগইন তথ্য</span>
+                            </h4>
+                            <span class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-green-100 text-green-800 border border-green-200">
+                                অটো সক্রিয় হবে
+                            </span>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-700 mb-1">
+                                    ইউজার আইডি (User ID)
+                                </label>
+                                <input type="text" name="username" id="manual_username"
+                                       placeholder="মোবাইল নম্বর বা ইউজারনেম"
+                                       class="w-full px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-mono">
+                                <span class="text-[10px] text-slate-500">ডিফল্ট শিক্ষার্থীর মোবাইল নম্বর</span>
+                            </div>
+
+                            <div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <label class="block text-[11px] font-semibold text-slate-700">
+                                        লগইন পাসওয়ার্ড
+                                    </label>
+                                    <button type="button" onclick="generateManualPassword()"
+                                            class="text-[10px] font-bold text-emerald-700 hover:text-emerald-800 underline">
+                                        + অটো পাসওয়ার্ড
+                                    </button>
+                                </div>
+                                <div class="relative flex items-center">
+                                    <input type="text" name="password" id="manual_password"
+                                           placeholder="পাসওয়ার্ড"
+                                           class="w-full px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-mono font-bold">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Admin Notes -->
+                <div>
+                    <label class="block text-[11px] font-semibold text-slate-600 mb-1">মন্তব্য / রেফারেন্স নোট</label>
+                    <input type="text" name="notes" placeholder="যেমন: সরাসরি অফিসে এসে ক্যাশ দিয়েছে / বিকাশ ভেরিফাইড"
+                           class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+                </div>
+
+                <!-- Modal Actions -->
+                <div class="pt-3 border-t border-slate-200 flex items-center justify-end gap-2.5">
+                    <button type="button" onclick="closeCreateStudentModal()"
+                            class="px-4 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold text-xs transition">
+                        বাতিল
+                    </button>
+                    <button type="submit"
+                            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-xs shadow-md shadow-emerald-600/30 transition">
+                        <i class="fa-solid fa-user-check"></i>
+                        <span>ভর্তি নিশ্চিত ও LMS অ্যাকাউন্ট তৈরি করুন</span>
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -824,6 +1069,11 @@ function openStudentModal(id, focusLms) {
         document.getElementById('modal-update-form').action = data.update_url || '';
         document.getElementById('modal-status-select').value = data.status || 'completed';
         document.getElementById('modal-notes-input').value = data.notes || '';
+
+        var deleteForm = document.getElementById('modal-delete-form');
+        if (deleteForm) {
+            deleteForm.action = data.delete_url || '';
+        }
 
         var statusBadgeText = document.getElementById('modal-status-text');
         if (data.status === 'completed') {
@@ -916,6 +1166,57 @@ function closeStudentModal() {
     }
 }
 
+// Manual Create Student Modal Helpers
+function openCreateStudentModal() {
+    var modal = document.getElementById('createStudentModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        var pwdInput = document.getElementById('manual_password');
+        if (pwdInput && !pwdInput.value) {
+            generateManualPassword();
+        }
+        var trxInput = document.getElementById('manual_transaction_id');
+        if (trxInput && !trxInput.value) {
+            generateManualTrxId();
+        }
+    }
+}
+
+function closeCreateStudentModal() {
+    var modal = document.getElementById('createStudentModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+}
+
+function syncManualUsername(phone) {
+    var unInput = document.getElementById('manual_username');
+    if (unInput && (!unInput.value || unInput.dataset.touched !== 'true')) {
+        unInput.value = phone.trim();
+    }
+}
+
+function generateManualPassword() {
+    var pwdInput = document.getElementById('manual_password');
+    if (pwdInput) {
+        pwdInput.value = 'AB2026#' + Math.floor(100 + Math.random() * 900);
+    }
+}
+
+function generateManualTrxId() {
+    var chars = '0123456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+    var res = 'BK';
+    for (var i = 0; i < 8; i++) {
+        res += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    var trxInput = document.getElementById('manual_transaction_id');
+    if (trxInput) {
+        trxInput.value = res;
+    }
+}
+
 function copyTrxText(text, btn) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text).then(function() {
@@ -940,11 +1241,28 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    var createModal = document.getElementById('createStudentModal');
+    if (createModal) {
+        createModal.addEventListener('click', function(e) {
+            if (e.target === createModal) {
+                closeCreateStudentModal();
+            }
+        });
+    }
+
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             closeStudentModal();
+            closeCreateStudentModal();
         }
     });
+
+    // Check if open_manual URL parameter is present
+    var urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('open_manual') === '1') {
+        openCreateStudentModal();
+    }
 });
 </script>
 @endpush
