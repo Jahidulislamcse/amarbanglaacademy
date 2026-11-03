@@ -153,10 +153,27 @@ class EpsPaymentController extends Controller
             Log::error('EPS Pay Exception: ' . $e->getMessage(), [
                 'slug' => $slug,
                 'transaction_id' => $transactionId ?? null,
+                'trace' => $e->getTraceAsString(),
             ]);
 
+            // Clear cached token if any connection error occurred
+            try {
+                $eps->clearTokenCache();
+            } catch (\Throwable $ignore) {}
+
+            $msg = $e->getMessage();
+            $isTimeout = str_contains($msg, 'cURL error 28') 
+                || str_contains($msg, 'timed out') 
+                || str_contains($msg, 'Connection timed out');
+
+            if ($isTimeout) {
+                $userError = 'EPS পেমেন্ট গেটওয়ের সার্ভারে সংযোগ পেতে সাময়িক বিলম্ব হচ্ছে। অনুগ্রহ করে আর একবার চেষ্টা করুন অথবা আমাদের হেল্পলাইনে (০১৩৩২-৫৪৯৫৪৯) যোগাযোগ করুন।';
+            } else {
+                $userError = 'পেমেন্ট গেটওয়েতে সাময়িক সমস্যা হচ্ছে (' . $msg . ')। অনুগ্রহ করে কিছুক্ষণ পর আবার চেষ্টা করুন অথবা হেল্পলাইনে যোগাযোগ করুন।';
+            }
+
             return redirect()->route('courses.checkout', $course->slug)
-                ->with('error', 'পেমেন্ট গেটওয়েতে সমস্যা হচ্ছে (' . $e->getMessage() . ')। অনুগ্রহ করে কিছুক্ষণ পর আবার চেষ্টা করুন।');
+                ->with('error', $userError);
         }
     }
 

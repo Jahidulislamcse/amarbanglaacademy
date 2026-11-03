@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -30,39 +31,68 @@ class EpsGateway
         ));
     }
 
-    public function token(): string
+    /**
+     * Clear cached EPS authentication token
+     */
+    public function clearTokenCache(): void
     {
-        $baseUrl = $this->getBaseUrl();
-        $username = trim($this->config['username'] ?? '');
-        $password = trim($this->config['password'] ?? '');
+        $cacheKey = 'eps_auth_token_' . md5($this->config['username'] ?? '');
+        Cache::forget($cacheKey);
+    }
 
-        if (empty($baseUrl) || empty($username) || empty($password)) {
-            throw new \Exception('EPS credentials are not configured in environment settings.');
+    /**
+     * Obtain EPS JWT Bearer Token (Cached for 50 minutes to eliminate repetitive auth latency)
+     */
+    public function token(bool $forceRefresh = false): string
+    {
+        $cacheKey = 'eps_auth_token_' . md5($this->config['username'] ?? '');
+
+        if ($forceRefresh) {
+            Cache::forget($cacheKey);
         }
 
-        try {
-            $response = Http::timeout(20)->withHeaders([
-                'x-hash' => $this->hash($username),
-                'Content-Type' => 'application/json',
-            ])->post($baseUrl . '/Auth/GetToken', [
-                'userName' => $username,
-                'password' => $password,
-            ]);
+        return Cache::remember($cacheKey, 3000, function () {
+            $baseUrl = $this->getBaseUrl();
+            $username = trim($this->config['username'] ?? '');
+            $password = trim($this->config['password'] ?? '');
 
-            if (!$response->successful() || empty($response->json('token'))) {
-                Log::error('EPS Token Error', [
-                    'status' => $response->status(),
-                    'body' => $response->body(),
-                ]);
-                $errorMsg = $response->json('message') ?? $response->json('Message') ?? $response->body();
-                throw new \Exception('EPS token failed: ' . ($errorMsg ?: 'HTTP ' . $response->status()));
+            if (empty($baseUrl) || empty($username) || empty($password)) {
+                throw new \Exception('EPS credentials are not configured in environment settings.');
             }
 
-            return $response->json('token');
-        } catch (\Throwable $e) {
-            Log::error('EPS Token Exception: ' . $e->getMessage());
-            throw $e;
-        }
+            return retry(2, function ($attempt) use ($baseUrl, $username, $password) {
+                try {
+                    $response = Http::timeout(45)
+                        ->connectTimeout(15)
+                        ->withOptions([
+                            'curl' => [
+                                CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4,
+                            ],
+                        ])
+                        ->withHeaders([
+                            'x-hash' => $this->hash($username),
+                            'Content-Type' => 'application/json',
+                        ])->post($baseUrl . '/Auth/GetToken', [
+                            'userName' => $username,
+                            'password' => $password,
+                        ]);
+
+                    if (!$response->successful() || empty($response->json('token'))) {
+                        Log::error('EPS Token Error (Attempt ' . $attempt . ')', [
+                            'status' => $response->status(),
+                            'body' => $response->body(),
+                        ]);
+                        $errorMsg = $response->json('message') ?? $response->json('Message') ?? $response->body();
+                        throw new \Exception('EPS token failed: ' . ($errorMsg ?: 'HTTP ' . $response->status()));
+                    }
+
+                    return $response->json('token');
+                } catch (\Throwable $e) {
+                    Log::warning("EPS Token attempt {$attempt} failed: " . $e->getMessage());
+                    throw $e;
+                }
+            }, 1000);
+        });
     }
 
     public function getCallbackUrl(string $routeName): string
@@ -151,11 +181,35 @@ class EpsGateway
         ];
 
         try {
-            $response = Http::timeout(25)->withHeaders([
-                'Authorization' => 'Bearer ' . $token,
-                'x-hash' => $this->hash($transactionId),
-                'Content-Type' => 'application/json',
-            ])->post($baseUrl . '/EPSEngine/InitializeEPS', $payload);
+            $response = retry(2, function ($attempt) use ($baseUrl, &$token, $payload, $transactionId) {
+                try {
+                    $res = Http::timeout(40)
+                        ->connectTimeout(15)
+                        ->withOptions([
+                            'curl' => [
+                                CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4,
+                            ],
+                        ])
+                        ->withHeaders([
+                            'Authorization' => 'Bearer ' . $token,
+                            'x-hash' => $this->hash($transactionId),
+                            'Content-Type' => 'application/json',
+                        ])->post($baseUrl . '/EPSEngine/InitializeEPS', $payload);
+
+                    if ($res->status() === 401 && $attempt === 1) {
+                        Log::warning('EPS Initialize received 401, refreshing token...');
+                        $token = $this->token(true);
+                        throw new \Exception('Token refreshed on 401, retrying initialize...');
+                    }
+
+                    return $res;
+                } catch (\Throwable $e) {
+                    if ($attempt === 1) {
+                        Log::warning("EPS Initialize attempt {$attempt} failed: " . $e->getMessage() . ", retrying...");
+                    }
+                    throw $e;
+                }
+            }, 1000);
 
             Log::info('EPS initialize payload', [
                 'transaction_id' => $transactionId,
@@ -195,14 +249,37 @@ class EpsGateway
     public function verify(string $merchantTransactionId): array
     {
         $baseUrl = $this->getBaseUrl();
-        $token = retry(2, fn () => $this->token(), 200);
+        $token = $this->token();
 
-        $response = retry(3, function () use ($baseUrl, $token, $merchantTransactionId) {
-            return Http::timeout(20)->withToken($token)->withHeaders([
-                'x-hash' => $this->hash($merchantTransactionId),
-            ])->get($baseUrl . '/EPSEngine/CheckMerchantTransactionStatus', [
-                'merchantTransactionId' => $merchantTransactionId,
-            ]);
+        $response = retry(3, function ($attempt) use ($baseUrl, &$token, $merchantTransactionId) {
+            try {
+                $res = Http::timeout(35)
+                    ->connectTimeout(15)
+                    ->withOptions([
+                        'curl' => [
+                            CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4,
+                        ],
+                    ])
+                    ->withToken($token)
+                    ->withHeaders([
+                        'x-hash' => $this->hash($merchantTransactionId),
+                    ])->get($baseUrl . '/EPSEngine/CheckMerchantTransactionStatus', [
+                        'merchantTransactionId' => $merchantTransactionId,
+                    ]);
+
+                if ($res->status() === 401 && $attempt === 1) {
+                    Log::warning('EPS Verify received 401, refreshing token...');
+                    $token = $this->token(true);
+                    throw new \Exception('Token refreshed on 401, retrying verify...');
+                }
+
+                return $res;
+            } catch (\Throwable $e) {
+                if ($attempt < 3) {
+                    Log::warning("EPS Verify attempt {$attempt} failed: " . $e->getMessage() . ", retrying...");
+                }
+                throw $e;
+            }
         }, 1000);
 
         if (!$response->successful()) {
