@@ -25,6 +25,7 @@ class Course extends Model
         'has_certificate' => 'boolean',
         'is_featured' => 'boolean',
         'is_popular' => 'boolean',
+        'is_live_now' => 'boolean',
     ];
 
     public function instructors(): BelongsToMany

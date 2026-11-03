@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
+    <title>শিক্ষার্থী লগইন - আমার বাংলা একাডেমি</title>
+
+    <!-- Google Fonts: Hind Siliguri & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        emerald: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                            800: '#065f46',
+                            900: '#064e3b',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['"Hind Siliguri"', '"Inter"', 'sans-serif'],
+                        bangla: ['"Hind Siliguri"', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.3/dist/cdn.min.js"></script>
+
+    <style>
+        body { font-family: 'Hind Siliguri', 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 text-slate-100 min-h-screen flex items-center justify-center p-4">
+
+    <div class="w-full max-w-md" x-data="{
+        login_id: '{{ old('login_id', '') }}',
+        password: '',
+        showPassword: false
+    }">
+        <!-- Brand Header -->
+        <div class="text-center mb-6">
+            <a href="{{ route('home') }}" class="inline-flex items-center gap-3 group">
+                <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-emerald-600 to-emerald-400 text-white flex items-center justify-center font-bold text-2xl shadow-lg shadow-emerald-500/20">
+                    আ
+                </div>
+            </a>
+            <h1 class="text-2xl font-bold text-white mt-3">আমার বাংলা একাডেমি</h1>
+            <p class="text-xs text-emerald-300 font-medium tracking-wide mt-1">শিক্ষার্থী LMS পোর্টাল ও লাইভ ক্লাসরুম</p>
+        </div>
+
+        <!-- Login Card -->
+        <div class="bg-white text-slate-800 rounded-3xl shadow-2xl p-6 sm:p-8 border border-white/20">
+            <div class="mb-6">
+                <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-graduation-cap text-emerald-600"></i>
+                    <span>শিক্ষার্থী লগইন</span>
+                </h2>
+                <p class="text-xs text-slate-500 mt-1">
+                    লাইভ ক্লাসে জয়েন করতে ও কোর্স সামগ্রী দেখতে আপনার ইউজার আইডি ও পাসওয়ার্ড দিয়ে লগইন করুন
+                </p>
+            </div>
+
+            <!-- Flash Error -->
+            @if(session('error'))
+                <div class="mb-4 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl p-3 flex items-center gap-2">
+                    <i class="fa-solid fa-circle-exclamation text-red-500 text-sm shrink-0"></i>
+                    <span>{{ session('error') }}</span>
+                </div>
+            @endif
+
+            <!-- Flash Success -->
+            @if(session('success'))
+                <div class="mb-4 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs rounded-xl p-3 flex items-center gap-2">
+                    <i class="fa-solid fa-circle-check text-emerald-500 text-sm shrink-0"></i>
+                    <span>{{ session('success') }}</span>
+                </div>
+            @endif
+
+            <!-- Flash Info -->
+            @if(session('info'))
+                <div class="mb-4 bg-blue-50 border border-blue-200 text-blue-700 text-xs rounded-xl p-3 flex items-center gap-2">
+                    <i class="fa-solid fa-circle-info text-blue-500 text-sm shrink-0"></i>
+                    <span>{{ session('info') }}</span>
+                </div>
+            @endif
+
+            <!-- Form -->
+            <form method="POST" action="{{ route('login.post') }}" class="space-y-4">
+                @csrf
+
+                <!-- User ID / Mobile / Email -->
+                <div>
+                    <label for="login_id" class="block text-xs font-semibold text-slate-700 mb-1.5">
+                        ইউজার আইডি / মোবাইল নম্বর / ইমেইল <span class="text-red-500">*</span>
+                    </label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                            <i class="fa-solid fa-user text-sm"></i>
+                        </div>
+                        <input type="text" id="login_id" name="login_id" x-model="login_id" required autofocus
+                            class="w-full pl-10 pr-4 py-2.5 text-sm bg-slate-50 border @error('login_id') border-red-400 bg-red-50/30 @else border-slate-300 @enderror rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition"
+                            placeholder="যেমন: 017XXXXXXXX বা ইমেইল">
+                    </div>
+                    @error('login_id')
+                        <p class="text-red-500 text-xs mt-1 flex items-center gap-1">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                            <span>{{ $message }}</span>
+                        </p>
+                    @enderror
+                </div>
+
+                <!-- Password -->
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label for="password" class="block text-xs font-semibold text-slate-700">
+                            পাসওয়ার্ড <span class="text-red-500">*</span>
+                        </label>
+                    </div>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                            <i class="fa-solid fa-key text-sm"></i>
+                        </div>
+                        <input :type="showPassword ? 'text' : 'password'" id="password" name="password" x-model="password" required
+                            class="w-full pl-10 pr-10 py-2.5 text-sm bg-slate-50 border @error('password') border-red-400 bg-red-50/30 @else border-slate-300 @enderror rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition"
+                            placeholder="পাসওয়ার্ড লিখুন">
+                        <button type="button" @click="showPassword = !showPassword" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 transition">
+                            <i :class="showPassword ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'" class="text-sm"></i>
+                        </button>
+                    </div>
+                    @error('password')
+                        <p class="text-red-500 text-xs mt-1 flex items-center gap-1">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                            <span>{{ $message }}</span>
+                        </p>
+                    @enderror
+                </div>
+
+                <!-- Remember Me -->
+                <div class="flex items-center justify-between text-xs">
+                    <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+                        <input type="checkbox" name="remember" value="1" class="rounded text-emerald-600 focus:ring-emerald-500 border-slate-300">
+                        <span class="text-slate-600">লগইন মনে রাখুন</span>
+                    </label>
+                    <a href="https://wa.me/8801332549549?text={{ urlencode('আসসালামু আলাইকুম, আমি আমার বাংলা একাডেমীর কোর্সের শিক্ষার্থী। আমার লগইন আইডি বা পাসওয়ার্ড দরকার।') }}"
+                       target="_blank" class="text-emerald-700 hover:underline font-semibold flex items-center gap-1">
+                        <i class="fa-brands fa-whatsapp text-xs text-green-600"></i>
+                        <span>পাসওয়ার্ড পাননি?</span>
+                    </a>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit"
+                    class="w-full py-3 px-4 rounded-xl font-bold text-white bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 shadow-md shadow-emerald-600/30 transition transform active:scale-[0.99] flex items-center justify-center gap-2 text-sm">
+                    <i class="fa-solid fa-arrow-right-to-bracket"></i>
+                    <span>পোর্টালে প্রবেশ করুন</span>
+                </button>
+            </form>
+
+            <!-- Support & Helpline Notice -->
+            <div class="mt-6 pt-5 border-t border-slate-100 bg-slate-50 rounded-2xl p-3.5 text-xs text-slate-600 space-y-1.5">
+                <div class="font-bold text-slate-800 flex items-center gap-1.5">
+                    <i class="fa-solid fa-headset text-emerald-600"></i>
+                    <span>লগইন সহায়তা ও সাহায্য:</span>
+                </div>
+                <p class="text-[11px] text-slate-500 leading-relaxed">
+                    ভর্তি হওয়া শিক্ষার্থীদের অ্যাডমিন থেকে ইউজার আইডি ও পাসওয়ার্ড প্রদান করা হয়। আইডি/পাসওয়ার্ড পেতে সরাসরি আমাদের হোয়াটসঅ্যাপে নক দিন।
+                </p>
+                <div class="pt-1">
+                    <a href="https://wa.me/8801332549549" target="_blank"
+                       class="inline-flex items-center gap-1.5 text-emerald-700 font-bold hover:underline text-[11px]">
+                        <i class="fa-brands fa-whatsapp text-sm text-green-600"></i>
+                        <span>WhatsApp হেল্পলাইন: ০১৩৩২-৫৪৯৫৪৯</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Footer links -->
+            <div class="mt-5 flex items-center justify-between text-xs text-slate-500 pt-2">
+                <a href="{{ route('home') }}" class="hover:text-emerald-700 inline-flex items-center gap-1 transition">
+                    <i class="fa-solid fa-arrow-left text-[10px]"></i>
+                    <span>মূল ওয়েবসাইট</span>
+                </a>
+                <a href="{{ route('admin.login') }}" class="text-slate-400 hover:text-slate-700 inline-flex items-center gap-1 transition text-[11px]">
+                    <i class="fa-solid fa-shield-halved text-[10px]"></i>
+                    <span>এডমিন লগইন</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

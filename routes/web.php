@@ -3,6 +3,8 @@
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\LmsController;
 use App\Http\Controllers\EpsPaymentController;
+use App\Http\Controllers\StudentAuthController;
+use App\Http\Controllers\StudentController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -28,11 +30,23 @@ Route::match(['get', 'post'], '/payment/eps/success', [EpsPaymentController::cla
 Route::match(['get', 'post'], '/payment/eps/fail', [EpsPaymentController::class, 'fail'])->name('eps.fail');
 Route::match(['get', 'post'], '/payment/eps/cancel', [EpsPaymentController::class, 'cancel'])->name('eps.cancel');
 
-// Live Classrooms (Zoom & Google Meet integration)
+// Live Classrooms & Exams Showcase
 Route::get('/live-classes', [LmsController::class, 'liveClasses'])->name('live.classes');
-
-// Exams & Certification System
 Route::get('/exams', [LmsController::class, 'exams'])->name('exams.index');
+
+// Student Authentication
+Route::get('/login', [StudentAuthController::class, 'showLoginForm'])->name('login');
+Route::post('/login', [StudentAuthController::class, 'login'])->name('login.post');
+Route::get('/student/login', [StudentAuthController::class, 'showLoginForm'])->name('student.login');
+Route::post('/student/logout', [StudentAuthController::class, 'logout'])->name('student.logout');
+Route::get('/student/logout', [StudentAuthController::class, 'logout']);
+Route::get('/logout', [StudentAuthController::class, 'logout'])->name('logout');
+
+// Student LMS Portal
+Route::middleware('auth')->prefix('student')->name('student.')->group(function () {
+    Route::get('/dashboard', [StudentController::class, 'dashboard'])->name('dashboard');
+    Route::get('/live-class', [StudentController::class, 'joinLiveClass'])->name('live-class');
+});
 
 // Admin Panel Authentication & Student Management
 Route::prefix('admin')->name('admin.')->group(function () {
@@ -48,11 +62,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/students/clean-duplicates', [AdminController::class, 'cleanDuplicates'])->name('students.clean-duplicates');
         Route::patch('/payments/{payment}/status', [AdminController::class, 'updateStatus'])->name('payments.update-status');
         Route::post('/payments/{payment}/verify-eps', [AdminController::class, 'verifyEps'])->name('payments.verify-eps');
+        Route::post('/courses/{course}/update-meeting', [AdminController::class, 'updateMeetingLink'])->name('courses.update-meeting');
+        Route::post('/students/{enrollment}/credentials', [AdminController::class, 'manageStudentAccount'])->name('students.credentials');
         Route::post('/logout', [AdminController::class, 'logout'])->name('logout');
         Route::get('/logout', [AdminController::class, 'logout']); // allow GET logout
     });
 });
-
-// Default login route fallback alias
-Route::get('/login', fn () => redirect()->route('admin.login'))->name('login');
 

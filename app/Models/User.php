@@ -20,9 +20,29 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'role',
         'email',
+        'phone',
+        'username',
         'password',
+        'plain_password',
     ];
+
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin' 
+            || in_array(strtolower($this->email), ['admin@amar-bangla.edu', 'admin@amarbanglaacademy.com']);
+    }
+
+    public function isStudent(): bool
+    {
+        return $this->role === 'student' && !$this->isAdmin();
+    }
+
+    public function enrollments()
+    {
+        return $this->hasMany(Enrollment::class);
+    }
 
     /**
      * The attributes that should be hidden for serialization.

@@ -169,6 +169,108 @@
     </div>
     @endif
 
+    <!-- Live Class & Meeting Link Management Card -->
+    <div class="bg-gradient-to-r from-slate-900 via-emerald-950 to-slate-900 rounded-2xl border border-emerald-800/40 p-5 shadow-lg text-white">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-emerald-800/50">
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xl shrink-0 border border-emerald-500/30">
+                    <i class="fa-solid fa-video"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h2 class="text-base font-bold text-white">লাইভ ক্লাস ও মিটিং লিংক ম্যানেজমেন্ট</h2>
+                        @if($primaryCourse?->is_live_now)
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-red-500 text-white animate-pulse">
+                                <span class="w-2 h-2 rounded-full bg-white"></span>
+                                লাইভ ক্লাস চলছে
+                            </span>
+                        @else
+                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-slate-800 text-slate-300 border border-slate-700">
+                                লাইভ অফলাইন
+                            </span>
+                        @endif
+                    </div>
+                    <p class="text-xs text-emerald-200/80 mt-0.5">
+                        এখানে জুম বা গুগল মিট লিংক দিলে সকল শিক্ষার্থী তাদের স্টুডেন্ট পোর্টাল থেকে এক ক্লিকে লাইভ ক্লাসে যুক্ত হতে পারবে
+                    </p>
+                </div>
+            </div>
+            @if($primaryCourse?->live_meeting_url)
+                <div class="flex items-center gap-2">
+                    <a href="{{ $primaryCourse->live_meeting_url }}" target="_blank"
+                       class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md transition">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                        <span>মিটিং টেস্ট করুন</span>
+                    </a>
+                </div>
+            @endif
+        </div>
+
+        <form method="POST" action="{{ route('admin.courses.update-meeting', $primaryCourse?->id ?? 1) }}" class="mt-4 grid grid-cols-1 md:grid-cols-12 gap-3.5">
+            @csrf
+            <!-- Live Meeting URL -->
+            <div class="md:col-span-6">
+                <label class="block text-xs font-medium text-emerald-200 mb-1">
+                    Zoom / Google Meet মিটিং লিঙ্ক <span class="text-emerald-400">*</span>
+                </label>
+                <div class="relative">
+                    <i class="fa-solid fa-link absolute left-3.5 top-3 text-slate-400 text-xs"></i>
+                    <input type="url" name="live_meeting_url" value="{{ old('live_meeting_url', $primaryCourse?->live_meeting_url) }}"
+                           placeholder="https://us05web.zoom.us/j/... অথবা https://meet.google.com/..."
+                           class="w-full pl-9 pr-3 py-2 text-xs bg-slate-800/90 border border-emerald-700/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                </div>
+            </div>
+
+            <!-- Topic / Title -->
+            <div class="md:col-span-6">
+                <label class="block text-xs font-medium text-emerald-200 mb-1">
+                    আজকের ক্লাসের বিষয় / টপিক
+                </label>
+                <div class="relative">
+                    <i class="fa-solid fa-heading absolute left-3.5 top-3 text-slate-400 text-xs"></i>
+                    <input type="text" name="live_class_topic" value="{{ old('live_class_topic', $primaryCourse?->live_class_topic) }}"
+                           placeholder="যেমন: ওরিয়েন্টেশন ক্লাস / মডিউল ১: সাংবাদিকতার পরিচিতি"
+                           class="w-full pl-9 pr-3 py-2 text-xs bg-slate-800/90 border border-emerald-700/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                </div>
+            </div>
+
+            <!-- Meeting ID -->
+            <div class="md:col-span-4">
+                <label class="block text-xs font-medium text-emerald-200 mb-1">
+                    Meeting ID (ঐচ্ছিক)
+                </label>
+                <input type="text" name="live_meeting_id" value="{{ old('live_meeting_id', $primaryCourse?->live_meeting_id) }}"
+                       placeholder="যেমন: 852 1234 5678"
+                       class="w-full px-3 py-2 text-xs bg-slate-800/90 border border-emerald-700/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+            </div>
+
+            <!-- Passcode -->
+            <div class="md:col-span-4">
+                <label class="block text-xs font-medium text-emerald-200 mb-1">
+                    Passcode / পাসকোড (ঐচ্ছিক)
+                </label>
+                <input type="text" name="live_meeting_passcode" value="{{ old('live_meeting_passcode', $primaryCourse?->live_meeting_passcode) }}"
+                       placeholder="যেমন: 123456"
+                       class="w-full px-3 py-2 text-xs bg-slate-800/90 border border-emerald-700/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+            </div>
+
+            <!-- Live Now Toggle & Submit -->
+            <div class="md:col-span-4 flex items-center justify-between gap-3 pt-2 md:pt-5">
+                <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+                    <input type="checkbox" name="is_live_now" value="1" {{ $primaryCourse?->is_live_now ? 'checked' : '' }}
+                           class="w-4 h-4 text-emerald-500 rounded bg-slate-800 border-emerald-700 focus:ring-emerald-400">
+                    <span class="text-xs font-bold text-white">এখন লাইভ চলছে</span>
+                </label>
+
+                <button type="submit"
+                        class="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold text-xs rounded-xl shadow-md transition">
+                    <i class="fa-solid fa-floppy-disk"></i>
+                    <span>মিটিং সেভ করুন</span>
+                </button>
+            </div>
+        </form>
+    </div>
+
     <!-- Search & Filter Card -->
     <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
         <form method="GET" action="{{ route('admin.students') }}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-end">
@@ -266,22 +368,41 @@
                                 }
                                 $waText = urlencode("আসসালামু আলাইকুম " . $payment->student_name . ", আমার বাংলা একাডেমীর কোর্সে ভর্তির বিষয়ে আপনার সাথে যোগাযোগ করা হচ্ছে।");
                                 $waUrl = "https://wa.me/{$waPhone}?text={$waText}";
+
+                                $enrollment = $payment->enrollment;
+                                $lmsUser = $enrollment?->user;
+                                $hasLms = !is_null($lmsUser);
+                                $lmsUserId = $lmsUser?->username ?: ($lmsUser?->phone ?: $payment->student_phone);
+                                $lmsPassword = $lmsUser?->plain_password ?? '';
+                                $loginPortalUrl = url('/login');
+                                $courseTitle = $payment->course?->bangla_title ?? $payment->course?->title ?? 'সাংবাদিকতা, আইন ও উপস্থাপনা';
+
+                                $credMsg = urlencode("আসসালামু আলাইকুম {$payment->student_name},\nআমার বাংলা একাডেমীর \"{$courseTitle}\" কোর্সে আপনার ভর্তি নিশ্চিত হয়েছে।\n\nআপনার স্টুডেন্ট পোর্টাল লগইন তথ্য:\n🌐 ওয়েবসাইট: {$loginPortalUrl}\n👤 ইউজার আইডি: {$lmsUserId}\n🔑 পাসওয়ার্ড: {$lmsPassword}\n\nপোর্টালে লগইন করে সরাসরি লাইভ ক্লাস ও কোর্স ম্যাটেরিয়াল পাবেন।\nহেল্পলাইন: 01332549549");
+                                $credentialsWaUrl = "https://wa.me/{$waPhone}?text={$credMsg}";
+
                                 $studentModalData = [
                                     'id' => $payment->id,
+                                    'enrollment_id' => $payment->enrollment_id,
                                     'student_name' => $payment->student_name,
                                     'student_phone' => $payment->student_phone,
                                     'student_email' => $payment->student_email,
-                                    'course_title' => $payment->course?->bangla_title ?? $payment->course?->title ?? 'সাংবাদিকতা, আইন ও উপস্থাপনা',
+                                    'course_title' => $courseTitle,
                                     'batch_no' => $payment->course?->batch_no ?? '১ম ব্যাচ',
                                     'amount' => number_format($payment->amount),
                                     'payment_method' => $payment->payment_method,
                                     'transaction_id' => $payment->transaction_id,
                                     'sender_phone' => $payment->sender_phone,
                                     'status' => $payment->status,
-                                    'enrollment_status' => $payment->enrollment?->status ?? 'active',
+                                    'enrollment_status' => $enrollment?->status ?? 'active',
                                     'created_at' => $payment->created_at ? $payment->created_at->format('d M Y, h:i A') : 'N/A',
                                     'notes' => $payment->notes ?? '',
                                     'wa_url' => $waUrl,
+                                    'has_lms' => $hasLms,
+                                    'lms_user_id' => $lmsUserId,
+                                    'lms_password' => $lmsPassword,
+                                    'credentials_url' => $enrollment ? route('admin.students.credentials', $enrollment->id) : '',
+                                    'credentials_wa_url' => $credentialsWaUrl,
+                                    'login_portal_url' => $loginPortalUrl,
                                     'update_url' => route('admin.payments.update-status', $payment->id),
                                     'verify_eps_url' => route('admin.payments.verify-eps', $payment->id),
                                 ];
@@ -388,24 +509,61 @@
                                     @endif
                                 </td>
 
-                                <!-- Payment Status Badge -->
+                                <!-- Payment & LMS Status Badges -->
                                 <td class="py-3.5 px-4 text-center">
                                     <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-green-50 text-green-700 border border-green-200">
                                         <i class="fa-solid fa-circle-check text-[10px]"></i>
                                         <span>পেমেন্ট সফল</span>
                                     </span>
+                                    @if($hasLms)
+                                        <div class="mt-1">
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 text-emerald-800 border border-emerald-200"
+                                                  title="ইউজার আইডি: {{ $lmsUserId }} (পাসওয়ার্ড: {{ $lmsPassword }})">
+                                                <i class="fa-solid fa-user-check text-[9px] text-emerald-600"></i>
+                                                <span>LMS সক্রিয়</span>
+                                            </span>
+                                        </div>
+                                    @else
+                                        <div class="mt-1">
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-50 text-amber-800 border border-amber-200">
+                                                <i class="fa-solid fa-user-clock text-[9px] text-amber-600"></i>
+                                                <span>LMS বাকি</span>
+                                            </span>
+                                        </div>
+                                    @endif
                                 </td>
 
                                 <!-- Actions -->
                                 <td class="py-3.5 px-4 text-center">
-                                    <!-- View Details Modal Trigger -->
-                                    <button type="button"
-                                        onclick="openStudentModal({{ $payment->id }})"
-                                        title="বিস্তারিত দেখুন"
-                                        class="inline-flex items-center gap-1 bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 text-xs font-semibold px-2.5 py-1 rounded-lg border border-slate-200 hover:border-emerald-200 transition cursor-pointer">
-                                        <i class="fa-solid fa-eye text-xs"></i>
-                                        <span>বিস্তারিত</span>
-                                    </button>
+                                    <div class="flex items-center justify-center gap-1.5 flex-wrap">
+                                        <!-- View Details Modal Trigger -->
+                                        <button type="button"
+                                            onclick="openStudentModal({{ $payment->id }})"
+                                            title="বিস্তারিত দেখুন"
+                                            class="inline-flex items-center gap-1 bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 text-xs font-semibold px-2.5 py-1 rounded-lg border border-slate-200 hover:border-emerald-200 transition cursor-pointer">
+                                            <i class="fa-solid fa-eye text-xs"></i>
+                                            <span>বিস্তারিত</span>
+                                        </button>
+
+                                        @if($hasLms)
+                                            <!-- Send Credentials via WhatsApp -->
+                                            <a href="{{ $credentialsWaUrl }}" target="_blank"
+                                               title="WhatsApp-এ ইউজার আইডি ও পাসওয়ার্ড পাঠান"
+                                               class="inline-flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold px-2.5 py-1 rounded-lg shadow-sm transition">
+                                                <i class="fa-brands fa-whatsapp text-xs"></i>
+                                                <span>আইডি পাঠান</span>
+                                            </a>
+                                        @else
+                                            <!-- Quick Create LMS Credentials Trigger -->
+                                            <button type="button"
+                                                onclick="openStudentModal({{ $payment->id }}, true)"
+                                                title="LMS ইউজার আইডি ও পাসওয়ার্ড তৈরি করুন"
+                                                class="inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-2.5 py-1 rounded-lg shadow-sm transition">
+                                                <i class="fa-solid fa-key text-xs"></i>
+                                                <span>লগইন তৈরি</span>
+                                            </button>
+                                        @endif
+                                    </div>
                                     <script id="student-data-{{ $payment->id }}" type="application/json">
                                         {!! json_encode($studentModalData, JSON_UNESCAPED_UNICODE) !!}
                                     </script>
@@ -544,6 +702,85 @@
                     </form>
                 </div>
 
+                <!-- Student LMS Login & Credentials Management Section -->
+                <div id="modal-credentials-section" class="pt-4 border-t border-slate-200">
+                    <div class="p-4 bg-emerald-50/70 border border-emerald-200 rounded-2xl space-y-3">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <div class="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center text-xs font-bold">
+                                    <i class="fa-solid fa-key"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-slate-900 text-xs uppercase tracking-wider">স্টুডেন্ট LMS পোর্টাল লগইন ও পাসওয়ার্ড</h4>
+                                    <p class="text-[11px] text-slate-500">শিক্ষার্থী লগইন লিংক: <a href="{{ url('/login') }}" target="_blank" class="text-emerald-700 underline font-semibold">{{ url('/login') }}</a></p>
+                                </div>
+                            </div>
+                            <span id="modal-lms-status-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold"></span>
+                        </div>
+
+                        <!-- Credentials Form -->
+                        <form id="modal-credentials-form" action="" method="POST" class="space-y-3 pt-1">
+                            @csrf
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-slate-700 mb-1">
+                                        লগইন ইউজার আইডি (User ID / Phone)
+                                    </label>
+                                    <div class="relative">
+                                        <i class="fa-solid fa-user absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                                        <input id="modal-lms-username" type="text" name="username" required
+                                               placeholder="মোবাইল নম্বর বা ইউজারনেম"
+                                               class="w-full pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-mono font-medium">
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="flex items-center justify-between mb-1">
+                                        <label class="block text-[11px] font-semibold text-slate-700">
+                                            লগইন পাসওয়ার্ড (Password)
+                                        </label>
+                                        <button type="button" onclick="generateAutoPassword()"
+                                                class="text-[10px] font-bold text-emerald-700 hover:text-emerald-800 underline">
+                                            + অটো পাসওয়ার্ড
+                                        </button>
+                                    </div>
+                                    <div class="relative flex items-center">
+                                        <i class="fa-solid fa-lock absolute left-3 text-slate-400 text-xs"></i>
+                                        <input id="modal-lms-password" type="text" name="password" required
+                                               placeholder="পাসওয়ার্ড প্রদান করুন"
+                                               class="w-full pl-8 pr-8 py-1.5 text-xs bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-mono font-medium">
+                                        <button type="button" onclick="togglePasswordVisibility()" class="absolute right-2.5 text-slate-400 hover:text-slate-600">
+                                            <i id="pwd-eye-icon" class="fa-solid fa-eye text-xs"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-2 pt-1">
+                                <button type="submit"
+                                        class="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-sm transition flex items-center justify-center gap-1.5">
+                                    <i class="fa-solid fa-floppy-disk"></i>
+                                    <span>LMS অ্যাকাউন্ট সংরক্ষণ করুন</span>
+                                </button>
+                                <button type="button" id="modal-copy-cred-btn" onclick="copyModalCredentials()"
+                                        class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs border border-slate-200 transition flex items-center gap-1"
+                                        title="ইউজার আইডি ও পাসওয়ার্ড কপি করুন">
+                                    <i class="fa-regular fa-copy"></i>
+                                    <span>কপি</span>
+                                </button>
+                            </div>
+                        </form>
+
+                        <!-- Share WhatsApp Button -->
+                        <div id="modal-wa-share-box" class="pt-2 border-t border-emerald-100 hidden">
+                            <a id="modal-lms-wa-link" href="#" target="_blank"
+                               class="w-full py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl text-xs shadow-sm transition flex items-center justify-center gap-1.5">
+                                <i class="fa-brands fa-whatsapp text-sm"></i>
+                                <span>WhatsApp-এ আইডি ও পাসওয়ার্ড পাঠান</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Admin Remarks / Status Note Form -->
                 <div class="pt-4 border-t border-slate-200">
                     <h4 class="font-bold text-slate-800 text-xs uppercase tracking-wider mb-2">স্ট্যাটাস ও এডমিন নোট আপডেট</h4>
@@ -576,7 +813,7 @@
 
 @push('scripts')
 <script>
-function openStudentModal(id) {
+function openStudentModal(id, focusLms) {
     var script = document.getElementById('student-data-' + id);
     if (!script) return;
     try {
@@ -626,12 +863,72 @@ function openStudentModal(id) {
             statusBadgeText.className = 'text-slate-600 font-bold';
         }
 
+        // Student LMS Credentials population
+        var credForm = document.getElementById('modal-credentials-form');
+        credForm.action = data.credentials_url || '';
+        document.getElementById('modal-lms-username').value = data.lms_user_id || data.student_phone || '';
+        document.getElementById('modal-lms-password').value = data.lms_password || '';
+
+        var lmsBadge = document.getElementById('modal-lms-status-badge');
+        var waShareBox = document.getElementById('modal-wa-share-box');
+        var lmsWaLink = document.getElementById('modal-lms-wa-link');
+
+        if (data.has_lms) {
+            lmsBadge.textContent = 'LMS সক্রিয়';
+            lmsBadge.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-800 border border-green-200';
+            waShareBox.classList.remove('hidden');
+            lmsWaLink.href = data.credentials_wa_url || '#';
+        } else {
+            lmsBadge.textContent = 'লগইন তৈরি বাকি';
+            lmsBadge.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200';
+            waShareBox.classList.add('hidden');
+            if (!data.lms_password) {
+                generateAutoPassword();
+            }
+        }
+
         var modal = document.getElementById('studentDetailModal');
         modal.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
+
+        if (focusLms) {
+            setTimeout(function() {
+                var lmsSec = document.getElementById('modal-credentials-section');
+                if (lmsSec) {
+                    lmsSec.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                var pwdField = document.getElementById('modal-lms-password');
+                if (pwdField) pwdField.focus();
+            }, 100);
+        }
     } catch(e) {
         console.error('Failed to parse student data', e);
     }
+}
+
+function generateAutoPassword() {
+    var randomNum = Math.floor(100 + Math.random() * 900);
+    document.getElementById('modal-lms-password').value = 'AB2026#' + randomNum;
+}
+
+function togglePasswordVisibility() {
+    var input = document.getElementById('modal-lms-password');
+    var icon = document.getElementById('pwd-eye-icon');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'fa-solid fa-eye-slash text-xs';
+    } else {
+        input.type = 'password';
+        icon.className = 'fa-solid fa-eye text-xs';
+    }
+}
+
+function copyModalCredentials() {
+    var user = document.getElementById('modal-lms-username').value;
+    var pwd = document.getElementById('modal-lms-password').value;
+    var loginUrl = '{{ url("/login") }}';
+    var text = "স্টুডেন্ট পোর্টাল লগইন:\nওয়েবসাইট: " + loginUrl + "\nইউজার আইডি: " + user + "\nপাসওয়ার্ড: " + pwd;
+    copyTrxText(text, document.getElementById('modal-copy-cred-btn'));
 }
 
 function closeStudentModal() {
@@ -653,7 +950,7 @@ function copyTrxText(text, btn) {
             }
         });
     } else {
-        window.prompt('TrxID কপি করুন:', text);
+        window.prompt('তথ্য কপি করুন:', text);
     }
 }
 

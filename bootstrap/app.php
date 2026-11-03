@@ -16,8 +16,19 @@ return Application::configure(basePath: dirname(__DIR__))
             'payment/eps/*',
             'eps/*',
         ]);
-        $middleware->redirectGuestsTo(fn () => route('admin.login'));
-        $middleware->redirectUsersTo(fn () => route('admin.students'));
+        $middleware->redirectGuestsTo(function (\Illuminate\Http\Request $request) {
+            if ($request->is('admin*')) {
+                return route('admin.login');
+            }
+            return route('login');
+        });
+        $middleware->redirectUsersTo(function (\Illuminate\Http\Request $request) {
+            $user = $request->user();
+            if ($user && method_exists($user, 'isAdmin') && $user->isAdmin()) {
+                return route('admin.students');
+            }
+            return route('student.dashboard');
+        });
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

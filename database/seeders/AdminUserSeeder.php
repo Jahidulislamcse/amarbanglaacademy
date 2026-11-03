@@ -31,6 +31,7 @@ class AdminUserSeeder extends Seeder
                 ['email' => $adminData['email']],
                 [
                     'name' => $adminData['name'],
+                    'role' => 'admin',
                     'password' => $adminData['password'],
                 ]
             );

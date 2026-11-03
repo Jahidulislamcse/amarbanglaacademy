@@ -37,7 +37,9 @@ class AdminPanelTest extends TestCase
         $response = $this->get('/admin/login');
         $response->assertStatus(200);
         $response->assertSee('এডমিন লগইন');
-        $response->assertSee('admin@amar-bangla.edu');
+        // Admin credentials should be removed for security
+        $response->assertDontSee('admin@amar-bangla.edu');
+        $response->assertDontSee('password123');
     }
 
     public function test_admin_can_login_with_valid_credentials(): void

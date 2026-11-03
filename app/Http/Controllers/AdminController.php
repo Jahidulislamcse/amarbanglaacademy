@@ -10,6 +10,7 @@ use App\Services\EpsGateway;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AdminController extends Controller
@@ -84,13 +85,13 @@ class AdminController extends Controller
         ];
 
         // 2a. Pending payments needing admin review / manual approval
-        $pendingPayments = Payment::with(['enrollment', 'course'])
+        $pendingPayments = Payment::with(['enrollment.user', 'course'])
             ->where('status', 'pending')
             ->latest()
             ->get();
 
         // 2b. Query builder: strictly show completed payment registrations
-        $query = Payment::with(['enrollment', 'course'])
+        $query = Payment::with(['enrollment.user', 'course'])
             ->where('status', 'completed')
             ->latest();
 
@@ -117,8 +118,9 @@ class AdminController extends Controller
 
         $payments = $query->paginate(15)->withQueryString();
         $courses = Course::all(['id', 'title', 'bangla_title']);
+        $primaryCourse = Course::first();
 
-        return view('admin.students', compact('payments', 'pendingPayments', 'stats', 'courses'));
+        return view('admin.students', compact('payments', 'pendingPayments', 'stats', 'courses', 'primaryCourse'));
     }
 
     /**
@@ -385,5 +387,69 @@ class AdminController extends Controller
 
             fclose($handle);
         }, 200, $headers);
+    }
+
+    /**
+     * Update Live Class Meeting Link & Details
+     */
+    public function updateMeetingLink(Request $request, Course $course)
+    {
+        $validated = $request->validate([
+            'live_meeting_url' => ['nullable', 'url', 'max:1000'],
+            'live_meeting_id' => ['nullable', 'string', 'max:100'],
+            'live_meeting_passcode' => ['nullable', 'string', 'max:100'],
+            'live_class_topic' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $course->update([
+            'live_meeting_url' => $validated['live_meeting_url'] ?? null,
+            'live_meeting_id' => $validated['live_meeting_id'] ?? null,
+            'live_meeting_passcode' => $validated['live_meeting_passcode'] ?? null,
+            'live_class_topic' => $validated['live_class_topic'] ?? null,
+            'is_live_now' => $request->boolean('is_live_now'),
+        ]);
+
+        return back()->with('success', 'লাইভ ক্লাসের মিটিং লিংক ও বিবরণী সফলভাবে আপডেট করা হয়েছে। শিক্ষার্থীরা এখন তাদের প্যানেল থেকে এই ক্লাসে যোগ দিতে পারবে।');
+    }
+
+    /**
+     * Create or Update Student LMS Login Account & Password
+     */
+    public function manageStudentAccount(Request $request, Enrollment $enrollment)
+    {
+        $validated = $request->validate([
+            'username' => ['nullable', 'string', 'max:100'],
+            'password' => ['required', 'string', 'min:4', 'max:100'],
+        ]);
+
+        $password = trim($validated['password']);
+        $rawUsername = trim($validated['username'] ?? '') ?: $enrollment->student_phone;
+
+        $user = $enrollment->user;
+
+        if (!$user) {
+            $user = User::where('email', $enrollment->student_email)
+                ->orWhere('phone', $enrollment->student_phone)
+                ->first();
+        }
+
+        if (!$user) {
+            $user = new User();
+            $user->name = $enrollment->student_name;
+            $user->email = $enrollment->student_email;
+            $user->phone = $enrollment->student_phone;
+            $user->role = 'student';
+        }
+
+        $user->username = $rawUsername;
+        $user->password = Hash::make($password);
+        $user->plain_password = $password;
+        $user->save();
+
+        $enrollment->update(['user_id' => $user->id]);
+
+        $loginId = $user->username ?: $user->phone ?: $user->email;
+
+        return back()->with('success', "{$enrollment->student_name}-এর LMS অ্যাকাউন্ট তৈরি/আপডেট সম্পন্ন! ইউজার আইডি: {$loginId}, পাসওয়ার্ড: {$password}");
     }
 }

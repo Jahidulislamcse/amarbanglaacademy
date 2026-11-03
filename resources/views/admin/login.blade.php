@@ -51,13 +51,9 @@
 <body class="bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 text-slate-100 min-h-screen flex items-center justify-center p-4">
 
     <div class="w-full max-w-md" x-data="{
-        email: '{{ old('email', 'admin@amar-bangla.edu') }}',
+        email: '{{ old('email', '') }}',
         password: '',
-        showPassword: false,
-        fillCredentials(userEmail, userPass) {
-            this.email = userEmail;
-            this.password = userPass;
-        }
+        showPassword: false
     }">
         <!-- Brand Header -->
         <div class="text-center mb-6">
@@ -111,7 +107,7 @@
                         </div>
                         <input type="email" id="email" name="email" x-model="email" required autofocus
                             class="w-full pl-10 pr-4 py-2.5 text-sm bg-slate-50 border @error('email') border-red-400 bg-red-50/30 @else border-slate-300 @enderror rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition"
-                            placeholder="admin@amar-bangla.edu">
+                            placeholder="admin@example.com">
                     </div>
                     @error('email')
                         <p class="text-red-500 text-xs mt-1 flex items-center gap-1">
@@ -157,30 +153,20 @@
                 <button type="submit"
                     class="w-full py-3 px-4 rounded-xl font-bold text-white bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 shadow-md shadow-emerald-600/30 transition transform active:scale-[0.99] flex items-center justify-center gap-2 text-sm">
                     <i class="fa-solid fa-arrow-right-to-bracket"></i>
-                    <span>লগইন করুন</span>
+                    <span>এডমিন লগইন</span>
                 </button>
             </form>
 
-            <!-- Quick Auto-Fill Credentials Box -->
-            <div class="mt-6 pt-5 border-t border-slate-100 bg-slate-50 rounded-2xl p-3.5 text-xs text-slate-600">
-                <div class="flex items-center justify-between mb-2">
-                    <span class="font-semibold text-slate-700 flex items-center gap-1.5">
-                        <i class="fa-solid fa-circle-info text-emerald-600"></i>
-                        <span>ডিফল্ট এডমিন তথ্য:</span>
-                    </span>
-                    <button type="button" @click="fillCredentials('admin@amar-bangla.edu', 'password123')"
-                        class="text-[11px] text-emerald-700 font-semibold hover:underline bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                        অটো পূরণ করুন
-                    </button>
-                </div>
-                <div class="space-y-1 font-mono text-[11px] text-slate-500 bg-white p-2 rounded-lg border border-slate-200">
-                    <div>ইমেইল: <span class="text-slate-800 select-all font-semibold">admin@amar-bangla.edu</span></div>
-                    <div>পাসওয়ার্ড: <span class="text-slate-800 select-all font-semibold">password123</span></div>
-                </div>
+            <!-- Switch to student login -->
+            <div class="mt-6 pt-5 border-t border-slate-100 text-center">
+                <a href="{{ route('student.login') }}" class="text-xs text-emerald-700 font-semibold hover:underline inline-flex items-center gap-1.5">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                    <span>শিক্ষার্থী? স্টুডেন্ট পোর্টালে লগইন করতে এখানে যান</span>
+                </a>
             </div>
 
             <!-- Back to website -->
-            <div class="mt-5 text-center">
+            <div class="mt-3 text-center">
                 <a href="{{ route('home') }}" class="text-xs text-slate-500 hover:text-emerald-700 inline-flex items-center gap-1.5 transition">
                     <i class="fa-solid fa-arrow-left"></i>
                     <span>মূল ওয়েবসাইটে ফিরে যান</span>
