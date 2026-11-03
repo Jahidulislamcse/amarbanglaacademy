@@ -36,9 +36,9 @@ class StudentController extends Controller
     }
 
     /**
-     * Direct Live Class Meeting Redirect Feature
+     * In-System Live Classroom (Distraction-free video class within the LMS)
      */
-    public function joinLiveClass()
+    public function classroom(Request $request)
     {
         $user = Auth::user();
 
@@ -57,13 +57,42 @@ class StudentController extends Controller
         $course = $enrollment?->course ?? Course::first();
 
         $meetingUrl = trim((string) ($course?->live_meeting_url ?? ''));
+        $lowerUrl = strtolower($meetingUrl);
 
-        if (!empty($meetingUrl)) {
-            // Direct redirect to Zoom / Google Meet meeting URL
-            return redirect()->away($meetingUrl);
+        $provider = 'in_system';
+        $embedUrl = null;
+
+        if (str_contains($lowerUrl, 'meet.google.com')) {
+            $provider = 'google_meet';
+        } elseif (str_contains($lowerUrl, 'zoom.us')) {
+            $provider = 'zoom';
+        } elseif (str_contains($lowerUrl, 'youtube.com') || str_contains($lowerUrl, 'youtu.be')) {
+            $provider = 'youtube';
+            preg_match('/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/', $meetingUrl, $matches);
+            $youtubeId = $matches[1] ?? null;
+            if ($youtubeId) {
+                $embedUrl = "https://www.youtube-nocookie.com/embed/{$youtubeId}?autoplay=1&rel=0";
+            }
+        } elseif (!empty($meetingUrl) && str_contains($lowerUrl, 'meet.jit.si')) {
+            $provider = 'in_system';
+            $embedUrl = $meetingUrl;
+        } else {
+            // Default In-System WebRTC classroom (Zero setup, 100% inside our website)
+            $provider = 'in_system';
+            $batchNum = preg_replace('/[^0-9]/', '', (string)($course?->batch_no ?? '1')) ?: '1';
+            $roomName = 'AmarBanglaAcademy_Classroom_Batch' . $batchNum;
+            $studentNameClean = urlencode($user->name ?: 'Student');
+            $embedUrl = "https://meet.jit.si/{$roomName}#userInfo.displayName=\"{$studentNameClean}\"&config.prejoinPageEnabled=false";
         }
 
-        return redirect()->route('student.dashboard')
-            ->with('info', 'বর্তমান ক্লাসের লাইভ মিটিং লিংক এখনো সক্রিয় হয়নি। ক্লাস শুরুর ১৫-২০ মিনিট পূর্বে লিংকটি এখানে সক্রিয় করা হবে অথবা WhatsApp গ্রুপে চোখ রাখুন।');
+        return view('student.classroom', compact('user', 'enrollment', 'course', 'provider', 'embedUrl', 'meetingUrl'));
+    }
+
+    /**
+     * Direct Live Class Meeting Route (Redirects to In-System Classroom)
+     */
+    public function joinLiveClass()
+    {
+        return redirect()->route('student.classroom');
     }
 }

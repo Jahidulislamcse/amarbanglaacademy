@@ -45,6 +45,7 @@ Route::get('/logout', [StudentAuthController::class, 'logout'])->name('logout');
 // Student LMS Portal
 Route::middleware('auth')->prefix('student')->name('student.')->group(function () {
     Route::get('/dashboard', [StudentController::class, 'dashboard'])->name('dashboard');
+    Route::get('/classroom', [StudentController::class, 'classroom'])->name('classroom');
     Route::get('/live-class', [StudentController::class, 'joinLiveClass'])->name('live-class');
 });
 

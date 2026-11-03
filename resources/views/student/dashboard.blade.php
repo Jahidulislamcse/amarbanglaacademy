@@ -207,24 +207,24 @@
 
                 <!-- Right Big Action Button -->
                 <div class="lg:col-span-4 flex flex-col items-stretch sm:items-start lg:items-end justify-center">
-                    @if($course?->live_meeting_url)
-                        <a href="{{ route('student.live-class') }}" target="_blank"
+                    @if($course?->live_meeting_url || $course?->is_live_now)
+                        <a href="{{ route('student.classroom') }}"
                            class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-sm sm:text-base px-6 py-4 rounded-2xl shadow-xl shadow-emerald-500/30 transform hover:-translate-y-0.5 transition">
                             <i class="fa-solid fa-video text-lg"></i>
-                            <span>ক্লাসে জয়েন করুন</span>
-                            <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
+                            <span>লাইভ ক্লাসরুমে প্রবেশ করুন</span>
+                            <i class="fa-solid fa-arrow-right text-xs"></i>
                         </a>
                         <span class="text-[11px] text-emerald-300/80 mt-2 text-center lg:text-right w-full">
-                            সরাসরি Zoom / Google Meet এ ওপেন হবে
+                            সরাসরি ইন-সিস্টেম লাইভ ক্লাসরুমে ওপেন হবে
                         </span>
                     @else
                         <div class="w-full bg-white/10 p-4 rounded-2xl border border-white/15 text-center lg:text-right space-y-1">
                             <div class="text-xs font-bold text-amber-300 flex items-center justify-center lg:justify-end gap-1.5">
                                 <i class="fa-solid fa-clock"></i>
-                                <span>ক্লাস শুরুর পূর্বে লিংক দেওয়া হবে</span>
+                                <span>ক্লাস শুরুর পূর্বে লিংক সক্রিয় হবে</span>
                             </div>
                             <p class="text-[11px] text-slate-300">
-                                WhatsApp গ্রুপেও লিংক নোটিফিকেশন পাঠানো হবে
+                                পরবর্তী ক্লাস: <strong>{{ $course?->live_schedule_text ?? 'রাত ৯:০০ টা' }}</strong>
                             </p>
                         </div>
                     @endif
