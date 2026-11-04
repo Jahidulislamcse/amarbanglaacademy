@@ -23,15 +23,10 @@
         </div>
 
         <div class="flex items-center gap-2">
-            <a href="{{ route('student.classroom') }}" target="_blank"
-               class="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-md transition">
-                <i class="fa-solid fa-video text-white"></i>
-                <span>ইন-সিস্টেম ক্লাসরুম টেস্ট</span>
-            </a>
             <a href="{{ route('student.dashboard') }}" target="_blank"
                class="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-sm transition">
                 <i class="fa-solid fa-graduation-cap text-amber-400"></i>
-                <span>স্টুডেন্ট পোর্টাল</span>
+                <span>স্টুডেন্ট পোর্টাল দেখুন</span>
             </a>
         </div>
     </div>
@@ -79,19 +74,11 @@
 
                 <!-- Action Buttons: Direct Join & Test -->
                 <div class="flex items-center gap-2.5 shrink-0 flex-wrap">
-                    <a href="{{ route('student.classroom') }}" target="_blank"
+                    <a href="{{ $primaryCourse->live_meeting_url }}" target="_blank"
                        class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs sm:text-sm shadow-lg shadow-emerald-500/20 transition transform active:scale-95">
-                        <i class="fa-solid fa-chalkboard-user"></i>
-                        <span>🔴 ইন-সিস্টেম ক্লাসরুমে প্রবেশ করুন (হোস্ট)</span>
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                        <span>সরাসরি মিটিংয়ে যুক্ত হন (Zoom / Meet)</span>
                     </a>
-                    @if($primaryCourse->live_meeting_url && !str_contains(strtolower($primaryCourse->live_meeting_url), 'meet.jit.si'))
-                        <a href="{{ $primaryCourse->live_meeting_url }}" target="_blank"
-                           class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-300 text-xs font-bold border border-slate-700 transition"
-                           title="বাহিরের অ্যাপে খুলুন">
-                            <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
-                            <span>এক্সটার্নাল লিঙ্ক</span>
-                        </a>
-                    @endif
                     <button type="button" onclick="copyMeetingLink('{{ $primaryCourse->live_meeting_url }}', this)"
                             class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-white text-xs font-bold border border-emerald-700/50 transition">
                         <i class="fa-regular fa-copy"></i>
@@ -193,21 +180,17 @@
                 <div class="md:col-span-2">
                     <div class="flex items-center justify-between mb-1.5 flex-wrap gap-2">
                         <label class="block text-xs font-bold text-slate-700">
-                            লাইভ মিটিং লিংক <span class="text-red-500">*</span>
+                            Zoom বা Google Meet মিটিং লিংক <span class="text-red-500">*</span>
                         </label>
                         <div class="flex items-center gap-1.5 text-[11px] flex-wrap">
-                            <span class="text-slate-400 font-medium">ক্লিক করে প্রিসেট বসান:</span>
-                            <button type="button" onclick="setMeetingPreset('insystem')"
-                                    class="px-2 py-0.5 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold transition">
-                                + ইন-সিস্টেম ক্লাসরুম (ওয়েবসাইট)
-                            </button>
+                            <span class="text-slate-400 font-medium">ক্লিক করে বসান:</span>
                             <button type="button" onclick="setMeetingPreset('zoom')"
-                                    class="px-2 py-0.5 rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold transition">
-                                + Zoom
+                                    class="px-2.5 py-0.5 rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold transition">
+                                <i class="fa-solid fa-video text-[10px]"></i> + Zoom লিংক
                             </button>
                             <button type="button" onclick="setMeetingPreset('meet')"
-                                    class="px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold transition">
-                                + Google Meet
+                                    class="px-2.5 py-0.5 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold transition">
+                                <i class="fa-solid fa-chalkboard-user text-[10px]"></i> + Google Meet লিংক
                             </button>
                         </div>
                     </div>
@@ -217,13 +200,13 @@
                         </div>
                         <input type="text" name="live_meeting_url" id="live_meeting_url_input" required
                                value="{{ old('live_meeting_url', $primaryCourse?->live_meeting_url) }}"
-                               placeholder="যেমন: https://meet.jit.si/AmarBanglaAcademy_Classroom_Batch1 অথবা Zoom/Meet লিংক"
+                               placeholder="যেমন: https://meet.google.com/abc-defg-hij অথবা https://us05web.zoom.us/j/85212345678"
                                class="w-full pl-9 pr-4 py-2.5 text-xs sm:text-sm bg-slate-50 border @error('live_meeting_url') border-red-400 bg-red-50/40 @else border-slate-300 @enderror rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none font-mono transition">
                     </div>
                     @error('live_meeting_url')
                         <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                     @enderror
-                    <p class="text-[11px] text-slate-400 mt-1">ইন-সিস্টেম ক্লাসরুম নির্বাচন করলে শিক্ষার্থীরা ওয়েবসাইট থেকে বের না হয়ে সরাসরি পোর্টালের ভেতরেই লাইভ ক্লাসে অংশ নিতে পারবে।</p>
+                    <p class="text-[11px] text-slate-400 mt-1">শিক্ষার্থীরা তাদের ড্যাশবোর্ডে "সরাসরি ক্লাসে যোগ দিন" বাটনে ক্লিক করলে কোনো লিমিট ছাড়া সরাসরি আপনার দেওয়া এই Zoom বা Google Meet-এ যুক্ত হয়ে যাবে।</p>
                 </div>
 
                 <!-- Live Class Topic -->
@@ -336,9 +319,7 @@
 function setMeetingPreset(type) {
     var urlInput = document.getElementById('live_meeting_url_input');
     if (!urlInput) return;
-    if (type === 'insystem') {
-        urlInput.value = 'https://meet.jit.si/AmarBanglaAcademy_Classroom_Batch1';
-    } else if (type === 'zoom') {
+    if (type === 'zoom') {
         urlInput.value = 'https://us05web.zoom.us/j/';
         urlInput.focus();
     } else if (type === 'meet') {

@@ -36,9 +36,9 @@ class StudentController extends Controller
     }
 
     /**
-     * In-System Live Classroom (100% inside LMS page without any external redirect)
+     * Direct Live Class Meeting Redirect (Regular Zoom or Google Meet)
      */
-    public function classroom(Request $request)
+    public function joinLiveClass()
     {
         $user = Auth::user();
 
@@ -58,32 +58,20 @@ class StudentController extends Controller
 
         $meetingUrl = trim((string) ($course?->live_meeting_url ?? ''));
 
-        // Dedicated in-system room name for this course & batch
-        $batchNum = preg_replace('/[^0-9]/', '', (string)($course?->batch_no ?? '1')) ?: '1';
-        $courseSlug = $course?->slug ? str_replace('-', '', ucwords($course->slug, '-')) : 'Journalism';
-        $defaultRoom = 'AmarBanglaAcademy_' . $courseSlug . '_Batch' . $batchNum;
-
-        // Base room URL (if custom Jitsi room URL provided, use that; otherwise use dedicated academy room)
-        if (!empty($meetingUrl) && str_contains(strtolower($meetingUrl), 'meet.jit.si')) {
-            $baseRoomUrl = explode('#', $meetingUrl)[0];
-        } else {
-            $baseRoomUrl = 'https://meet.jit.si/' . $defaultRoom;
+        if (!empty($meetingUrl)) {
+            // Direct redirect to Zoom / Google Meet meeting URL
+            return redirect()->away($meetingUrl);
         }
 
-        // Student / Instructor display name inside the meeting
-        $displayName = urlencode($user->name ?: ($user->role === 'admin' ? 'শিক্ষক / মডারেটর' : 'শিক্ষার্থী'));
-
-        // Embedded WebRTC URL with pre-filled name, audio auto-managed, clean in-system UI
-        $embedUrl = rtrim($baseRoomUrl, '/') . '#userInfo.displayName="' . $displayName . '"&config.prejoinPageEnabled=false&config.disableDeepLinking=true';
-
-        return view('student.classroom', compact('user', 'enrollment', 'course', 'embedUrl', 'meetingUrl'));
+        return redirect()->route('student.dashboard')
+            ->with('info', 'বর্তমান ক্লাসের লাইভ মিটিং লিংক এখনো সক্রিয় হয়নি। ক্লাস শুরুর ১৫-২০ মিনিট পূর্বে এখানে লিংক সক্রিয় করা হবে অথবা WhatsApp গ্রুপে চোখ রাখুন।');
     }
 
     /**
-     * Direct Live Class Meeting Route (Redirects to In-System Classroom)
+     * Classroom route (redirects directly to live meeting URL)
      */
-    public function joinLiveClass()
+    public function classroom()
     {
-        return redirect()->route('student.classroom');
+        return $this->joinLiveClass();
     }
 }

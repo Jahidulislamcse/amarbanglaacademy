@@ -208,14 +208,14 @@
                 <!-- Right Big Action Button -->
                 <div class="lg:col-span-4 flex flex-col items-stretch sm:items-start lg:items-end justify-center">
                     @if($course?->live_meeting_url || $course?->is_live_now)
-                        <a href="{{ route('student.classroom') }}"
-                           class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-sm sm:text-base px-6 py-4 rounded-2xl shadow-xl shadow-emerald-500/30 transform hover:-translate-y-0.5 transition">
+                        <a href="{{ route('student.live-class') }}" target="_blank"
+                           class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-sm sm:text-base px-6 py-4 rounded-2xl shadow-xl shadow-emerald-500/30 transform hover:-translate-y-0.5 active:scale-95 transition">
                             <i class="fa-solid fa-video text-lg"></i>
-                            <span>লাইভ ক্লাসরুমে প্রবেশ করুন</span>
-                            <i class="fa-solid fa-arrow-right text-xs"></i>
+                            <span>সরাসরি ক্লাসে যোগ দিন</span>
+                            <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
                         </a>
                         <span class="text-[11px] text-emerald-300/80 mt-2 text-center lg:text-right w-full">
-                            সরাসরি ইন-সিস্টেম লাইভ ক্লাসরুমে ওপেন হবে
+                            সরাসরি Zoom বা Google Meet এ ওপেন হবে
                         </span>
                     @else
                         <div class="w-full bg-white/10 p-4 rounded-2xl border border-white/15 text-center lg:text-right space-y-1">

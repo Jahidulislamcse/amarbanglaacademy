@@ -197,10 +197,10 @@ class StudentAuthAndLmsTest extends TestCase
         $response->assertSee('স্টুডেন্ট এলএমএস পোর্টাল');
         $response->assertSee('রাকিবুল ইসলাম');
         $response->assertSee('সাংবাদিকতা, আইন ও উপস্থাপনা');
-        $response->assertSee('লাইভ ক্লাসরুমে প্রবেশ করুন');
+        $response->assertSee('সরাসরি ক্লাসে যোগ দিন');
     }
 
-    public function test_live_class_redirects_to_in_system_classroom(): void
+    public function test_live_class_redirects_to_meeting_url(): void
     {
         $studentUser = User::create([
             'name' => 'রাকিবুল ইসলাম',
@@ -221,15 +221,10 @@ class StudentAuthAndLmsTest extends TestCase
         ]);
 
         $this->course->update([
-            'live_meeting_url' => 'https://meet.jit.si/AmarBanglaAcademy_Classroom_Batch1',
+            'live_meeting_url' => 'https://us05web.zoom.us/j/987654321',
         ]);
 
         $response = $this->actingAs($studentUser)->get('/student/live-class');
-        $response->assertRedirect('/student/classroom');
-
-        $classroomResponse = $this->actingAs($studentUser)->get('/student/classroom');
-        $classroomResponse->assertStatus(200);
-        $classroomResponse->assertSee('in-system-frame');
-        $classroomResponse->assertSee('AmarBanglaAcademy_Classroom_Batch1');
+        $response->assertRedirect('https://us05web.zoom.us/j/987654321');
     }
 }
