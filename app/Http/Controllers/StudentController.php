@@ -36,7 +36,7 @@ class StudentController extends Controller
     }
 
     /**
-     * In-System Live Classroom (Distraction-free video class within the LMS)
+     * In-System Live Classroom (100% inside LMS page without any external redirect)
      */
     public function classroom(Request $request)
     {
@@ -57,35 +57,26 @@ class StudentController extends Controller
         $course = $enrollment?->course ?? Course::first();
 
         $meetingUrl = trim((string) ($course?->live_meeting_url ?? ''));
-        $lowerUrl = strtolower($meetingUrl);
 
-        $provider = 'in_system';
-        $embedUrl = null;
+        // Dedicated in-system room name for this course & batch
+        $batchNum = preg_replace('/[^0-9]/', '', (string)($course?->batch_no ?? '1')) ?: '1';
+        $courseSlug = $course?->slug ? str_replace('-', '', ucwords($course->slug, '-')) : 'Journalism';
+        $defaultRoom = 'AmarBanglaAcademy_' . $courseSlug . '_Batch' . $batchNum;
 
-        if (str_contains($lowerUrl, 'meet.google.com')) {
-            $provider = 'google_meet';
-        } elseif (str_contains($lowerUrl, 'zoom.us')) {
-            $provider = 'zoom';
-        } elseif (str_contains($lowerUrl, 'youtube.com') || str_contains($lowerUrl, 'youtu.be')) {
-            $provider = 'youtube';
-            preg_match('/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/', $meetingUrl, $matches);
-            $youtubeId = $matches[1] ?? null;
-            if ($youtubeId) {
-                $embedUrl = "https://www.youtube-nocookie.com/embed/{$youtubeId}?autoplay=1&rel=0";
-            }
-        } elseif (!empty($meetingUrl) && str_contains($lowerUrl, 'meet.jit.si')) {
-            $provider = 'in_system';
-            $embedUrl = $meetingUrl;
+        // Base room URL (if custom Jitsi room URL provided, use that; otherwise use dedicated academy room)
+        if (!empty($meetingUrl) && str_contains(strtolower($meetingUrl), 'meet.jit.si')) {
+            $baseRoomUrl = explode('#', $meetingUrl)[0];
         } else {
-            // Default In-System WebRTC classroom (Zero setup, 100% inside our website)
-            $provider = 'in_system';
-            $batchNum = preg_replace('/[^0-9]/', '', (string)($course?->batch_no ?? '1')) ?: '1';
-            $roomName = 'AmarBanglaAcademy_Classroom_Batch' . $batchNum;
-            $studentNameClean = urlencode($user->name ?: 'Student');
-            $embedUrl = "https://meet.jit.si/{$roomName}#userInfo.displayName=\"{$studentNameClean}\"&config.prejoinPageEnabled=false";
+            $baseRoomUrl = 'https://meet.jit.si/' . $defaultRoom;
         }
 
-        return view('student.classroom', compact('user', 'enrollment', 'course', 'provider', 'embedUrl', 'meetingUrl'));
+        // Student / Instructor display name inside the meeting
+        $displayName = urlencode($user->name ?: ($user->role === 'admin' ? 'শিক্ষক / মডারেটর' : 'শিক্ষার্থী'));
+
+        // Embedded WebRTC URL with pre-filled name, audio auto-managed, clean in-system UI
+        $embedUrl = rtrim($baseRoomUrl, '/') . '#userInfo.displayName="' . $displayName . '"&config.prejoinPageEnabled=false&config.disableDeepLinking=true';
+
+        return view('student.classroom', compact('user', 'enrollment', 'course', 'embedUrl', 'meetingUrl'));
     }
 
     /**

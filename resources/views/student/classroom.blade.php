@@ -93,166 +93,47 @@
         </div>
     </header>
 
-    <!-- Main Classroom Canvas -->
+    <!-- Main Classroom Canvas: 100% In-System Video Meeting Panel -->
     <main id="classroom-main" class="flex-1 w-full classroom-frame-container relative bg-slate-950 flex flex-col">
 
-        @if($provider === 'in_system')
-            <!-- MODE 1: NATIVE IN-SYSTEM WEBRTC VIDEO CLASSROOM (100% Inside website) -->
-            <div class="relative w-full h-full flex flex-col">
-                <iframe
-                    id="in-system-frame"
-                    src="{{ $embedUrl }}"
-                    allow="camera; microphone; display-capture; autoplay; clipboard-write; fullscreen"
-                    class="w-full flex-1 border-0 bg-slate-950"
-                    allowfullscreen>
-                </iframe>
+        <!-- Embedded Interactive Video Meeting -->
+        <iframe
+            id="in-system-frame"
+            src="{{ $embedUrl }}"
+            allow="camera *; microphone *; display-capture *; autoplay *; clipboard-write *; fullscreen *"
+            class="w-full flex-1 border-0 bg-slate-950"
+            allowfullscreen>
+        </iframe>
 
-                <!-- In-System Classroom Bottom Info Strip -->
-                <div class="bg-slate-900/90 border-t border-slate-800/80 px-4 py-2 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-400 shrink-0">
-                    <div class="flex items-center gap-2">
-                        <i class="fa-solid fa-circle-check text-emerald-400"></i>
-                        <span>আপনি সরাসরি <strong>ইন-সিস্টেম লাইভ ক্লাসরুমে</strong> যুক্ত আছেন। মাইক্রোফোন ও ক্যামেরা স্ক্রিনের নিচ থেকে চালু/বন্ধ করতে পারবেন।</span>
-                    </div>
-                    <div class="flex items-center gap-3 text-[11px]">
-                        @if($course?->live_meeting_passcode)
-                            <span>পাসকোড: <strong class="text-white font-mono">{{ $course->live_meeting_passcode }}</strong></span>
-                        @endif
-                        <a href="https://wa.me/8801332549549" target="_blank" class="text-emerald-400 hover:underline flex items-center gap-1">
-                            <i class="fa-brands fa-whatsapp"></i>
-                            <span>হেল্পলাইন: 01332-549549</span>
-                        </a>
-                    </div>
-                </div>
+        <!-- In-System Classroom Bottom Info Strip -->
+        <div class="bg-slate-900/95 border-t border-slate-800 px-4 py-2.5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-300 shrink-0">
+            <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span>আপনি সরাসরি <strong>আমার বাংলা একাডেমি লাইভ ক্লাসরুমে</strong> যুক্ত আছেন। ক্যামেরা, মাইক ও স্ক্রিন শেয়ারের সকল কন্ট্রোল নিচে রয়েছে।</span>
             </div>
 
-        @elseif($provider === 'google_meet')
-            <!-- MODE 2: GOOGLE MEET CLASSROOM THEATRE -->
-            <div class="flex-1 overflow-y-auto p-4 sm:p-8 flex items-center justify-center">
-                <div class="max-w-2xl w-full bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-10 shadow-2xl text-center space-y-6 relative overflow-hidden">
-                    <!-- Glow effect -->
-                    <div class="absolute -right-20 -top-20 w-60 h-60 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="flex items-center gap-3 text-xs flex-wrap">
+                @if($course?->live_meeting_passcode)
+                    <span class="bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-700 font-mono text-white">
+                        পাসকোড: <strong>{{ $course->live_meeting_passcode }}</strong>
+                    </span>
+                @endif
 
-                    <!-- Platform Logo & Status -->
-                    <div class="w-16 h-16 rounded-2xl bg-emerald-950/80 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-3xl mx-auto shadow-inner">
-                        <i class="fa-solid fa-chalkboard-user"></i>
-                    </div>
+                @if(!empty($meetingUrl) && !str_contains(strtolower($meetingUrl), 'meet.jit.si'))
+                    <a href="{{ $meetingUrl }}" target="_blank"
+                       class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition"
+                       title="যদি এই পেজে ব্রাউজারে কোনো সমস্যা হয়, তবে বিকল্প হিসেবে এক্সটার্নাল অ্যাপে খুলতে ক্লিক করুন">
+                        <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                        <span>বিকল্প অ্যাপ লিংক</span>
+                    </a>
+                @endif
 
-                    <div class="space-y-2">
-                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-emerald-900/40 text-emerald-300 border border-emerald-700/50">
-                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                            <span>গুগল মিট অনলাইন লাইভ সেশন</span>
-                        </div>
-                        <h2 class="text-xl sm:text-2xl font-black text-white">
-                            {{ $course?->live_class_topic ?: 'আজকের লাইভ ক্লাস শুরু হয়েছে' }}
-                        </h2>
-                        <p class="text-xs sm:text-sm text-slate-300 max-w-lg mx-auto leading-relaxed">
-                            গুগল মিটের সিকিউরিটি ও গোপনীয়তা পলিসির কারণে ক্যামেরা ও মাইক্রোফোন ব্যবহারের জন্য এটি গুগল অনুমোদিত সুরক্ষিত ট্যাবে ওপেন হয়। নিচের বাটনে ক্লিক করে সরাসরি ক্লাসে অংশ নিন।
-                        </p>
-                    </div>
-
-                    <!-- Big Launch Button -->
-                    <div class="pt-2">
-                        <a href="{{ $meetingUrl }}" target="_blank"
-                           class="inline-flex items-center justify-center gap-3 w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black text-sm sm:text-base shadow-xl shadow-emerald-500/20 transform hover:-translate-y-0.5 active:scale-95 transition">
-                            <i class="fa-solid fa-video text-lg"></i>
-                            <span>গুগল মিটে সরাসরি ক্লাসে যুক্ত হন</span>
-                            <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
-                        </a>
-                    </div>
-
-                    <!-- Meeting Details Card -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4 border-t border-slate-800 text-left text-xs">
-                        <div class="p-3 bg-slate-950/70 rounded-xl border border-slate-800">
-                            <span class="text-slate-400 text-[11px] block">কোর্স ও ব্যাচ</span>
-                            <span class="font-bold text-white mt-0.5 block">{{ $course?->bangla_title ?? 'সাংবাদিকতা, আইন ও উপস্থাপনা' }} ({{ $course?->batch_no ?? '১ম ব্যাচ' }})</span>
-                        </div>
-                        <div class="p-3 bg-slate-950/70 rounded-xl border border-slate-800">
-                            <span class="text-slate-400 text-[11px] block">অংশগ্রহণকারী শিক্ষার্থী</span>
-                            <span class="font-bold text-emerald-400 mt-0.5 block">{{ $user->name }}</span>
-                        </div>
-                    </div>
-
-                    <!-- WhatsApp Group Backup -->
-                    <div class="pt-2 text-xs text-slate-400">
-                        কোনো সমস্যা হলে WhatsApp গ্রুপে যুক্ত থাকুন:
-                        <a href="https://chat.whatsapp.com/EeM7caaCmE79NR0BFdrwWh?s=sh&p=a&iam=2" target="_blank" class="text-emerald-400 underline font-bold ml-1">
-                            WhatsApp ব্যাচ গ্রুপ
-                        </a>
-                    </div>
-                </div>
+                <a href="https://wa.me/8801332549549" target="_blank" class="text-emerald-400 hover:underline flex items-center gap-1 font-bold">
+                    <i class="fa-brands fa-whatsapp text-sm"></i>
+                    <span>হেল্পলাইন: 01332-549549</span>
+                </a>
             </div>
-
-        @elseif($provider === 'zoom')
-            <!-- MODE 3: ZOOM CLASSROOM THEATRE -->
-            <div class="flex-1 overflow-y-auto p-4 sm:p-8 flex items-center justify-center">
-                <div class="max-w-2xl w-full bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-10 shadow-2xl text-center space-y-6 relative overflow-hidden">
-                    <div class="w-16 h-16 rounded-2xl bg-blue-950/80 border border-blue-500/30 text-blue-400 flex items-center justify-center text-3xl mx-auto shadow-inner">
-                        <i class="fa-solid fa-video"></i>
-                    </div>
-
-                    <div class="space-y-2">
-                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-blue-900/40 text-blue-300 border border-blue-700/50">
-                            <span class="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
-                            <span>জুম (Zoom) অনলাইন লাইভ সেশন</span>
-                        </div>
-                        <h2 class="text-xl sm:text-2xl font-black text-white">
-                            {{ $course?->live_class_topic ?: 'আজকের জুম লাইভ ক্লাস' }}
-                        </h2>
-                        <p class="text-xs sm:text-sm text-slate-300 max-w-lg mx-auto leading-relaxed">
-                            আপনি সরাসরি জুম অ্যাপ অথবা ব্রাউজারের মাধ্যমে আজকের ক্লাসে যুক্ত হতে পারবেন। নিচে মিটিং আইডি ও পাসকোড দেওয়া আছে।
-                        </p>
-                    </div>
-
-                    <!-- Meeting ID & Passcode Card -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                        <div class="p-3.5 bg-slate-950/80 rounded-2xl border border-slate-800 flex items-center justify-between">
-                            <div class="text-left">
-                                <span class="text-slate-400 text-[11px] block">Meeting ID</span>
-                                <strong class="text-white font-mono text-sm block mt-0.5">{{ $course?->live_meeting_id ?: 'সরাসরি লিংকে যুক্ত' }}</strong>
-                            </div>
-                            @if($course?->live_meeting_id)
-                                <button type="button" onclick="copyClassText('{{ $course->live_meeting_id }}', this)" class="p-2 text-slate-400 hover:text-white">
-                                    <i class="fa-regular fa-copy"></i>
-                                </button>
-                            @endif
-                        </div>
-
-                        <div class="p-3.5 bg-slate-950/80 rounded-2xl border border-slate-800 flex items-center justify-between">
-                            <div class="text-left">
-                                <span class="text-slate-400 text-[11px] block">Passcode</span>
-                                <strong class="text-white font-mono text-sm block mt-0.5">{{ $course?->live_meeting_passcode ?: 'পাসকোড নেই' }}</strong>
-                            </div>
-                            @if($course?->live_meeting_passcode)
-                                <button type="button" onclick="copyClassText('{{ $course->live_meeting_passcode }}', this)" class="p-2 text-slate-400 hover:text-white">
-                                    <i class="fa-regular fa-copy"></i>
-                                </button>
-                            @endif
-                        </div>
-                    </div>
-
-                    <!-- Direct Launch Button -->
-                    <div class="pt-2">
-                        <a href="{{ $meetingUrl }}" target="_blank"
-                           class="inline-flex items-center justify-center gap-3 w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-sm sm:text-base shadow-xl shadow-blue-500/20 transform hover:-translate-y-0.5 active:scale-95 transition">
-                            <i class="fa-solid fa-video text-lg"></i>
-                            <span>জুম ক্লাসে প্রবেশ করুন</span>
-                            <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-        @elseif($provider === 'youtube')
-            <!-- MODE 4: YOUTUBE LIVE EMBED -->
-            <div class="relative w-full h-full flex flex-col">
-                <iframe
-                    src="{{ $embedUrl }}"
-                    class="w-full flex-1 border-0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowfullscreen>
-                </iframe>
-            </div>
-        @endif
+        </div>
 
     </main>
 

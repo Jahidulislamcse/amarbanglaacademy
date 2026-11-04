@@ -79,11 +79,19 @@
 
                 <!-- Action Buttons: Direct Join & Test -->
                 <div class="flex items-center gap-2.5 shrink-0 flex-wrap">
-                    <a href="{{ $primaryCourse->live_meeting_url }}" target="_blank"
+                    <a href="{{ route('student.classroom') }}" target="_blank"
                        class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs sm:text-sm shadow-lg shadow-emerald-500/20 transition transform active:scale-95">
-                        <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                        <span>সরাসরি মিটিংয়ে যুক্ত হন</span>
+                        <i class="fa-solid fa-chalkboard-user"></i>
+                        <span>🔴 ইন-সিস্টেম ক্লাসরুমে প্রবেশ করুন (হোস্ট)</span>
                     </a>
+                    @if($primaryCourse->live_meeting_url && !str_contains(strtolower($primaryCourse->live_meeting_url), 'meet.jit.si'))
+                        <a href="{{ $primaryCourse->live_meeting_url }}" target="_blank"
+                           class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-300 text-xs font-bold border border-slate-700 transition"
+                           title="বাহিরের অ্যাপে খুলুন">
+                            <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                            <span>এক্সটার্নাল লিঙ্ক</span>
+                        </a>
+                    @endif
                     <button type="button" onclick="copyMeetingLink('{{ $primaryCourse->live_meeting_url }}', this)"
                             class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-white text-xs font-bold border border-emerald-700/50 transition">
                         <i class="fa-regular fa-copy"></i>
