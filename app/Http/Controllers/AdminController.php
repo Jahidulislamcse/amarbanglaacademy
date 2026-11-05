@@ -6,9 +6,11 @@ use App\Models\Attendance;
 use App\Models\AttendanceSession;
 use App\Models\Course;
 use App\Models\Enrollment;
+use App\Models\LiveMeeting;
 use App\Models\Payment;
 use App\Models\User;
 use App\Services\EpsGateway;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -448,7 +450,177 @@ class AdminController extends Controller
         $primaryCourse = Course::first();
         $totalStudents = Enrollment::where('status', 'active')->count();
 
-        return view('admin.live-meetings', compact('primaryCourse', 'totalStudents'));
+        $meetings = [];
+        $activeMeeting = null;
+
+        if ($primaryCourse) {
+            $meetings = LiveMeeting::where('course_id', $primaryCourse->id)
+                ->orderBy('starts_at', 'desc')
+                ->get();
+
+            $activeMeeting = $primaryCourse->currentOrNextMeeting();
+        }
+
+        return view('admin.live-meetings', compact('primaryCourse', 'totalStudents', 'meetings', 'activeMeeting'));
+    }
+
+    /**
+     * Store Scheduled Live Meeting (Date and Time based)
+     */
+    public function storeMeeting(Request $request)
+    {
+        $primaryCourse = Course::firstOrFail();
+
+        $rawUrl = trim((string) $request->input('meeting_url'));
+        if (!empty($rawUrl) && !str_starts_with($rawUrl, 'http://') && !str_starts_with($rawUrl, 'https://')) {
+            $rawUrl = 'https://' . $rawUrl;
+            $request->merge(['meeting_url' => $rawUrl]);
+        }
+
+        $validated = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'meeting_url' => ['required', 'url', 'max:1000'],
+            'meeting_id' => ['nullable', 'string', 'max:100'],
+            'meeting_passcode' => ['nullable', 'string', 'max:100'],
+            'scheduled_date' => ['required', 'date'],
+            'scheduled_time' => ['required', 'string'],
+            'schedule_text' => ['nullable', 'string', 'max:255'],
+            'notes' => ['nullable', 'string', 'max:500'],
+        ], [
+            'title.required' => 'ক্লাসের বিষয় বা শিরোনাম প্রদান করুন।',
+            'meeting_url.required' => 'মিটিং লিংক আবশ্যক।',
+            'meeting_url.url' => 'সঠিক মিটিং লিংক প্রদান করুন (যেমন: https://zoom.us/j/... অথবা https://meet.google.com/...)।',
+            'scheduled_date.required' => 'ক্লাসের তারিখ নির্ধারণ করুন।',
+            'scheduled_time.required' => 'ক্লাস শুরুর সময় নির্ধারণ করুন।',
+        ]);
+
+        $startsAt = Carbon::parse($validated['scheduled_date'] . ' ' . $validated['scheduled_time']);
+        $endsAt = $startsAt->copy()->addHours(2);
+
+        $platform = 'other';
+        if (str_contains(strtolower($validated['meeting_url']), 'zoom')) {
+            $platform = 'zoom';
+        } elseif (str_contains(strtolower($validated['meeting_url']), 'meet.google')) {
+            $platform = 'google_meet';
+        }
+
+        $isLiveNow = $request->boolean('is_live_now');
+
+        if ($isLiveNow) {
+            // Unset other live meetings for this course
+            LiveMeeting::where('course_id', $primaryCourse->id)->update(['is_live_now' => false]);
+        }
+
+        $meeting = LiveMeeting::create([
+            'course_id' => $primaryCourse->id,
+            'title' => $validated['title'],
+            'meeting_url' => $validated['meeting_url'],
+            'meeting_id' => $validated['meeting_id'] ?? null,
+            'meeting_passcode' => $validated['meeting_passcode'] ?? null,
+            'platform' => $platform,
+            'starts_at' => $startsAt,
+            'ends_at' => $endsAt,
+            'schedule_text' => $validated['schedule_text'] ?? null,
+            'is_live_now' => $isLiveNow,
+            'status' => $isLiveNow ? 'live' : 'scheduled',
+            'notes' => $validated['notes'] ?? null,
+            'created_by' => Auth::id(),
+        ]);
+
+        // Sync with course
+        $primaryCourse->update([
+            'live_meeting_url' => $meeting->meeting_url,
+            'live_meeting_id' => $meeting->meeting_id,
+            'live_meeting_passcode' => $meeting->meeting_passcode,
+            'live_class_topic' => $meeting->title,
+            'live_schedule_text' => $meeting->formatted_schedule,
+            'is_live_now' => $isLiveNow,
+        ]);
+
+        if ($isLiveNow) {
+            AttendanceSession::firstOrCreate(
+                [
+                    'course_id' => $primaryCourse->id,
+                    'session_date' => $startsAt->toDateString(),
+                ],
+                [
+                    'title' => $meeting->title,
+                    'started_at' => now(),
+                    'is_active' => true,
+                    'status' => 'completed',
+                ]
+            );
+        }
+
+        return back()->with('success', "তারিখ ও সময়ভিত্তিক মিটিং সফলভাবে শিডিউল করা হয়েছে! ({$meeting->formatted_schedule})");
+    }
+
+    /**
+     * Toggle Live Status for a Scheduled Meeting
+     */
+    public function toggleMeetingLive(LiveMeeting $meeting)
+    {
+        $course = $meeting->course;
+
+        if ($meeting->is_live_now) {
+            $meeting->update([
+                'is_live_now' => false,
+                'status' => 'completed',
+            ]);
+            $course->update(['is_live_now' => false]);
+            $msg = 'লাইভ মিটিং সফলভাবে বন্ধ করা হয়েছে। শিক্ষার্থীরা এখন পরবর্তী সময়সূচি দেখবে।';
+        } else {
+            // Turn off other meetings
+            LiveMeeting::where('course_id', $course->id)->update(['is_live_now' => false]);
+
+            $meeting->update([
+                'is_live_now' => true,
+                'status' => 'live',
+            ]);
+
+            $course->update([
+                'live_meeting_url' => $meeting->meeting_url,
+                'live_class_topic' => $meeting->title,
+                'live_meeting_id' => $meeting->meeting_id,
+                'live_meeting_passcode' => $meeting->meeting_passcode,
+                'live_schedule_text' => $meeting->formatted_schedule,
+                'is_live_now' => true,
+            ]);
+
+            // Ensure attendance session exists
+            AttendanceSession::firstOrCreate(
+                [
+                    'course_id' => $course->id,
+                    'session_date' => now()->toDateString(),
+                ],
+                [
+                    'title' => $meeting->title,
+                    'started_at' => now(),
+                    'is_active' => true,
+                    'status' => 'completed',
+                ]
+            );
+
+            $msg = "🔴 '{$meeting->title}' লাইভ মিটিং শুরু করা হয়েছে! শিক্ষার্থীদের ড্যাশবোর্ডে সরাসরি জয়েন বাটন সক্রিয় হয়ে গেছে।";
+        }
+
+        return back()->with('success', $msg);
+    }
+
+    /**
+     * Delete a Scheduled Meeting
+     */
+    public function destroyMeeting(LiveMeeting $meeting)
+    {
+        $course = $meeting->course;
+        $wasLive = $meeting->is_live_now;
+        $meeting->delete();
+
+        if ($wasLive) {
+            $course->update(['is_live_now' => false]);
+        }
+
+        return back()->with('success', 'মিটিংটি সফলভাবে মুছে ফেলা হয়েছে।');
     }
 
     /**

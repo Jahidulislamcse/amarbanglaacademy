@@ -6,6 +6,7 @@ use App\Models\Attendance;
 use App\Models\AttendanceSession;
 use App\Models\Course;
 use App\Models\Enrollment;
+use App\Models\LiveMeeting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -34,6 +35,18 @@ class StudentController extends Controller
         // Get main course details with syllabus modules
         $course = $enrollment?->course ?? Course::with(['modules.lessons', 'instructors'])->first();
 
+        // Active or next scheduled live meeting
+        $currentMeeting = $course?->currentOrNextMeeting();
+
+        // All scheduled live meetings for student schedule timeline
+        $scheduledMeetings = [];
+        if ($course) {
+            $scheduledMeetings = LiveMeeting::where('course_id', $course->id)
+                ->where('status', '!=', 'cancelled')
+                ->orderBy('starts_at', 'asc')
+                ->get();
+        }
+
         // Calculate attendance stats for student
         $attendanceStats = $user->attendanceStatsForCourse($course?->id);
 
@@ -50,7 +63,15 @@ class StudentController extends Controller
                 ->get();
         }
 
-        return view('student.dashboard', compact('user', 'enrollment', 'course', 'attendanceStats', 'sessions'));
+        return view('student.dashboard', compact(
+            'user',
+            'enrollment',
+            'course',
+            'currentMeeting',
+            'scheduledMeetings',
+            'attendanceStats',
+            'sessions'
+        ));
     }
 
     /**
@@ -74,30 +95,33 @@ class StudentController extends Controller
 
         $course = $enrollment?->course ?? Course::first();
 
-        $meetingUrl = trim((string) ($course?->live_meeting_url ?? ''));
+        // Check date/time based meeting first, then fallback to course attributes
+        $currentMeeting = $course?->currentOrNextMeeting();
+
+        $isLive = ($currentMeeting && $currentMeeting->is_live_now) || ($course?->is_live_now);
+        $meetingUrl = trim((string) ($currentMeeting?->meeting_url ?? $course?->live_meeting_url ?? ''));
+        $scheduleText = $currentMeeting?->formatted_schedule ?? $course?->live_schedule_text ?? 'রাত ৯:০০ টা';
 
         // If not live yet and user is a student, redirect to dashboard with schedule notice
-        if ($user->role === 'student' && !$course?->is_live_now) {
-            $schedule = $course?->live_schedule_text ?? 'রাত ৯:০০ টা';
+        if ($user->role === 'student' && !$isLive) {
             return redirect()->route('student.dashboard')
-                ->with('info', "ক্লাস এখনো শুরু হয়নি বা লাইভ লিংক সক্রিয় করা হয়নি। পরবর্তী ক্লাসের সময়সূচি: {$schedule}। নির্ধারিত সময়ে ক্লাস শুরু হলে বাটনটি সক্রিয় হবে।");
+                ->with('info', "ক্লাস এখনো শুরু হয়নি বা লাইভ লিংক সক্রিয় করা হয়নি। পরবর্তী ক্লাসের সময়সূচি: {$scheduleText}। নির্ধারিত সময়ে ক্লাস শুরু হলে বাটনটি সক্রিয় হবে।");
         }
 
         // Automatic attendance record when student joins live class
         if ($user->role === 'student' && $course) {
+            $topic = $currentMeeting?->title ?: ($course->live_class_topic ?: ('লাইভ ক্লাস (' . now()->format('d M Y') . ')'));
+            $sessionDate = $currentMeeting?->starts_at?->toDateString() ?: now()->toDateString();
+
             $session = AttendanceSession::where('course_id', $course->id)
-                ->whereDate('session_date', now()->toDateString())
+                ->whereDate('session_date', $sessionDate)
                 ->first();
 
             if (!$session) {
-                $topic = !empty($course->live_class_topic)
-                    ? $course->live_class_topic
-                    : ('লাইভ ক্লাস (' . now()->format('d M Y') . ')');
-
                 $session = AttendanceSession::create([
                     'course_id' => $course->id,
                     'title' => $topic,
-                    'session_date' => now()->toDateString(),
+                    'session_date' => $sessionDate,
                     'started_at' => now(),
                     'is_active' => true,
                     'status' => 'completed',

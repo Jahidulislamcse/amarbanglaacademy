@@ -76,6 +76,37 @@ class Course extends Model
         return $this->hasMany(Attendance::class);
     }
 
+    public function liveMeetings(): HasMany
+    {
+        return $this->hasMany(LiveMeeting::class)->orderBy('starts_at', 'asc');
+    }
+
+    /**
+     * Get current active live meeting, or next upcoming scheduled meeting
+     */
+    public function currentOrNextMeeting(): ?LiveMeeting
+    {
+        // 1. Check if any meeting is explicitly marked live now
+        $liveMeeting = $this->liveMeetings()->where('is_live_now', true)->latest('starts_at')->first();
+        if ($liveMeeting) {
+            return $liveMeeting;
+        }
+
+        // 2. Next upcoming scheduled meeting (today or future)
+        $nextMeeting = $this->liveMeetings()
+            ->where('status', '!=', 'cancelled')
+            ->where('starts_at', '>=', now()->subHours(2))
+            ->orderBy('starts_at', 'asc')
+            ->first();
+
+        if ($nextMeeting) {
+            return $nextMeeting;
+        }
+
+        // 3. Fallback to latest meeting
+        return $this->liveMeetings()->latest('starts_at')->first();
+    }
+
     public function getEffectivePriceAttribute(): float
     {
         return $this->discount_price !== null && $this->discount_price > 0 

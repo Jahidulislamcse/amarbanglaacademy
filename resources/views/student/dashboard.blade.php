@@ -53,6 +53,15 @@
     openModule: 1
 }">
 
+    @php
+        $activeMeeting = $currentMeeting ?? $course?->currentOrNextMeeting();
+        $isLiveNow = ($activeMeeting && $activeMeeting->is_live_now) || ($course?->is_live_now);
+        $liveTopic = $activeMeeting?->title ?: ($course?->live_class_topic ?? ($course?->bangla_title ?? 'সাংবাদিকতা, আইন ও উপস্থাপনা'));
+        $liveSchedule = $activeMeeting?->formatted_schedule ?: ($course?->live_schedule_text ?? 'রাত ৯:০০ টা');
+        $liveMeetingId = $activeMeeting?->meeting_id ?: $course?->live_meeting_id;
+        $liveMeetingPasscode = $activeMeeting?->meeting_passcode ?: $course?->live_meeting_passcode;
+    @endphp
+
     <!-- Top Student Header -->
     <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -76,7 +85,7 @@
 
                 <!-- Right Actions: Student Info & Logout -->
                 <div class="flex items-center gap-2 sm:gap-4">
-                    @if($course?->is_live_now)
+                    @if($isLiveNow)
                         <a href="{{ route('student.live-class') }}" target="_blank"
                            class="inline-flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl shadow-sm animate-pulse transition">
                             <span class="w-2 h-2 rounded-full bg-white animate-ping"></span>
@@ -86,7 +95,7 @@
                     @else
                         <div class="hidden sm:inline-flex items-center gap-1.5 bg-amber-50 border border-amber-200/80 text-amber-900 text-xs font-medium px-3 py-1.5 rounded-xl select-none" title="ক্লাস শুরুর সময়ে লিংক সক্রিয় হবে">
                             <i class="fa-regular fa-clock text-amber-600 text-xs"></i>
-                            <span>ক্লাস শিডিউল: <strong class="text-amber-950 font-bold">{{ $course?->live_schedule_text ?? 'রাত ৯:০০ টা' }}</strong></span>
+                            <span>পরবর্তী ক্লাস: <strong class="text-amber-950 font-bold">{{ $liveSchedule }}</strong></span>
                         </div>
                     @endif
 
@@ -166,7 +175,7 @@
                 <!-- Left text -->
                 <div class="lg:col-span-8 space-y-3">
                     <div class="flex items-center gap-2 flex-wrap">
-                        @if($course?->is_live_now)
+                        @if($isLiveNow)
                             <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-rose-600 text-white animate-pulse shadow-md shadow-rose-600/30">
                                 <span class="w-2 h-2 rounded-full bg-white"></span>
                                 লাইভ ক্লাস চলছে (LIVE NOW)
@@ -181,11 +190,11 @@
                     </div>
 
                     <h2 class="text-xl sm:text-2xl lg:text-3xl font-extrabold leading-snug">
-                        {{ $course?->live_class_topic ?? ($course?->bangla_title ?? 'সাংবাদিকতা, আইন ও উপস্থাপনা') }}
+                        {{ $liveTopic }}
                     </h2>
 
                     <!-- Prominent Class Schedule Box when not live -->
-                    @if(!$course?->is_live_now)
+                    @if(!$isLiveNow)
                         <div class="inline-flex items-center gap-3 p-3 sm:px-4 sm:py-2.5 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-amber-200">
                             <div class="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center text-base shrink-0">
                                 <i class="fa-regular fa-calendar-check"></i>
@@ -193,14 +202,14 @@
                             <div>
                                 <span class="text-[11px] text-amber-300/80 block font-medium">পরবর্তী ক্লাসের সময়সূচি:</span>
                                 <strong class="text-sm sm:text-base text-amber-200 font-bold block">
-                                    {{ $course?->live_schedule_text ?? 'প্রতি বৃহস্পতি, শুক্র ও শনি রাত ৯:০০ টা' }}
+                                    {{ $liveSchedule }}
                                 </strong>
                             </div>
                         </div>
                     @endif
 
                     <p class="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-2xl">
-                        @if($course?->is_live_now)
+                        @if($isLiveNow)
                             ক্লাস শুরু হয়েছে! নিচের বাটনে ক্লিক করে সরাসরি Zoom বা Google Meet-এ যুক্ত হতে পারবেন। কোনো পাসকোড লাগলে তা নিচে দেওয়া আছে।
                         @else
                             নির্ধারিত ক্লাসের সময়ে এডমিন থেকে ক্লাস শুরু করা হলে নিচের বাটনটি স্বয়ংক্রিয়ভাবে সক্রিয় হবে এবং আপনি সরাসরি ক্লাসে যোগ দিতে পারবেন।
@@ -208,18 +217,18 @@
                     </p>
 
                     <!-- Meeting Details Badges if available when live -->
-                    @if($course?->is_live_now && ($course?->live_meeting_id || $course?->live_meeting_passcode))
+                    @if($isLiveNow && ($liveMeetingId || $liveMeetingPasscode))
                         <div class="flex items-center gap-3 pt-1 text-xs font-mono flex-wrap">
-                            @if($course->live_meeting_id)
+                            @if($liveMeetingId)
                                 <div class="bg-white/10 px-3 py-1 rounded-xl border border-white/15 flex items-center gap-2">
                                     <span class="text-slate-400 font-sans">মিটিং আইডি:</span>
-                                    <strong class="text-white select-all">{{ $course->live_meeting_id }}</strong>
+                                    <strong class="text-white select-all">{{ $liveMeetingId }}</strong>
                                 </div>
                             @endif
-                            @if($course->live_meeting_passcode)
+                            @if($liveMeetingPasscode)
                                 <div class="bg-white/10 px-3 py-1 rounded-xl border border-white/15 flex items-center gap-2">
                                     <span class="text-slate-400 font-sans">পাসকোড:</span>
-                                    <strong class="text-white select-all">{{ $course->live_meeting_passcode }}</strong>
+                                    <strong class="text-white select-all">{{ $liveMeetingPasscode }}</strong>
                                 </div>
                             @endif
                         </div>
@@ -228,7 +237,7 @@
 
                 <!-- Right Big Action Button -->
                 <div class="lg:col-span-4 flex flex-col items-stretch sm:items-start lg:items-end justify-center">
-                    @if($course?->is_live_now)
+                    @if($isLiveNow)
                         <!-- Active Button when class is Live Now -->
                         <a href="{{ route('student.live-class') }}" target="_blank"
                            class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-sm sm:text-base px-6 py-4 rounded-2xl shadow-xl shadow-emerald-500/30 transform hover:-translate-y-0.5 active:scale-95 transition">
@@ -249,7 +258,7 @@
                         <div class="w-full text-center lg:text-right mt-2 space-y-0.5">
                             <span class="text-[11px] text-amber-300 font-semibold block">
                                 <i class="fa-solid fa-clock text-[10px] mr-1"></i>
-                                শিডিউল: {{ $course?->live_schedule_text ?? 'রাত ৯:০০ টা' }}
+                                শিডিউল: {{ $liveSchedule }}
                             </span>
                             <span class="text-[10px] text-slate-400 block">
                                 নির্ধারিত সময়ে বাটনটি সক্রিয় হবে
@@ -328,7 +337,100 @@
             </div>
         </div>
 
-        <!-- 3. OFFICIAL WHATSAPP BATCH GROUP CARD -->
+        <!-- 3. CLASS SCHEDULE & MEETINGS TIMELINE (তারিখ ও সময়ভিত্তিক ক্লাস শিডিউল ক্যালেন্ডার) -->
+        @if(isset($scheduledMeetings) && count($scheduledMeetings) > 0)
+            <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-7 space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100">
+                    <div>
+                        <h3 class="font-bold text-lg text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-calendar-days text-emerald-600"></i>
+                            <span>ক্লাসের তারিখ ও সময়সূচি (Class Schedule Calendar)</span>
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-0.5">
+                            আপনার ব্যাচের নির্ধারিত লাইভ ক্লাসের তারিখ ও সময়তালিকা
+                        </p>
+                    </div>
+                    <span class="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 self-start sm:self-auto">
+                        নির্ধারিত ক্লাস: {{ count($scheduledMeetings) }}টি
+                    </span>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                        <thead>
+                            <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[11px]">
+                                <th class="py-2.5 px-3 sm:px-4">তারিখ ও বার</th>
+                                <th class="py-2.5 px-3 sm:px-4">ক্লাসের সময়</th>
+                                <th class="py-2.5 px-3 sm:px-4">ক্লাসের বিষয় / টপিক</th>
+                                <th class="py-2.5 px-3 sm:px-4 text-center">স্ট্যাটাস</th>
+                                <th class="py-2.5 px-3 sm:px-4 text-right">যোগদান</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            @foreach($scheduledMeetings as $m)
+                                @php
+                                    $isThisMeetingLive = $m->is_live_now;
+                                @endphp
+                                <tr class="hover:bg-slate-50/70 transition {{ $isThisMeetingLive ? 'bg-red-50/30' : '' }}">
+                                    <td class="py-3 px-3 sm:px-4 whitespace-nowrap">
+                                        <div class="font-bold text-slate-800">
+                                            {{ $m->starts_at ? $m->starts_at->format('d M, Y') : 'N/A' }}
+                                        </div>
+                                        <div class="text-[10px] text-slate-400">
+                                            {{ $m->starts_at ? $m->starts_at->isoFormat('dddd') : '' }}
+                                        </div>
+                                    </td>
+                                    <td class="py-3 px-3 sm:px-4 whitespace-nowrap">
+                                        <div class="font-bold text-slate-900 flex items-center gap-1">
+                                            <i class="fa-regular fa-clock text-emerald-600 text-xs"></i>
+                                            <span>{{ $m->starts_at ? $m->starts_at->format('h:i A') : 'N/A' }}</span>
+                                        </div>
+                                        @if($m->schedule_text)
+                                            <div class="text-[10px] text-amber-700 mt-0.5">{{ $m->schedule_text }}</div>
+                                        @endif
+                                    </td>
+                                    <td class="py-3 px-3 sm:px-4">
+                                        <div class="font-semibold text-slate-900">{{ $m->title }}</div>
+                                    </td>
+                                    <td class="py-3 px-3 sm:px-4 text-center whitespace-nowrap">
+                                        @if($isThisMeetingLive)
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700 animate-pulse">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-red-600"></span>
+                                                লাইভ চলছে
+                                            </span>
+                                        @elseif($m->starts_at && $m->starts_at->isPast())
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600">
+                                                সম্পন্ন
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                                                আসন্ন ক্লাস
+                                            </span>
+                                        @endif
+                                    </td>
+                                    <td class="py-3 px-3 sm:px-4 text-right whitespace-nowrap">
+                                        @if($isThisMeetingLive)
+                                            <a href="{{ route('student.live-class') }}" target="_blank"
+                                               class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-xs transition animate-pulse">
+                                                <i class="fa-solid fa-video text-[10px]"></i>
+                                                <span>যুক্ত হন</span>
+                                            </a>
+                                        @else
+                                            <span class="text-slate-400 text-xs flex items-center justify-end gap-1">
+                                                <i class="fa-solid fa-lock text-[10px]"></i>
+                                                <span>লক</span>
+                                            </span>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        @endif
+
+        <!-- 4. OFFICIAL WHATSAPP BATCH GROUP CARD -->
         <div class="p-5 rounded-2xl bg-gradient-to-r from-emerald-50 via-teal-50 to-green-50 border border-emerald-200 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div class="flex items-center gap-3.5">
                 <div class="w-12 h-12 rounded-2xl bg-green-500 text-white flex items-center justify-center text-2xl shadow-sm shrink-0">
@@ -484,7 +586,7 @@
                         এখনো কোনো ক্লাস সেশন সম্পন্ন হয়নি
                     </p>
                     <p class="text-[11px] text-slate-500 mt-1 max-w-md mx-auto">
-                        ক্লাস শুরু হলে নির্ধারিত সময়ে ড্যাশবোর্ডের "সরাসরি ক্লাসে যোগ দিন" বাটনে ক্লিক করে ক্লাসে ঢুকলে আপনার হাজিরা স্বয়ংক্রিয়ভাবে এখানে যুক্ত হবে।
+                        ক্লাস শুরু হলে নির্ধারিত সময়ে ড্যাশবোর্ডের লাইভ বাটনে ক্লিক করে ক্লাসে ঢুকলে আপনার হাজিরা স্বয়ংক্রিয়ভাবে এখানে যুক্ত হবে।
                     </p>
                 </div>
             @endif
