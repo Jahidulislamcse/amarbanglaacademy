@@ -556,6 +556,98 @@ class AdminController extends Controller
     }
 
     /**
+     * Update an Existing Scheduled Live Meeting
+     */
+    public function updateMeeting(Request $request, LiveMeeting $meeting)
+    {
+        $rawUrl = trim((string) $request->input('meeting_url'));
+        if (!empty($rawUrl) && !str_starts_with($rawUrl, 'http://') && !str_starts_with($rawUrl, 'https://')) {
+            $rawUrl = 'https://' . $rawUrl;
+            $request->merge(['meeting_url' => $rawUrl]);
+        }
+
+        $validated = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'meeting_url' => ['required', 'url', 'max:1000'],
+            'meeting_id' => ['nullable', 'string', 'max:100'],
+            'meeting_passcode' => ['nullable', 'string', 'max:100'],
+            'scheduled_date' => ['required', 'date'],
+            'scheduled_time' => ['required', 'string'],
+            'schedule_text' => ['nullable', 'string', 'max:255'],
+            'notes' => ['nullable', 'string', 'max:500'],
+        ], [
+            'title.required' => 'ক্লাসের বিষয় বা শিরোনাম প্রদান করুন।',
+            'meeting_url.required' => 'মিটিং লিংক আবশ্যক।',
+            'meeting_url.url' => 'সঠিক মিটিং লিংক প্রদান করুন (যেমন: https://zoom.us/j/... অথবা https://meet.google.com/...)।',
+            'scheduled_date.required' => 'ক্লাসের তারিখ নির্ধারণ করুন।',
+            'scheduled_time.required' => 'ক্লাস শুরুর সময় নির্ধারণ করুন।',
+        ]);
+
+        $startsAt = Carbon::parse($validated['scheduled_date'] . ' ' . $validated['scheduled_time']);
+        $endsAt = $startsAt->copy()->addHours(2);
+
+        $platform = 'other';
+        if (str_contains(strtolower($validated['meeting_url']), 'zoom')) {
+            $platform = 'zoom';
+        } elseif (str_contains(strtolower($validated['meeting_url']), 'meet.google')) {
+            $platform = 'google_meet';
+        }
+
+        $isLiveNow = $request->boolean('is_live_now');
+        $course = $meeting->course;
+
+        if ($isLiveNow) {
+            LiveMeeting::where('course_id', $course->id)
+                ->where('id', '!=', $meeting->id)
+                ->update(['is_live_now' => false]);
+        }
+
+        $meeting->update([
+            'title' => $validated['title'],
+            'meeting_url' => $validated['meeting_url'],
+            'meeting_id' => $validated['meeting_id'] ?? null,
+            'meeting_passcode' => $validated['meeting_passcode'] ?? null,
+            'platform' => $platform,
+            'starts_at' => $startsAt,
+            'ends_at' => $endsAt,
+            'schedule_text' => $validated['schedule_text'] ?? null,
+            'is_live_now' => $isLiveNow,
+            'status' => $isLiveNow ? 'live' : 'scheduled',
+            'notes' => $validated['notes'] ?? null,
+        ]);
+
+        if ($isLiveNow) {
+            $course->update([
+                'live_meeting_url' => $meeting->meeting_url,
+                'live_meeting_id' => $meeting->meeting_id,
+                'live_meeting_passcode' => $meeting->meeting_passcode,
+                'live_class_topic' => $meeting->title,
+                'live_schedule_text' => $meeting->formatted_schedule,
+                'is_live_now' => true,
+            ]);
+
+            AttendanceSession::firstOrCreate(
+                [
+                    'course_id' => $course->id,
+                    'session_date' => $startsAt->toDateString(),
+                ],
+                [
+                    'title' => $meeting->title,
+                    'started_at' => now(),
+                    'is_active' => true,
+                    'status' => 'completed',
+                ]
+            );
+        } else {
+            if ($course->is_live_now && $course->live_meeting_url === $meeting->meeting_url) {
+                $course->update(['is_live_now' => false]);
+            }
+        }
+
+        return back()->with('success', "মিটিংটি সফলভাবে হালনাগাদ (সম্পাদনা) করা হয়েছে!");
+    }
+
+    /**
      * Toggle Live Status for a Scheduled Meeting
      */
     public function toggleMeetingLive(LiveMeeting $meeting)

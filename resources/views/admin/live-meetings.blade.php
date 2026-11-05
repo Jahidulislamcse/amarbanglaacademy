@@ -3,7 +3,39 @@
 @section('title', 'তারিখ ও সময়ভিত্তিক লাইভ মিটিং শিডিউল - আমার বাংলা একাডেমি এডমিন')
 
 @section('content')
-<div class="space-y-6" x-data="{ showScheduleModal: false }">
+<div class="space-y-6" x-data="{
+    showScheduleModal: false,
+    showEditModal: false,
+    editForm: {
+        id: null,
+        title: '',
+        meeting_url: '',
+        meeting_id: '',
+        meeting_passcode: '',
+        scheduled_date: '',
+        scheduled_time: '',
+        schedule_text: '',
+        notes: '',
+        is_live_now: false,
+        actionUrl: ''
+    },
+    openEdit(meeting) {
+        this.editForm = {
+            id: meeting.id,
+            title: meeting.title,
+            meeting_url: meeting.meeting_url,
+            meeting_id: meeting.meeting_id || '',
+            meeting_passcode: meeting.meeting_passcode || '',
+            scheduled_date: meeting.date_str,
+            scheduled_time: meeting.time_str,
+            schedule_text: meeting.schedule_text || '',
+            notes: meeting.notes || '',
+            is_live_now: Boolean(meeting.is_live_now),
+            actionUrl: '{{ url('/admin/meetings') }}/' + meeting.id
+        };
+        this.showEditModal = true;
+    }
+}">
 
     <!-- Page Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -273,6 +305,27 @@
                                             @endif
                                         </form>
 
+                                        @php
+                                            $meetingJson = [
+                                                'id' => $meeting->id,
+                                                'title' => $meeting->title,
+                                                'meeting_url' => $meeting->meeting_url,
+                                                'meeting_id' => $meeting->meeting_id,
+                                                'meeting_passcode' => $meeting->meeting_passcode,
+                                                'date_str' => $meeting->starts_at ? $meeting->starts_at->format('Y-m-d') : date('Y-m-d'),
+                                                'time_str' => $meeting->starts_at ? $meeting->starts_at->format('H:i') : '21:00',
+                                                'schedule_text' => $meeting->schedule_text,
+                                                'notes' => $meeting->notes,
+                                                'is_live_now' => (bool) $meeting->is_live_now,
+                                            ];
+                                        @endphp
+                                        <button type="button"
+                                                @click='openEdit(@json($meetingJson))'
+                                                class="p-1.5 text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition"
+                                                title="সম্পাদনা করুন">
+                                            <i class="fa-regular fa-pen-to-square"></i>
+                                        </button>
+
                                         <form method="POST" action="{{ route('admin.meetings.destroy', $meeting->id) }}"
                                               onsubmit="return confirm('এই শিডিউল মিটিংটি মুছে ফেলতে চান?')" class="inline">
                                             @csrf
@@ -398,6 +451,117 @@
                     <button type="submit"
                             class="px-5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-sm transition">
                         শিডিউল মিটিং সংরক্ষণ করুন
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Scheduled Meeting Modal -->
+    <div x-show="showEditModal"
+         x-cloak
+         class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 relative"
+             @click.away="showEditModal = false">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
+                <h3 class="font-bold text-lg text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-pen-to-square text-emerald-600"></i>
+                    <span>শিডিউল মিটিং সম্পাদনা করুন</span>
+                </h3>
+                <button type="button" @click="showEditModal = false" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <form method="POST" :action="editForm.actionUrl" class="space-y-4">
+                @csrf
+                @method('PUT')
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5">
+                        ক্লাসের বিষয় / শিরোনাম <span class="text-rose-500">*</span>
+                    </label>
+                    <input type="text" name="title" required
+                           x-model="editForm.title"
+                           placeholder="যেমন: ক্লাস ১: সাংবাদিকতার পরিচিতি ও মৌলিক ধারণা"
+                           class="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">
+                            ক্লাসের তারিখ <span class="text-rose-500">*</span>
+                        </label>
+                        <input type="date" name="scheduled_date" required
+                               x-model="editForm.scheduled_date"
+                               class="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">
+                            ক্লাস শুরুর সময় <span class="text-rose-500">*</span>
+                        </label>
+                        <input type="time" name="scheduled_time" required
+                               x-model="editForm.scheduled_time"
+                               class="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-mono">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5">
+                        মিটিং URL (Zoom বা Google Meet লিংক) <span class="text-rose-500">*</span>
+                    </label>
+                    <input type="text" name="meeting_url" required
+                           x-model="editForm.meeting_url"
+                           placeholder="https://us05web.zoom.us/j/... অথবা https://meet.google.com/..."
+                           class="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-mono">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">মিটিং আইডি (ঐচ্ছিক)</label>
+                        <input type="text" name="meeting_id"
+                               x-model="editForm.meeting_id"
+                               placeholder="যেমন: 852 1234 5678"
+                               class="w-full px-3.5 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-mono">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">পাসকোড (ঐচ্ছিক)</label>
+                        <input type="text" name="meeting_passcode"
+                               x-model="editForm.meeting_passcode"
+                               placeholder="যেমন: 123456"
+                               class="w-full px-3.5 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-mono">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5">
+                        কাস্টম শিডিউল টেক্সট <span class="text-slate-400 font-normal">(ঐচ্ছিক, শিক্ষার্থীদের বাটনের নিচে দেখাবে)</span>
+                    </label>
+                    <input type="text" name="schedule_text"
+                           x-model="editForm.schedule_text"
+                           placeholder="যেমন: আজ রাত ৯:০০ টা - ১১:০০ টা"
+                           class="w-full px-3.5 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+                </div>
+
+                <div class="p-3 bg-red-50/70 border border-red-200 rounded-xl flex items-center gap-2">
+                    <input type="checkbox" id="edit_modal_is_live_now" name="is_live_now" value="1"
+                           x-model="editForm.is_live_now"
+                           class="w-4 h-4 text-red-600 rounded border-slate-300 focus:ring-red-500 cursor-pointer">
+                    <label for="edit_modal_is_live_now" class="text-xs font-bold text-red-900 cursor-pointer">
+                        🔴 এই মিটিংটি সরাসরি লাইভ হিসেবে সক্রিয় করুন
+                    </label>
+                </div>
+
+                <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+                    <button type="button" @click="showEditModal = false"
+                            class="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-xl transition">
+                        বাতিল
+                    </button>
+                    <button type="submit"
+                            class="px-5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-sm transition">
+                        আপডেট সংরক্ষণ করুন
                     </button>
                 </div>
             </form>

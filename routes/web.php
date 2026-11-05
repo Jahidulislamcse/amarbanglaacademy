@@ -62,6 +62,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/students/store', [AdminController::class, 'storeStudent'])->name('students.store');
         Route::get('/live-meetings', [AdminController::class, 'liveMeetings'])->name('live-meetings');
         Route::post('/meetings', [AdminController::class, 'storeMeeting'])->name('meetings.store');
+        Route::put('/meetings/{meeting}', [AdminController::class, 'updateMeeting'])->name('meetings.update');
         Route::post('/meetings/{meeting}/toggle-live', [AdminController::class, 'toggleMeetingLive'])->name('meetings.toggle-live');
         Route::delete('/meetings/{meeting}', [AdminController::class, 'destroyMeeting'])->name('meetings.destroy');
         Route::get('/students/export', [AdminController::class, 'exportCsv'])->name('students.export');

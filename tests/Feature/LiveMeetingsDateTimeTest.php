@@ -161,4 +161,41 @@ class LiveMeetingsDateTimeTest extends TestCase
         $attendance = Attendance::where('user_id', $this->student->id)->where('status', 'present')->first();
         $this->assertNotNull($attendance);
     }
+
+    public function test_admin_can_update_existing_scheduled_meeting(): void
+    {
+        $meeting = LiveMeeting::create([
+            'course_id' => $this->course->id,
+            'title' => 'পুরাতন শিরোনাম',
+            'meeting_url' => 'https://us05web.zoom.us/j/111222333',
+            'meeting_id' => '111 222 333',
+            'meeting_passcode' => '112233',
+            'starts_at' => now()->addDay(),
+            'is_live_now' => false,
+        ]);
+
+        $response = $this->actingAs($this->admin)->put(route('admin.meetings.update', $meeting->id), [
+            'title' => 'হালনাগাদ করা শিরোনাম: লাইভ ব্রডকাস্টিং',
+            'meeting_url' => 'https://meet.google.com/abc-defg-hij',
+            'meeting_id' => 'abc-defg-hij',
+            'meeting_passcode' => '445566',
+            'scheduled_date' => '2026-11-10',
+            'scheduled_time' => '20:30',
+            'schedule_text' => '১০ নভেম্বর ২০২৬, রাত ৮:৩০ টা',
+            'is_live_now' => '1',
+        ]);
+
+        $response->assertSessionHas('success');
+
+        $meeting->refresh();
+        $this->course->refresh();
+
+        $this->assertEquals('হালনাগাদ করা শিরোনাম: লাইভ ব্রডকাস্টিং', $meeting->title);
+        $this->assertEquals('https://meet.google.com/abc-defg-hij', $meeting->meeting_url);
+        $this->assertEquals('google_meet', $meeting->platform);
+        $this->assertEquals('2026-11-10 20:30:00', $meeting->starts_at->format('Y-m-d H:i:s'));
+        $this->assertTrue((bool) $meeting->is_live_now);
+        $this->assertTrue((bool) $this->course->is_live_now);
+        $this->assertEquals('হালনাগাদ করা শিরোনাম: লাইভ ব্রডকাস্টিং', $this->course->live_class_topic);
+    }
 }
