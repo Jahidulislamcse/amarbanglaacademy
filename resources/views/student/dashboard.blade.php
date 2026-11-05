@@ -76,12 +76,18 @@
 
                 <!-- Right Actions: Student Info & Logout -->
                 <div class="flex items-center gap-2 sm:gap-4">
-                    @if($course?->live_meeting_url)
+                    @if($course?->is_live_now)
                         <a href="{{ route('student.live-class') }}" target="_blank"
-                           class="hidden sm:inline-flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-sm animate-pulse transition">
+                           class="inline-flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl shadow-sm animate-pulse transition">
+                            <span class="w-2 h-2 rounded-full bg-white animate-ping"></span>
                             <i class="fa-solid fa-video"></i>
                             <span>লাইভ ক্লাসে যোগ দিন</span>
                         </a>
+                    @else
+                        <div class="hidden sm:inline-flex items-center gap-1.5 bg-amber-50 border border-amber-200/80 text-amber-900 text-xs font-medium px-3 py-1.5 rounded-xl select-none" title="ক্লাস শুরুর সময়ে লিংক সক্রিয় হবে">
+                            <i class="fa-regular fa-clock text-amber-600 text-xs"></i>
+                            <span>ক্লাস শিডিউল: <strong class="text-amber-950 font-bold">{{ $course?->live_schedule_text ?? 'রাত ৯:০০ টা' }}</strong></span>
+                        </div>
                     @endif
 
                     <!-- User Card -->

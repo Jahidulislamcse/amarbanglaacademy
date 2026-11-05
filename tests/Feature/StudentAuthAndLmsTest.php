@@ -261,10 +261,11 @@ class StudentAuthAndLmsTest extends TestCase
         $response->assertRedirect('/student/dashboard');
         $response->assertSessionHas('info');
 
-        // Verify dashboard shows disabled button and schedule text
+        // Verify dashboard shows disabled button and schedule text, and does NOT show active join class anywhere
         $dashboardResponse = $this->actingAs($studentUser)->get('/student/dashboard');
         $dashboardResponse->assertStatus(200);
         $dashboardResponse->assertSee('ক্লাস শুরুর সময়ে লিংক সক্রিয় হবে');
         $dashboardResponse->assertSee('আজ রাত ৯:০০ টা');
+        $dashboardResponse->assertDontSee('লাইভ ক্লাসে যোগ দিন');
     }
 }
