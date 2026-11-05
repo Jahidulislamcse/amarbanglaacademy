@@ -67,6 +67,7 @@ class StudentAuthAndLmsTest extends TestCase
             'live_class_topic' => 'মডিউল ১: সাংবাদিকতার পরিচিতি',
             'live_meeting_id' => '123 456 7890',
             'live_meeting_passcode' => '998877',
+            'live_schedule_text' => 'প্রতি বৃহস্পতি, শুক্র ও শনি রাত ৯:০০ টা',
             'is_live_now' => '1',
         ]);
 
@@ -77,6 +78,7 @@ class StudentAuthAndLmsTest extends TestCase
         $this->assertEquals('মডিউল ১: সাংবাদিকতার পরিচিতি', $this->course->live_class_topic);
         $this->assertEquals('123 456 7890', $this->course->live_meeting_id);
         $this->assertEquals('998877', $this->course->live_meeting_passcode);
+        $this->assertEquals('প্রতি বৃহস্পতি, শুক্র ও শনি রাত ৯:০০ টা', $this->course->live_schedule_text);
         $this->assertTrue((bool) $this->course->is_live_now);
     }
 
@@ -222,9 +224,47 @@ class StudentAuthAndLmsTest extends TestCase
 
         $this->course->update([
             'live_meeting_url' => 'https://us05web.zoom.us/j/987654321',
+            'is_live_now' => true,
         ]);
 
         $response = $this->actingAs($studentUser)->get('/student/live-class');
         $response->assertRedirect('https://us05web.zoom.us/j/987654321');
+    }
+
+    public function test_live_class_redirects_to_dashboard_when_not_live(): void
+    {
+        $studentUser = User::create([
+            'name' => 'রাকিবুল ইসলাম',
+            'email' => 'rakib2@example.com',
+            'phone' => '01314818934',
+            'password' => Hash::make('AB#2026#999'),
+            'role' => 'student',
+        ]);
+
+        Enrollment::create([
+            'user_id' => $studentUser->id,
+            'course_id' => $this->course->id,
+            'student_name' => 'রাকিবুল ইসলাম',
+            'student_email' => 'rakib2@example.com',
+            'student_phone' => '01314818934',
+            'status' => 'active',
+            'enrolled_at' => now(),
+        ]);
+
+        $this->course->update([
+            'live_meeting_url' => 'https://us05web.zoom.us/j/987654321',
+            'live_schedule_text' => 'আজ রাত ৯:০০ টা',
+            'is_live_now' => false,
+        ]);
+
+        $response = $this->actingAs($studentUser)->get('/student/live-class');
+        $response->assertRedirect('/student/dashboard');
+        $response->assertSessionHas('info');
+
+        // Verify dashboard shows disabled button and schedule text
+        $dashboardResponse = $this->actingAs($studentUser)->get('/student/dashboard');
+        $dashboardResponse->assertStatus(200);
+        $dashboardResponse->assertSee('ক্লাস শুরুর সময়ে লিংক সক্রিয় হবে');
+        $dashboardResponse->assertSee('আজ রাত ৯:০০ টা');
     }
 }

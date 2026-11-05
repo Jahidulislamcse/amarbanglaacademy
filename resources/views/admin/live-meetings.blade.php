@@ -256,23 +256,49 @@
                                class="w-full pl-9 pr-4 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none font-mono transition">
                     </div>
                 </div>
+
+                <!-- Live Schedule Text -->
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5">
+                        ক্লাসের সময়সূচি (Schedule Text) <span class="text-xs font-normal text-slate-400">(শিক্ষার্থীদের ড্যাশবোর্ডে প্রদর্শিত হবে)</span>
+                    </label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                            <i class="fa-regular fa-clock text-xs"></i>
+                        </div>
+                        <input type="text" name="live_schedule_text"
+                               value="{{ old('live_schedule_text', $primaryCourse?->live_schedule_text) }}"
+                               placeholder="যেমন: আজ রাত ৯:০০ টা অথবা প্রতি বৃহস্পতি, শুক্র ও শনি রাত ৯:০০ টা"
+                               class="w-full pl-9 pr-4 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition">
+                    </div>
+                    <p class="text-[11px] text-slate-400 mt-1">ক্লাস শুরু না হওয়া পর্যন্ত শিক্ষার্থীদের ড্যাশবোর্ডে এই সময়সূচিটি দেখাবে এবং জয়েন বাটন লক থাকবে।</p>
+                </div>
             </div>
 
-            <!-- Is Live Now Checkbox -->
-            <div class="p-4 bg-emerald-50/60 border border-emerald-200 rounded-2xl flex items-center justify-between">
+            <!-- Is Live Now Toggle Box -->
+            <div class="p-4 rounded-2xl border transition {{ $primaryCourse?->is_live_now ? 'bg-red-50/80 border-red-300' : 'bg-emerald-50/60 border-emerald-200' }} flex items-center justify-between">
                 <div>
-                    <label for="is_live_now" class="font-bold text-xs sm:text-sm text-emerald-950 flex items-center gap-2 cursor-pointer">
+                    <label for="is_live_now" class="font-bold text-xs sm:text-sm text-slate-900 flex items-center gap-2.5 cursor-pointer">
                         <input type="checkbox" id="is_live_now" name="is_live_now" value="1"
                                {{ $primaryCourse?->is_live_now ? 'checked' : '' }}
-                               class="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500">
-                        <span>এখন লাইভ ক্লাস চলছে হিসেবে চিহ্নিত করুন</span>
+                               class="w-5 h-5 text-red-600 rounded border-slate-300 focus:ring-red-500 cursor-pointer">
+                        <span>🔴 লাইভ ক্লাস শুরু করুন (শিক্ষার্থীদের জয়েন বাটন সক্রিয় হবে)</span>
                     </label>
-                    <p class="text-[11px] text-emerald-800 mt-0.5 ml-6">
-                        এটি টিক দিলে শিক্ষার্থীদের ড্যাশবোর্ডে লাল ব্লিঙ্ক ইফেক্ট সহ <strong>"লাইভ ক্লাস চলছে"</strong> নোটিশ ভেসে উঠবে।
+                    <p class="text-[11px] text-slate-600 mt-1 ml-7">
+                        <strong>টিক চিহ্ন দিলে:</strong> শিক্ষার্থীদের ড্যাশবোর্ডে লাল ব্লিঙ্ক ইফেক্ট সহ বাটনটি সক্রিয় (Active) হবে এবং শিক্ষার্থীরা সরাসরি ক্লাসে যোগ দিতে পারবে।<br>
+                        <strong>টিক না দিলে:</strong> শিক্ষার্থীদের বাটনটি লক থাকবে এবং কেবল ক্লাসের সময়সূচি প্রদর্শিত হবে।
                     </p>
                 </div>
                 @if($primaryCourse?->is_live_now)
-                    <span class="w-3 h-3 rounded-full bg-red-600 animate-ping"></span>
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-red-600 text-white animate-pulse shadow">
+                        <span class="w-2 h-2 rounded-full bg-white"></span>
+                        LIVE NOW
+                    </span>
+                @else
+                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-200 text-slate-700">
+                        <i class="fa-solid fa-lock text-[10px]"></i>
+                        অফলাইন / লক
+                    </span>
                 @endif
             </div>
 

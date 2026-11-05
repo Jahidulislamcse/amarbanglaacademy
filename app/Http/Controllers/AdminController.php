@@ -465,6 +465,7 @@ class AdminController extends Controller
             'live_meeting_id' => ['nullable', 'string', 'max:100'],
             'live_meeting_passcode' => ['nullable', 'string', 'max:100'],
             'live_class_topic' => ['nullable', 'string', 'max:255'],
+            'live_schedule_text' => ['nullable', 'string', 'max:255'],
         ], [
             'live_meeting_url.url' => 'সঠিক মিটিং লিংক প্রদান করুন (যেমন: https://zoom.us/j/... অথবা https://meet.google.com/...)।',
         ]);
@@ -474,6 +475,7 @@ class AdminController extends Controller
             'live_meeting_id' => $validated['live_meeting_id'] ?? null,
             'live_meeting_passcode' => $validated['live_meeting_passcode'] ?? null,
             'live_class_topic' => $validated['live_class_topic'] ?? null,
+            'live_schedule_text' => $validated['live_schedule_text'] ?? $course->live_schedule_text,
             'is_live_now' => $request->boolean('is_live_now'),
         ]);
 

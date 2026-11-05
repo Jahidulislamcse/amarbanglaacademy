@@ -58,6 +58,13 @@ class StudentController extends Controller
 
         $meetingUrl = trim((string) ($course?->live_meeting_url ?? ''));
 
+        // If not live yet and user is a student, redirect to dashboard with schedule notice
+        if ($user->role === 'student' && !$course?->is_live_now) {
+            $schedule = $course?->live_schedule_text ?? 'রাত ৯:০০ টা';
+            return redirect()->route('student.dashboard')
+                ->with('info', "ক্লাস এখনো শুরু হয়নি বা লাইভ লিংক সক্রিয় করা হয়নি। পরবর্তী ক্লাসের সময়সূচি: {$schedule}। নির্ধারিত সময়ে ক্লাস শুরু হলে বাটনটি সক্রিয় হবে।");
+        }
+
         if (!empty($meetingUrl)) {
             // Direct redirect to Zoom / Google Meet meeting URL
             return redirect()->away($meetingUrl);

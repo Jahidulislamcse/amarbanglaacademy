@@ -161,14 +161,14 @@
                 <div class="lg:col-span-8 space-y-3">
                     <div class="flex items-center gap-2 flex-wrap">
                         @if($course?->is_live_now)
-                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-rose-600 text-white animate-pulse">
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-rose-600 text-white animate-pulse shadow-md shadow-rose-600/30">
                                 <span class="w-2 h-2 rounded-full bg-white"></span>
                                 লাইভ ক্লাস চলছে (LIVE NOW)
                             </span>
                         @else
-                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                                <i class="fa-solid fa-video text-xs"></i>
-                                লাইভ অনলাইন ক্লাস রুম
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                                <i class="fa-solid fa-clock text-xs"></i>
+                                শিডিউল করা লাইভ ক্লাস
                             </span>
                         @endif
                         <span class="text-xs text-slate-300 font-medium">প্ল্যাটফর্ম: {{ $course?->live_platform ?? 'Zoom & Google Meet' }}</span>
@@ -178,17 +178,32 @@
                         {{ $course?->live_class_topic ?? ($course?->bangla_title ?? 'সাংবাদিকতা, আইন ও উপস্থাপনা') }}
                     </h2>
 
+                    <!-- Prominent Class Schedule Box when not live -->
+                    @if(!$course?->is_live_now)
+                        <div class="inline-flex items-center gap-3 p-3 sm:px-4 sm:py-2.5 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-amber-200">
+                            <div class="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center text-base shrink-0">
+                                <i class="fa-regular fa-calendar-check"></i>
+                            </div>
+                            <div>
+                                <span class="text-[11px] text-amber-300/80 block font-medium">পরবর্তী ক্লাসের সময়সূচি:</span>
+                                <strong class="text-sm sm:text-base text-amber-200 font-bold block">
+                                    {{ $course?->live_schedule_text ?? 'প্রতি বৃহস্পতি, শুক্র ও শনি রাত ৯:০০ টা' }}
+                                </strong>
+                            </div>
+                        </div>
+                    @endif
+
                     <p class="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-2xl">
-                        @if($course?->live_meeting_url)
-                            নিচের বাটনে ক্লিক করে সরাসরি ক্লাসে যুক্ত হতে পারবেন। কোনো পাসকোড লাগলে তা নিচে দেওয়া আছে।
+                        @if($course?->is_live_now)
+                            ক্লাস শুরু হয়েছে! নিচের বাটনে ক্লিক করে সরাসরি Zoom বা Google Meet-এ যুক্ত হতে পারবেন। কোনো পাসকোড লাগলে তা নিচে দেওয়া আছে।
                         @else
-                            পরবর্তী ক্লাসের সময়সূচি: <strong>{{ $course?->live_schedule_text ?? 'বৃহস্পতি, শুক্র ও শনি রাত ৯:০০ টা' }}</strong>। ক্লাস শুরুর পূর্বে এখানে লাইভ মিটিং লিংক সক্রিয় হবে।
+                            নির্ধারিত ক্লাসের সময়ে এডমিন থেকে ক্লাস শুরু করা হলে নিচের বাটনটি স্বয়ংক্রিয়ভাবে সক্রিয় হবে এবং আপনি সরাসরি ক্লাসে যোগ দিতে পারবেন।
                         @endif
                     </p>
 
-                    <!-- Meeting Details Badges if available -->
-                    @if($course?->live_meeting_id || $course?->live_meeting_passcode)
-                        <div class="flex items-center gap-3 pt-2 text-xs font-mono flex-wrap">
+                    <!-- Meeting Details Badges if available when live -->
+                    @if($course?->is_live_now && ($course?->live_meeting_id || $course?->live_meeting_passcode))
+                        <div class="flex items-center gap-3 pt-1 text-xs font-mono flex-wrap">
                             @if($course->live_meeting_id)
                                 <div class="bg-white/10 px-3 py-1 rounded-xl border border-white/15 flex items-center gap-2">
                                     <span class="text-slate-400 font-sans">মিটিং আইডি:</span>
@@ -207,25 +222,32 @@
 
                 <!-- Right Big Action Button -->
                 <div class="lg:col-span-4 flex flex-col items-stretch sm:items-start lg:items-end justify-center">
-                    @if($course?->live_meeting_url || $course?->is_live_now)
+                    @if($course?->is_live_now)
+                        <!-- Active Button when class is Live Now -->
                         <a href="{{ route('student.live-class') }}" target="_blank"
                            class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-sm sm:text-base px-6 py-4 rounded-2xl shadow-xl shadow-emerald-500/30 transform hover:-translate-y-0.5 active:scale-95 transition">
+                            <span class="w-2.5 h-2.5 rounded-full bg-white animate-ping"></span>
                             <i class="fa-solid fa-video text-lg"></i>
                             <span>সরাসরি ক্লাসে যোগ দিন</span>
                             <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
                         </a>
-                        <span class="text-[11px] text-emerald-300/80 mt-2 text-center lg:text-right w-full">
-                            সরাসরি Zoom বা Google Meet এ ওপেন হবে
+                        <span class="text-[11px] text-emerald-300 font-semibold mt-2 text-center lg:text-right w-full">
+                            এখন লাইভ চলছে — এক ক্লিকে ক্লাসে যোগ দিন
                         </span>
                     @else
-                        <div class="w-full bg-white/10 p-4 rounded-2xl border border-white/15 text-center lg:text-right space-y-1">
-                            <div class="text-xs font-bold text-amber-300 flex items-center justify-center lg:justify-end gap-1.5">
-                                <i class="fa-solid fa-clock"></i>
-                                <span>ক্লাস শুরুর পূর্বে লিংক সক্রিয় হবে</span>
-                            </div>
-                            <p class="text-[11px] text-slate-300">
-                                পরবর্তী ক্লাস: <strong>{{ $course?->live_schedule_text ?? 'রাত ৯:০০ টা' }}</strong>
-                            </p>
+                        <!-- Disabled Button before Scheduled Time / when not live -->
+                        <div class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-slate-800/90 text-slate-400 font-bold text-sm sm:text-base px-6 py-4 rounded-2xl border border-slate-700/80 cursor-not-allowed select-none shadow-inner">
+                            <i class="fa-solid fa-lock text-slate-500"></i>
+                            <span>ক্লাস শুরুর সময়ে লিংক সক্রিয় হবে</span>
+                        </div>
+                        <div class="w-full text-center lg:text-right mt-2 space-y-0.5">
+                            <span class="text-[11px] text-amber-300 font-semibold block">
+                                <i class="fa-solid fa-clock text-[10px] mr-1"></i>
+                                শিডিউল: {{ $course?->live_schedule_text ?? 'রাত ৯:০০ টা' }}
+                            </span>
+                            <span class="text-[10px] text-slate-400 block">
+                                নির্ধারিত সময়ে বাটনটি সক্রিয় হবে
+                            </span>
                         </div>
                     @endif
                 </div>
