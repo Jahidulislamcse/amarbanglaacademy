@@ -66,6 +66,16 @@ class Course extends Model
         return $this->hasMany(Payment::class);
     }
 
+    public function attendanceSessions(): HasMany
+    {
+        return $this->hasMany(AttendanceSession::class)->orderBy('session_date', 'desc');
+    }
+
+    public function attendances(): HasMany
+    {
+        return $this->hasMany(Attendance::class);
+    }
+
     public function getEffectivePriceAttribute(): float
     {
         return $this->discount_price !== null && $this->discount_price > 0 

@@ -150,6 +150,21 @@
                 @endif
             </a>
 
+            <!-- Attendance Manager Link -->
+            @php
+                $isAttendance = request()->routeIs('admin.attendance.*');
+            @endphp
+            <a href="{{ route('admin.attendance.index') }}"
+               class="flex items-center justify-between px-3.5 py-3 rounded-xl text-xs font-bold transition group {{ $isAttendance ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20' : 'hover:bg-slate-800/80 hover:text-white text-slate-300' }}">
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-clipboard-user text-base {{ $isAttendance ? 'text-white' : 'text-purple-400 group-hover:text-purple-300' }}"></i>
+                    <span>হাজিরা ও উপস্থিতি</span>
+                </div>
+                <span class="text-[10px] px-2 py-0.5 rounded-full font-semibold {{ $isAttendance ? 'bg-emerald-800 text-emerald-100' : 'bg-slate-800 text-slate-400' }}">
+                    রেকর্ড
+                </span>
+            </a>
+
             <!-- Duplicate Clean Link (Fast Action) -->
             <form method="POST" action="{{ route('admin.students.clean-duplicates') }}"
                   onsubmit="return confirm('অতিরিক্ত ডুপ্লিকেট পেন্ডিং রেজিস্ট্রেশন মুছে পরিষ্কার করতে চান?')">

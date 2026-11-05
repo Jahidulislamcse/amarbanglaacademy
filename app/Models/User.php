@@ -44,6 +44,38 @@ class User extends Authenticatable
         return $this->hasMany(Enrollment::class);
     }
 
+    public function attendances()
+    {
+        return $this->hasMany(Attendance::class);
+    }
+
+    /**
+     * Get attendance statistics for the user in a course
+     */
+    public function attendanceStatsForCourse(?int $courseId = null): array
+    {
+        $sessionQuery = AttendanceSession::where('status', '!=', 'cancelled');
+        if ($courseId) {
+            $sessionQuery->where('course_id', $courseId);
+        }
+        $totalSessions = $sessionQuery->count();
+
+        $attQuery = $this->attendances()->whereIn('status', ['present', 'late']);
+        if ($courseId) {
+            $attQuery->where('course_id', $courseId);
+        }
+        $presentCount = $attQuery->count();
+
+        $percentage = $totalSessions > 0 ? (int) round(($presentCount / $totalSessions) * 100) : 100;
+
+        return [
+            'total_sessions' => $totalSessions,
+            'present_count' => $presentCount,
+            'absent_count' => max(0, $totalSessions - $presentCount),
+            'percentage' => $percentage,
+        ];
+    }
+
     /**
      * The attributes that should be hidden for serialization.
      *

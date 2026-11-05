@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Attendance;
+use App\Models\AttendanceSession;
 use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\Payment;
@@ -470,14 +472,32 @@ class AdminController extends Controller
             'live_meeting_url.url' => 'সঠিক মিটিং লিংক প্রদান করুন (যেমন: https://zoom.us/j/... অথবা https://meet.google.com/...)।',
         ]);
 
+        $isLiveNow = $request->boolean('is_live_now');
+
         $course->update([
             'live_meeting_url' => $validated['live_meeting_url'] ?? null,
             'live_meeting_id' => $validated['live_meeting_id'] ?? null,
             'live_meeting_passcode' => $validated['live_meeting_passcode'] ?? null,
             'live_class_topic' => $validated['live_class_topic'] ?? null,
             'live_schedule_text' => $validated['live_schedule_text'] ?? $course->live_schedule_text,
-            'is_live_now' => $request->boolean('is_live_now'),
+            'is_live_now' => $isLiveNow,
         ]);
+
+        // When live is turned on, automatically ensure an attendance session exists for today
+        if ($isLiveNow) {
+            AttendanceSession::firstOrCreate(
+                [
+                    'course_id' => $course->id,
+                    'session_date' => now()->toDateString(),
+                ],
+                [
+                    'title' => $validated['live_class_topic'] ?: ('লাইভ ক্লাস (' . now()->format('d M Y') . ')'),
+                    'started_at' => now(),
+                    'is_active' => true,
+                    'status' => 'completed',
+                ]
+            );
+        }
 
         return back()->with('success', 'লাইভ ক্লাসের মিটিং লিংক ও বিবরণী সফলভাবে সংরক্ষিত হয়েছে! শিক্ষার্থীরা এখন তাদের ড্যাশবোর্ড থেকে এক ক্লিকে সরাসরি যুক্ত হতে পারবে।');
     }
@@ -643,5 +663,243 @@ class AdminController extends Controller
             DB::rollBack();
             return back()->withInput()->with('error', 'শিক্ষার্থী ভর্তি করতে সমস্যা হয়েছে: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Admin Attendance Sessions Overview
+     */
+    public function attendanceIndex(Request $request)
+    {
+        $primaryCourse = Course::first();
+        $totalActiveStudents = Enrollment::where('status', 'active')
+            ->when($primaryCourse, fn($q) => $q->where('course_id', $primaryCourse->id))
+            ->count();
+
+        $sessions = AttendanceSession::where('course_id', $primaryCourse?->id)
+            ->withCount(['attendances as present_count' => function ($q) {
+                $q->whereIn('status', ['present', 'late']);
+            }])
+            ->orderBy('session_date', 'desc')
+            ->orderBy('id', 'desc')
+            ->paginate(15);
+
+        $totalSessions = AttendanceSession::where('course_id', $primaryCourse?->id)
+            ->where('status', '!=', 'cancelled')
+            ->count();
+
+        // Calculate average attendance across sessions
+        $allSessions = AttendanceSession::where('course_id', $primaryCourse?->id)
+            ->where('status', '!=', 'cancelled')
+            ->withCount(['attendances as present_count' => fn($q) => $q->whereIn('status', ['present', 'late'])])
+            ->get();
+
+        $avgPercentage = 0;
+        if ($allSessions->count() > 0 && $totalActiveStudents > 0) {
+            $totalPresentSum = $allSessions->sum('present_count');
+            $avgPercentage = (int) round(($totalPresentSum / ($allSessions->count() * $totalActiveStudents)) * 100);
+        }
+
+        // Today's attendance session if any
+        $todaySession = AttendanceSession::where('course_id', $primaryCourse?->id)
+            ->whereDate('session_date', now()->toDateString())
+            ->first();
+
+        return view('admin.attendance.index', compact(
+            'primaryCourse',
+            'sessions',
+            'totalActiveStudents',
+            'totalSessions',
+            'avgPercentage',
+            'todaySession'
+        ));
+    }
+
+    /**
+     * Create New Attendance Session
+     */
+    public function storeAttendanceSession(Request $request)
+    {
+        $primaryCourse = Course::first();
+        $validated = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'session_date' => ['required', 'date'],
+            'notes' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $session = AttendanceSession::create([
+            'course_id' => $primaryCourse->id,
+            'title' => $validated['title'],
+            'session_date' => $validated['session_date'],
+            'started_at' => now(),
+            'status' => 'completed',
+            'is_active' => true,
+            'notes' => $validated['notes'] ?? null,
+            'created_by' => Auth::id(),
+        ]);
+
+        return redirect()->route('admin.attendance.session', $session->id)
+            ->with('success', 'নতুন ক্লাস সেশন সফলভাবে তৈরি করা হয়েছে! এখন উপস্থিতি পরিচালনা করুন।');
+    }
+
+    /**
+     * View Attendance Sheet for a Session
+     */
+    public function showAttendanceSession(AttendanceSession $session)
+    {
+        $course = $session->course;
+
+        // Get all active enrolled students with user relation
+        $enrollments = Enrollment::where('course_id', $course->id)
+            ->where('status', 'active')
+            ->with('user')
+            ->orderBy('student_name', 'asc')
+            ->get();
+
+        // Get map of user_id => Attendance record
+        $attendances = Attendance::where('attendance_session_id', $session->id)
+            ->get()
+            ->keyBy('user_id');
+
+        $presentCount = $attendances->filter(fn($a) => $a->isPresent())->count();
+        $totalEnrolled = $enrollments->count();
+        $percentage = $totalEnrolled > 0 ? (int) round(($presentCount / $totalEnrolled) * 100) : 0;
+
+        return view('admin.attendance.sheet', compact(
+            'session',
+            'course',
+            'enrollments',
+            'attendances',
+            'presentCount',
+            'totalEnrolled',
+            'percentage'
+        ));
+    }
+
+    /**
+     * Toggle Student Attendance in a Session
+     */
+    public function toggleAttendance(Request $request, AttendanceSession $session)
+    {
+        $validated = $request->validate([
+            'user_id' => ['required', 'exists:users,id'],
+        ]);
+
+        $userId = $validated['user_id'];
+        $attendance = Attendance::where('attendance_session_id', $session->id)
+            ->where('user_id', $userId)
+            ->first();
+
+        $enrollment = Enrollment::where('user_id', $userId)
+            ->where('course_id', $session->course_id)
+            ->first();
+
+        if ($attendance && $attendance->status === 'present') {
+            $attendance->update([
+                'status' => 'absent',
+            ]);
+            $newStatus = 'absent';
+        } else {
+            if ($attendance) {
+                $attendance->update([
+                    'status' => 'present',
+                    'attended_at' => now(),
+                    'join_method' => 'manual_admin',
+                ]);
+            } else {
+                Attendance::create([
+                    'attendance_session_id' => $session->id,
+                    'user_id' => $userId,
+                    'course_id' => $session->course_id,
+                    'enrollment_id' => $enrollment?->id,
+                    'status' => 'present',
+                    'attended_at' => now(),
+                    'join_method' => 'manual_admin',
+                ]);
+            }
+            $newStatus = 'present';
+        }
+
+        if ($request->wantsJson()) {
+            $presentCount = Attendance::where('attendance_session_id', $session->id)
+                ->whereIn('status', ['present', 'late'])
+                ->count();
+            return response()->json([
+                'success' => true,
+                'status' => $newStatus,
+                'present_count' => $presentCount,
+            ]);
+        }
+
+        return back()->with('success', 'শিক্ষার্থীর উপস্থিতি সফলভাবে আপডেট করা হয়েছে!');
+    }
+
+    /**
+     * Mark All Enrolled Students Present for a Session
+     */
+    public function markAllPresent(AttendanceSession $session)
+    {
+        $enrollments = Enrollment::where('course_id', $session->course_id)
+            ->where('status', 'active')
+            ->whereNotNull('user_id')
+            ->get();
+
+        foreach ($enrollments as $enr) {
+            Attendance::updateOrCreate(
+                [
+                    'attendance_session_id' => $session->id,
+                    'user_id' => $enr->user_id,
+                ],
+                [
+                    'course_id' => $session->course_id,
+                    'enrollment_id' => $enr->id,
+                    'status' => 'present',
+                    'attended_at' => now(),
+                    'join_method' => 'manual_admin',
+                ]
+            );
+        }
+
+        return back()->with('success', 'সকল সক্রিয় শিক্ষার্থীকে উপস্থিত মার্ক করা হয়েছে!');
+    }
+
+    /**
+     * Delete an Attendance Session
+     */
+    public function destroyAttendanceSession(AttendanceSession $session)
+    {
+        $session->delete();
+        return redirect()->route('admin.attendance.index')
+            ->with('success', 'ক্লাস সেশন ও উপস্থিতি রেকর্ড সফলভাবে মুছে ফেলা হয়েছে।');
+    }
+
+    /**
+     * Student-wise Attendance Summary
+     */
+    public function attendanceStudents(Request $request)
+    {
+        $primaryCourse = Course::first();
+        $search = trim((string) $request->input('search', ''));
+
+        $totalSessions = AttendanceSession::where('course_id', $primaryCourse?->id)
+            ->where('status', '!=', 'cancelled')
+            ->count();
+
+        $studentsQuery = Enrollment::where('course_id', $primaryCourse?->id)
+            ->where('status', 'active')
+            ->with(['user.attendances' => function ($q) use ($primaryCourse) {
+                $q->where('course_id', $primaryCourse?->id);
+            }]);
+
+        if (!empty($search)) {
+            $studentsQuery->where(function ($q) use ($search) {
+                $q->where('student_name', 'like', "%{$search}%")
+                  ->orWhere('student_phone', 'like', "%{$search}%")
+                  ->orWhere('student_email', 'like', "%{$search}%");
+            });
+        }
+
+        $students = $studentsQuery->orderBy('student_name', 'asc')->paginate(20);
+
+        return view('admin.attendance.students', compact('primaryCourse', 'students', 'totalSessions', 'search'));
     }
 }

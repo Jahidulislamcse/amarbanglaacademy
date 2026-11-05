@@ -288,15 +288,28 @@
                 </div>
             </div>
 
-            <!-- Total Classes -->
+            <!-- Total Classes / Attendance -->
             <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3">
                 <div class="w-11 h-11 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-lg shrink-0">
-                    <i class="fa-solid fa-chalkboard-user"></i>
+                    <i class="fa-solid fa-clipboard-user"></i>
                 </div>
-                <div class="min-w-0">
-                    <div class="text-[11px] font-semibold text-slate-500">মোট ক্লাস</div>
-                    <div class="text-xs sm:text-sm font-bold text-slate-900">
-                        ১২টি লাইভ ক্লাস (১ মাস)
+                <div class="min-w-0 flex-1">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[11px] font-semibold text-slate-500">আমার উপস্থিতি</span>
+                        <span class="text-xs font-black {{ ($attendanceStats['percentage'] ?? 100) >= 80 ? 'text-emerald-600' : 'text-amber-600' }}">
+                            {{ $attendanceStats['percentage'] ?? 100 }}%
+                        </span>
+                    </div>
+                    <div class="text-xs font-bold text-slate-900 mt-0.5">
+                        @if(($attendanceStats['total_sessions'] ?? 0) > 0)
+                            {{ $attendanceStats['present_count'] }}/{{ $attendanceStats['total_sessions'] }} টি ক্লাসে উপস্থিত
+                        @else
+                            ক্লাস শুরু অপেক্ষায় (১০০%)
+                        @endif
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-1.5 mt-1.5 overflow-hidden">
+                        <div class="h-full {{ ($attendanceStats['percentage'] ?? 100) >= 80 ? 'bg-emerald-500' : 'bg-amber-500' }} rounded-full transition-all"
+                             style="width: {{ min(100, $attendanceStats['percentage'] ?? 100) }}%"></div>
                     </div>
                 </div>
             </div>
@@ -335,6 +348,146 @@
                 <i class="fa-brands fa-whatsapp text-base"></i>
                 <span>গ্রুপে যুক্ত হন</span>
             </a>
+        </div>
+
+        <!-- 4. ATTENDANCE SUMMARY & BREAKDOWN SECTION (উপস্থিতি ও হাজিরা বিবরণী) -->
+        <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-7 space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+                <div>
+                    <h3 class="font-bold text-lg text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-clipboard-check text-emerald-600"></i>
+                        <span>আমার ক্লাসের হাজিরা ও উপস্থিতির হার</span>
+                    </h3>
+                    <p class="text-xs text-slate-500 mt-0.5">
+                        লাইভ ক্লাসে যোগ দিলে স্বয়ংক্রিয়ভাবে আপনার হাজিরা গণনা করা হয়।
+                    </p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold {{ ($attendanceStats['percentage'] ?? 100) >= 80 ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-amber-100 text-amber-800 border border-amber-200' }}">
+                        <i class="fa-solid {{ ($attendanceStats['percentage'] ?? 100) >= 80 ? 'fa-circle-check text-emerald-600' : 'fa-circle-exclamation text-amber-600' }}"></i>
+                        <span>উপস্থিতির হার: {{ $attendanceStats['percentage'] ?? 100 }}%</span>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Attendance Stats Grid -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
+                    <div class="text-[11px] font-semibold text-slate-500">মোট ক্লাস সম্পন্ন</div>
+                    <div class="text-xl font-black text-slate-900 mt-1">
+                        {{ $attendanceStats['total_sessions'] ?? 0 }} <span class="text-xs font-normal text-slate-500">টি</span>
+                    </div>
+                </div>
+
+                <div class="bg-emerald-50/60 p-4 rounded-2xl border border-emerald-200/80">
+                    <div class="text-[11px] font-semibold text-emerald-800">উপস্থিত ছিলেন</div>
+                    <div class="text-xl font-black text-emerald-700 mt-1">
+                        {{ $attendanceStats['present_count'] ?? 0 }} <span class="text-xs font-normal text-emerald-600">টি</span>
+                    </div>
+                </div>
+
+                <div class="bg-rose-50/60 p-4 rounded-2xl border border-rose-200/80">
+                    <div class="text-[11px] font-semibold text-rose-800">অনুপস্থিত</div>
+                    <div class="text-xl font-black text-rose-700 mt-1">
+                        {{ $attendanceStats['absent_count'] ?? 0 }} <span class="text-xs font-normal text-rose-600">টি</span>
+                    </div>
+                </div>
+
+                <div class="bg-purple-50/60 p-4 rounded-2xl border border-purple-200/80">
+                    <div class="text-[11px] font-semibold text-purple-800">উপস্থিতির শতকরা হার</div>
+                    <div class="text-xl font-black text-purple-700 mt-1">
+                        {{ $attendanceStats['percentage'] ?? 100 }}%
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress Bar & Certificate Notice -->
+            <div class="p-4 rounded-2xl bg-gradient-to-r from-emerald-50/60 to-teal-50/40 border border-emerald-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                        <i class="fa-solid fa-award"></i>
+                    </div>
+                    <div>
+                        <strong class="text-slate-800 font-bold block">সনদপত্র (Certificate) প্রাপ্তির শর্ত:</strong>
+                        <span class="text-slate-600">কোর্সের চূড়ান্ত সনদ অর্জনের জন্য ন্যূনতম ৮০% ক্লাসে সক্রিয় উপস্থিতি আবশ্যক।</span>
+                    </div>
+                </div>
+                <div class="w-full sm:w-48 shrink-0">
+                    <div class="flex items-center justify-between text-[11px] font-semibold text-slate-600 mb-1">
+                        <span>বর্তমান প্রগ্রেস</span>
+                        <span class="font-bold text-emerald-700">{{ $attendanceStats['percentage'] ?? 100 }}%</span>
+                    </div>
+                    <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                        <div class="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all duration-500"
+                             style="width: {{ min(100, $attendanceStats['percentage'] ?? 100) }}%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Session Attendance History -->
+            @if(count($sessions) > 0)
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                        <thead>
+                            <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[11px]">
+                                <th class="py-2.5 px-3 sm:px-4">তারিখ</th>
+                                <th class="py-2.5 px-3 sm:px-4">ক্লাসের বিষয়</th>
+                                <th class="py-2.5 px-3 sm:px-4 text-center">উপস্থিতি স্ট্যাটাস</th>
+                                <th class="py-2.5 px-3 sm:px-4 text-right">যোগদানের সময়</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            @foreach($sessions as $sess)
+                                @php
+                                    $myAttendance = $sess->attendances->first();
+                                    $isPresent = $myAttendance && $myAttendance->isPresent();
+                                @endphp
+                                <tr class="hover:bg-slate-50/70 transition">
+                                    <td class="py-3 px-3 sm:px-4 whitespace-nowrap">
+                                        <div class="font-bold text-slate-800">{{ $sess->session_date->format('d M, Y') }}</div>
+                                        <div class="text-[10px] text-slate-400">{{ $sess->session_date->isoFormat('dddd') }}</div>
+                                    </td>
+                                    <td class="py-3 px-3 sm:px-4">
+                                        <div class="font-semibold text-slate-900">{{ $sess->title }}</div>
+                                    </td>
+                                    <td class="py-3 px-3 sm:px-4 text-center whitespace-nowrap">
+                                        @if($isPresent)
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
+                                                <i class="fa-solid fa-circle-check text-emerald-600"></i>
+                                                <span>উপস্থিত</span>
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700">
+                                                <i class="fa-solid fa-circle-xmark text-rose-500"></i>
+                                                <span>অনুপস্থিত</span>
+                                            </span>
+                                        @endif
+                                    </td>
+                                    <td class="py-3 px-3 sm:px-4 text-right whitespace-nowrap text-slate-500 font-mono text-xs">
+                                        @if($isPresent)
+                                            {{ $myAttendance->attended_at ? $myAttendance->attended_at->format('h:i A') : 'ক্লাস টাইম' }}
+                                        @else
+                                            —
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @else
+                <div class="p-6 rounded-2xl bg-slate-50 border border-slate-200/80 text-center">
+                    <div class="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto text-xl mb-2">
+                        <i class="fa-solid fa-calendar-check"></i>
+                    </div>
+                    <p class="text-xs sm:text-sm font-semibold text-slate-700">
+                        এখনো কোনো ক্লাস সেশন সম্পন্ন হয়নি
+                    </p>
+                    <p class="text-[11px] text-slate-500 mt-1 max-w-md mx-auto">
+                        ক্লাস শুরু হলে নির্ধারিত সময়ে ড্যাশবোর্ডের "সরাসরি ক্লাসে যোগ দিন" বাটনে ক্লিক করে ক্লাসে ঢুকলে আপনার হাজিরা স্বয়ংক্রিয়ভাবে এখানে যুক্ত হবে।
+                    </p>
+                </div>
+            @endif
         </div>
 
         <!-- 4. COURSE CURRICULUM & MODULE ACCORDION (12 MODULES) -->

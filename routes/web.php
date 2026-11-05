@@ -68,6 +68,16 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/payments/{payment}/verify-eps', [AdminController::class, 'verifyEps'])->name('payments.verify-eps');
         Route::post('/courses/{course}/update-meeting', [AdminController::class, 'updateMeetingLink'])->name('courses.update-meeting');
         Route::post('/students/{enrollment}/credentials', [AdminController::class, 'manageStudentAccount'])->name('students.credentials');
+
+        // Live Class Attendance Management
+        Route::get('/attendance', [AdminController::class, 'attendanceIndex'])->name('attendance.index');
+        Route::post('/attendance/sessions', [AdminController::class, 'storeAttendanceSession'])->name('attendance.sessions.store');
+        Route::get('/attendance/sessions/{session}', [AdminController::class, 'showAttendanceSession'])->name('attendance.session');
+        Route::post('/attendance/sessions/{session}/toggle', [AdminController::class, 'toggleAttendance'])->name('attendance.toggle');
+        Route::post('/attendance/sessions/{session}/mark-all-present', [AdminController::class, 'markAllPresent'])->name('attendance.mark-all-present');
+        Route::delete('/attendance/sessions/{session}', [AdminController::class, 'destroyAttendanceSession'])->name('attendance.sessions.destroy');
+        Route::get('/attendance/students', [AdminController::class, 'attendanceStudents'])->name('attendance.students');
+
         Route::post('/logout', [AdminController::class, 'logout'])->name('logout');
         Route::get('/logout', [AdminController::class, 'logout']); // allow GET logout
     });
