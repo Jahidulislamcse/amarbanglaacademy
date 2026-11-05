@@ -198,4 +198,16 @@ class LiveMeetingsDateTimeTest extends TestCase
         $this->assertTrue((bool) $this->course->is_live_now);
         $this->assertEquals('হালনাগাদ করা শিরোনাম: লাইভ ব্রডকাস্টিং', $this->course->live_class_topic);
     }
+
+    public function test_live_meetings_page_does_not_contain_legacy_default_meeting_form(): void
+    {
+        $response = $this->actingAs($this->admin)->get(route('admin.live-meetings'));
+
+        $response->assertStatus(200);
+        $response->assertDontSee('কোর্সের মূল ডিফল্ট মিটিং লিংক ও শিডিউল টেক্সট');
+        $response->assertDontSee('ডিফল্ট মিটিং সংরক্ষণ করুন');
+        $response->assertDontSee('কোনো নির্দিষ্ট তারিখের শিডিউল মিটিং সেট না থাকলে শিক্ষার্থীরা সর্বদা এই লিংক ও শিডিউল দেখতে পাবে');
+        $response->assertSee('লাইভ ক্লাস ও মিটিং রুম কন্ট্রোল (তারিখ ও সময়ভিত্তিক শিডিউল)');
+        $response->assertSee('+ নতুন মিটিং শিডিউল করুন');
+    }
 }
