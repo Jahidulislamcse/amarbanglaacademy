@@ -166,6 +166,49 @@
     <!-- Main Content Container -->
     <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-7 w-full space-y-6">
 
+        <!-- 0. CLASS SCHEDULE NOTICE BANNER -->
+        <div class="bg-gradient-to-r from-emerald-50 via-teal-50 to-blue-50 border-2 border-emerald-500/30 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="flex items-start sm:items-center gap-3.5">
+                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-emerald-600 text-white flex items-center justify-center text-lg shrink-0 shadow-md shadow-emerald-600/20">
+                    <i class="fa-solid fa-bullhorn animate-bounce"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-600 text-white shadow-xs">
+                            <i class="fa-solid fa-bell text-[10px]"></i>
+                            <span>ক্লাস শিডিউল নোটিশ</span>
+                        </span>
+                        <span class="text-xs font-bold text-emerald-950">
+                            লাইভ ক্লাসের সাপ্তাহিক সময়সূচি
+                        </span>
+                    </div>
+                    <p class="text-xs sm:text-sm text-slate-800 font-semibold mt-1">
+                        আমাদের সকল লাইভ ক্লাস <span class="text-emerald-900 font-extrabold underline decoration-emerald-500 decoration-2">প্রতি বৃহস্পতি, শুক্র ও শনিবার</span> রাত ৯:০০ টায় অনুষ্ঠিত হবে।
+                    </p>
+                </div>
+            </div>
+
+            <!-- Days Badges -->
+            <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap self-start md:self-center pl-13 md:pl-0">
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold bg-white text-emerald-900 border border-emerald-200 shadow-2xs">
+                    <i class="fa-regular fa-calendar-check text-emerald-600 text-xs"></i>
+                    <span>বৃহস্পতিবার</span>
+                </span>
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold bg-white text-emerald-900 border border-emerald-200 shadow-2xs">
+                    <i class="fa-regular fa-calendar-check text-emerald-600 text-xs"></i>
+                    <span>শুক্রবার</span>
+                </span>
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold bg-white text-emerald-900 border border-emerald-200 shadow-2xs">
+                    <i class="fa-regular fa-calendar-check text-emerald-600 text-xs"></i>
+                    <span>শনিবার</span>
+                </span>
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold bg-emerald-700 text-white shadow-xs">
+                    <i class="fa-regular fa-clock text-xs"></i>
+                    <span>রাত ৯:০০ টা</span>
+                </span>
+            </div>
+        </div>
+
         <!-- 1. LIVE CLASSROOM HERO SECTION (Direct Meeting Redirect Feature) -->
         <div class="bg-gradient-to-br from-slate-900 via-emerald-950 to-slate-950 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden border border-emerald-900/60">
             <!-- Decorative Background Accent -->
@@ -298,10 +341,11 @@
                     <i class="fa-solid fa-calendar-days"></i>
                 </div>
                 <div class="min-w-0">
-                    <div class="text-[11px] font-semibold text-slate-500">ব্যাচ নম্বর</div>
+                    <div class="text-[11px] font-semibold text-slate-500">ক্লাসের দিন ও সময়</div>
                     <div class="text-xs sm:text-sm font-bold text-slate-900">
-                        {{ $course?->batch_no ?? '১ম ব্যাচ' }} (শুরু: ৫ নভেম্বর)
+                        প্রতি বৃহস্পতি, শুক্র ও শনিবার
                     </div>
+                    <div class="text-[10px] text-emerald-700 font-semibold mt-0.5">রাত ৯:০০ টা ({{ $course?->batch_no ?? '১ম ব্যাচ' }})</div>
                 </div>
             </div>
 
@@ -355,7 +399,7 @@
                             <span>ক্লাসের তারিখ ও সময়সূচি (Class Schedule Calendar)</span>
                         </h3>
                         <p class="text-xs text-slate-500 mt-0.5">
-                            আপনার ব্যাচের নির্ধারিত লাইভ ক্লাসের তারিখ ও সময়তালিকা
+                            লাইভ ক্লাস অনুষ্ঠিত হবে প্রতি বৃহস্পতি, শুক্র ও শনিবার রাত ৯:০০ টায়
                         </p>
                     </div>
                     <span class="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 self-start sm:self-auto">

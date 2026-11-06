@@ -200,6 +200,8 @@ class StudentAuthAndLmsTest extends TestCase
         $response->assertSee('রাকিবুল ইসলাম');
         $response->assertSee('সাংবাদিকতা, আইন ও উপস্থাপনা');
         $response->assertSee('সরাসরি ক্লাসে যোগ দিন');
+        $response->assertSee('ক্লাস শিডিউল নোটিশ');
+        $response->assertSee('প্রতি বৃহস্পতি, শুক্র ও শনিবার');
     }
 
     public function test_live_class_redirects_to_meeting_url(): void
