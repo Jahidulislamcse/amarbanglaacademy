@@ -254,4 +254,76 @@ class AttendanceSystemTest extends TestCase
         $response->assertSee('100%');
         $response->assertSee('সার্টিফিকেট যোগ্য');
     }
+
+    public function test_user_ongshoipru_marma_is_reconciled_and_visible_in_attendance_sheet(): void
+    {
+        // Simulate real case: completed payment exists, but enrollment was pending or user unlinked
+        \App\Models\Payment::create([
+            'course_id' => $this->course->id,
+            'student_name' => 'অংশেপ্রু মারমা',
+            'student_email' => 'bulbulipharmacydentalcare608@gmail.com',
+            'student_phone' => '01820680720',
+            'amount' => 999,
+            'payment_method' => 'bkash',
+            'transaction_id' => 'DJV5SK4UVH',
+            'sender_phone' => '01820680720',
+            'status' => 'completed',
+        ]);
+
+        $session = AttendanceSession::create([
+            'course_id' => $this->course->id,
+            'title' => 'সাংবাদিকতার পরিচিতি ও মৌলিক ধারণা',
+            'session_date' => now()->toDateString(),
+            'status' => 'completed',
+        ]);
+
+        // When admin visits the attendance sheet, auto-reconciliation kicks in
+        $response = $this->actingAs($this->admin)->get(route('admin.attendance.session', $session->id));
+        $response->assertStatus(200);
+        $response->assertSee('অংশেপ্রু মারমা');
+        $response->assertSee('01820680720');
+        $response->assertSee('bulbulipharmacydentalcare608@gmail.com');
+
+        // Check enrollment was created/activated and user account linked
+        $enrollment = Enrollment::where('student_email', 'bulbulipharmacydentalcare608@gmail.com')->first();
+        $this->assertNotNull($enrollment);
+        $this->assertEquals('active', $enrollment->status);
+        $this->assertNotNull($enrollment->user_id);
+        $this->assertNotNull($enrollment->user);
+
+        // Admin can toggle attendance for this student
+        $toggleResponse = $this->actingAs($this->admin)->post(route('admin.attendance.toggle', $session->id), [
+            'enrollment_id' => $enrollment->id,
+            'user_id' => $enrollment->user_id,
+        ]);
+        $toggleResponse->assertSessionHas('success');
+
+        $this->assertTrue(Attendance::where('attendance_session_id', $session->id)->where('user_id', $enrollment->user_id)->where('status', 'present')->exists());
+
+        // Also visible in student-wise attendance report
+        $studentsReport = $this->actingAs($this->admin)->get(route('admin.attendance.students'));
+        $studentsReport->assertStatus(200);
+        $studentsReport->assertSee('অংশেপ্রু মারমা');
+    }
+
+    public function test_lms_sync_students_artisan_command_reconciles_records(): void
+    {
+        \App\Models\Payment::create([
+            'course_id' => $this->course->id,
+            'student_name' => 'নতুন শিক্ষার্থী',
+            'student_email' => 'notun@example.com',
+            'student_phone' => '01999888777',
+            'amount' => 999,
+            'payment_method' => 'bkash',
+            'transaction_id' => 'TRXNOTUN123',
+            'status' => 'completed',
+        ]);
+
+        $this->artisan('lms:sync-students')
+            ->expectsOutputToContain('Reconciliation complete!')
+            ->assertExitCode(0);
+
+        $this->assertTrue(Enrollment::where('student_email', 'notun@example.com')->where('status', 'active')->exists());
+        $this->assertTrue(User::where('email', 'notun@example.com')->exists());
+    }
 }

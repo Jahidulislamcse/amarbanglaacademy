@@ -147,11 +147,39 @@ class AdminController extends Controller
         if ($payment->enrollment) {
             if ($validated['status'] === 'completed') {
                 $payment->enrollment->update(['status' => 'active']);
+                if (!$payment->enrollment->user_id || !$payment->enrollment->user) {
+                    self::ensureUserForEnrollment($payment->enrollment);
+                }
             } elseif ($validated['status'] === 'cancelled' || $validated['status'] === 'failed') {
                 $payment->enrollment->update(['status' => 'cancelled']);
             } elseif ($validated['status'] === 'pending') {
                 $payment->enrollment->update(['status' => 'pending']);
             }
+        } elseif ($validated['status'] === 'completed') {
+            // Find existing enrollment or create new active enrollment
+            $enrollment = Enrollment::where('course_id', $payment->course_id)
+                ->where(function ($q) use ($payment) {
+                    $q->where('student_email', $payment->student_email)
+                      ->orWhere('student_phone', $payment->student_phone);
+                })
+                ->first();
+
+            if (!$enrollment) {
+                $enrollment = Enrollment::create([
+                    'course_id' => $payment->course_id,
+                    'student_name' => $payment->student_name,
+                    'student_email' => $payment->student_email,
+                    'student_phone' => $payment->student_phone,
+                    'status' => 'active',
+                    'enrolled_at' => now(),
+                    'expires_at' => now()->addMonths(12),
+                ]);
+            } else {
+                $enrollment->update(['status' => 'active']);
+            }
+
+            $payment->update(['enrollment_id' => $enrollment->id]);
+            self::ensureUserForEnrollment($enrollment);
         }
 
         // Auto-clean duplicates if payment was approved to completed
@@ -987,13 +1015,189 @@ class AdminController extends Controller
     }
 
     /**
+     * Ensure all confirmed students with completed payments or enrollments
+     * have an active Enrollment record and a linked User account.
+     */
+    public static function reconcileEnrolledStudents(?Course $course = null): void
+    {
+        $courseId = $course?->id ?? Course::first()?->id;
+        if (!$courseId) {
+            return;
+        }
+
+        // 1. Ensure every completed payment for this course has an active Enrollment
+        $completedPayments = Payment::where(function ($q) use ($courseId) {
+                $q->where('course_id', $courseId)
+                  ->orWhereNull('course_id');
+            })
+            ->where('status', 'completed')
+            ->get();
+
+        foreach ($completedPayments as $payment) {
+            $rawPhone = trim((string) $payment->student_phone);
+            $cleanPhone = preg_replace('/[^0-9]/', '', $rawPhone);
+            $email = trim((string) $payment->student_email);
+
+            $enrollment = null;
+            if ($payment->enrollment_id) {
+                $enrollment = Enrollment::find($payment->enrollment_id);
+            }
+
+            if (!$enrollment) {
+                $enrollment = Enrollment::where(function ($q) use ($rawPhone, $cleanPhone, $email) {
+                    if (!empty($rawPhone)) {
+                        $q->where('student_phone', $rawPhone);
+                        if (!empty($cleanPhone)) {
+                            $q->orWhere('student_phone', $cleanPhone);
+                        }
+                    }
+                    if (!empty($email)) {
+                        $q->orWhere('student_email', $email);
+                    }
+                })->where(function ($q) use ($courseId) {
+                    $q->where('course_id', $courseId)->orWhereNull('course_id');
+                })->first();
+            }
+
+            if (!$enrollment) {
+                $enrollment = Enrollment::create([
+                    'course_id' => $courseId,
+                    'student_name' => $payment->student_name,
+                    'student_email' => $email,
+                    'student_phone' => $rawPhone,
+                    'status' => 'active',
+                    'enrolled_at' => $payment->created_at ?? now(),
+                    'expires_at' => now()->addMonths(12),
+                ]);
+            } else {
+                $updates = [];
+                if ($enrollment->status !== 'active') {
+                    $updates['status'] = 'active';
+                }
+                if (!$enrollment->course_id) {
+                    $updates['course_id'] = $courseId;
+                }
+                if (!empty($payment->student_name) && $enrollment->student_name !== $payment->student_name) {
+                    $updates['student_name'] = $payment->student_name;
+                }
+                if (!empty($email) && $enrollment->student_email !== $email) {
+                    $updates['student_email'] = $email;
+                }
+                if (!empty($updates)) {
+                    $enrollment->update($updates);
+                }
+            }
+
+            if ($payment->enrollment_id !== $enrollment->id || $payment->course_id !== $courseId) {
+                $payment->update([
+                    'enrollment_id' => $enrollment->id,
+                    'course_id' => $courseId,
+                ]);
+            }
+
+            self::ensureUserForEnrollment($enrollment);
+        }
+
+        // 2. Also ensure any existing active or completed enrollments have valid user_id & course_id
+        $enrollments = Enrollment::where(function ($q) use ($courseId) {
+                $q->where('course_id', $courseId)->orWhereNull('course_id');
+            })
+            ->whereIn('status', ['active', 'completed'])
+            ->get();
+
+        foreach ($enrollments as $enr) {
+            $updates = [];
+            if ($enr->status !== 'active') {
+                $updates['status'] = 'active';
+            }
+            if (!$enr->course_id) {
+                $updates['course_id'] = $courseId;
+            }
+            if (!empty($updates)) {
+                $enr->update($updates);
+            }
+
+            if (!$enr->user_id || !$enr->user) {
+                self::ensureUserForEnrollment($enr);
+            }
+        }
+    }
+
+    /**
+     * Ensure an Enrollment is linked to a valid student User
+     */
+    public static function ensureUserForEnrollment(Enrollment $enrollment): User
+    {
+        $rawPhone = trim((string) $enrollment->student_phone);
+        $cleanPhone = preg_replace('/[^0-9]/', '', $rawPhone);
+        $email = trim((string) $enrollment->student_email);
+
+        $user = User::where(function ($q) use ($rawPhone, $cleanPhone, $email) {
+            if (!empty($rawPhone)) {
+                $q->where('phone', $rawPhone);
+                if (!empty($cleanPhone)) {
+                    $q->orWhere('phone', $cleanPhone)
+                      ->orWhere('username', $cleanPhone);
+                }
+            }
+            if (!empty($email)) {
+                $q->orWhere('email', $email);
+            }
+        })->first();
+
+        if (!$user) {
+            $username = strlen($cleanPhone) >= 11 ? substr($cleanPhone, -11) : ($rawPhone ?: 'stu_' . $enrollment->id);
+            if (User::where('username', $username)->exists()) {
+                $username = $username . '_' . $enrollment->id;
+            }
+            $userEmail = !empty($email) ? $email : ($username . '@student.amarbangla.edu');
+            if (User::where('email', $userEmail)->exists()) {
+                $userEmail = 'stu_' . $enrollment->id . '_' . $userEmail;
+            }
+            $defaultPwd = 'AB2026#' . rand(100, 999);
+
+            $user = User::create([
+                'name' => $enrollment->student_name,
+                'email' => $userEmail,
+                'phone' => $rawPhone,
+                'username' => $username,
+                'role' => 'student',
+                'password' => Hash::make($defaultPwd),
+                'plain_password' => $defaultPwd,
+            ]);
+        } else {
+            $userUpdates = [];
+            if (!empty($enrollment->student_name) && $user->name !== $enrollment->student_name) {
+                $userUpdates['name'] = $enrollment->student_name;
+            }
+            if (empty($user->phone) && !empty($rawPhone)) {
+                $userUpdates['phone'] = $rawPhone;
+            }
+            if (!empty($email) && $user->email !== $email && !User::where('email', $email)->where('id', '!=', $user->id)->exists()) {
+                $userUpdates['email'] = $email;
+            }
+            if (!empty($userUpdates)) {
+                $user->update($userUpdates);
+            }
+        }
+
+        if ($enrollment->user_id !== $user->id) {
+            $enrollment->update(['user_id' => $user->id]);
+        }
+
+        return $user;
+    }
+
+    /**
      * Admin Attendance Sessions Overview
      */
     public function attendanceIndex(Request $request)
     {
-        $primaryCourse = Course::first();
-        $totalActiveStudents = Enrollment::where('status', 'active')
-            ->when($primaryCourse, fn($q) => $q->where('course_id', $primaryCourse->id))
+        $primaryCourse = Course::find($request->input('course_id')) ?? Course::first();
+        self::reconcileEnrolledStudents($primaryCourse);
+
+        $totalActiveStudents = Enrollment::where('course_id', $primaryCourse?->id)
+            ->whereIn('status', ['active', 'completed'])
             ->count();
 
         $sessions = AttendanceSession::where('course_id', $primaryCourse?->id)
@@ -1025,8 +1229,11 @@ class AdminController extends Controller
             ->whereDate('session_date', now()->toDateString())
             ->first();
 
+        $courses = Course::all();
+
         return view('admin.attendance.index', compact(
             'primaryCourse',
+            'courses',
             'sessions',
             'totalActiveStudents',
             'totalSessions',
@@ -1040,7 +1247,7 @@ class AdminController extends Controller
      */
     public function storeAttendanceSession(Request $request)
     {
-        $primaryCourse = Course::first();
+        $primaryCourse = Course::find($request->input('course_id')) ?? Course::first();
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'session_date' => ['required', 'date'],
@@ -1067,11 +1274,12 @@ class AdminController extends Controller
      */
     public function showAttendanceSession(AttendanceSession $session)
     {
-        $course = $session->course;
+        $course = $session->course ?? Course::first();
+        self::reconcileEnrolledStudents($course);
 
         // Get all active enrolled students with user relation
         $enrollments = Enrollment::where('course_id', $course->id)
-            ->where('status', 'active')
+            ->whereIn('status', ['active', 'completed'])
             ->with('user')
             ->orderBy('student_name', 'asc')
             ->get();
@@ -1101,17 +1309,37 @@ class AdminController extends Controller
      */
     public function toggleAttendance(Request $request, AttendanceSession $session)
     {
-        $validated = $request->validate([
-            'user_id' => ['required', 'exists:users,id'],
-        ]);
+        $userId = $request->input('user_id');
+        $enrollmentId = $request->input('enrollment_id');
 
-        $userId = $validated['user_id'];
+        $enrollment = null;
+        if ($enrollmentId) {
+            $enrollment = Enrollment::find($enrollmentId);
+        }
+
+        if (!$userId && $enrollment) {
+            $user = $enrollment->user ?? self::ensureUserForEnrollment($enrollment);
+            $userId = $user->id;
+        }
+
+        if (!$enrollment && $userId) {
+            $enrollment = Enrollment::where('user_id', $userId)
+                ->where('course_id', $session->course_id)
+                ->first();
+        }
+
+        if (!$userId) {
+            return back()->with('error', 'শিক্ষার্থীর লগইন তথ্য পাওয়া যায়নি।');
+        }
+
+        $user = User::find($userId);
+        if (!$user && $enrollment) {
+            $user = self::ensureUserForEnrollment($enrollment);
+            $userId = $user->id;
+        }
+
         $attendance = Attendance::where('attendance_session_id', $session->id)
             ->where('user_id', $userId)
-            ->first();
-
-        $enrollment = Enrollment::where('user_id', $userId)
-            ->where('course_id', $session->course_id)
             ->first();
 
         if ($attendance && $attendance->status === 'present') {
@@ -1159,16 +1387,24 @@ class AdminController extends Controller
      */
     public function markAllPresent(AttendanceSession $session)
     {
+        $course = $session->course ?? Course::first();
+        self::reconcileEnrolledStudents($course);
+
         $enrollments = Enrollment::where('course_id', $session->course_id)
-            ->where('status', 'active')
-            ->whereNotNull('user_id')
+            ->whereIn('status', ['active', 'completed'])
             ->get();
 
         foreach ($enrollments as $enr) {
+            $userId = $enr->user_id;
+            if (!$userId || !$enr->user) {
+                $user = self::ensureUserForEnrollment($enr);
+                $userId = $user->id;
+            }
+
             Attendance::updateOrCreate(
                 [
                     'attendance_session_id' => $session->id,
-                    'user_id' => $enr->user_id,
+                    'user_id' => $userId,
                 ],
                 [
                     'course_id' => $session->course_id,
@@ -1198,7 +1434,8 @@ class AdminController extends Controller
      */
     public function attendanceStudents(Request $request)
     {
-        $primaryCourse = Course::first();
+        $primaryCourse = Course::find($request->input('course_id')) ?? Course::first();
+        self::reconcileEnrolledStudents($primaryCourse);
         $search = trim((string) $request->input('search', ''));
 
         $totalSessions = AttendanceSession::where('course_id', $primaryCourse?->id)
@@ -1206,7 +1443,7 @@ class AdminController extends Controller
             ->count();
 
         $studentsQuery = Enrollment::where('course_id', $primaryCourse?->id)
-            ->where('status', 'active')
+            ->whereIn('status', ['active', 'completed'])
             ->with(['user.attendances' => function ($q) use ($primaryCourse) {
                 $q->where('course_id', $primaryCourse?->id);
             }]);
@@ -1219,8 +1456,9 @@ class AdminController extends Controller
             });
         }
 
-        $students = $studentsQuery->orderBy('student_name', 'asc')->paginate(20);
+        $students = $studentsQuery->orderBy('student_name', 'asc')->paginate(30)->withQueryString();
+        $courses = Course::all();
 
-        return view('admin.attendance.students', compact('primaryCourse', 'students', 'totalSessions', 'search'));
+        return view('admin.attendance.students', compact('primaryCourse', 'courses', 'students', 'totalSessions', 'search'));
     }
 }

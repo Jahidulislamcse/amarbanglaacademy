@@ -28,9 +28,14 @@ class StudentController extends Controller
                     $q->orWhere('student_phone', $user->phone);
                 }
             })
-            ->where('status', 'active')
+            ->whereIn('status', ['active', 'completed'])
             ->latest()
             ->first();
+
+        // Auto-heal enrollment user link if needed
+        if ($enrollment && $enrollment->user_id !== $user->id) {
+            $enrollment->update(['user_id' => $user->id, 'status' => 'active']);
+        }
 
         // Get main course details with syllabus modules
         $course = $enrollment?->course ?? Course::with(['modules.lessons', 'instructors'])->first();

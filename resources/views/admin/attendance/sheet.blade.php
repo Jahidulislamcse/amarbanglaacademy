@@ -171,29 +171,26 @@
                                 @endif
                             </td>
                             <td class="py-3 px-4 sm:px-6 text-right whitespace-nowrap">
-                                @if($user)
-                                    <form method="POST" action="{{ route('admin.attendance.toggle', $session->id) }}" class="inline">
-                                        @csrf
-                                        <input type="hidden" name="user_id" value="{{ $user->id }}">
-                                        @if($isPresent)
-                                            <button type="submit"
-                                                    title="অনুপস্থিত হিসেবে পরিবর্তন করতে ক্লিক করুন"
-                                                    class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition">
-                                                <i class="fa-solid fa-xmark"></i>
-                                                <span>অনুপস্থিত</span>
-                                            </button>
-                                        @else
-                                            <button type="submit"
-                                                    title="উপস্থিত হিসেবে মার্ক করতে ক্লিক করুন"
-                                                    class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 transition">
-                                                <i class="fa-solid fa-check"></i>
-                                                <span>উপস্থিত</span>
-                                            </button>
-                                        @endif
-                                    </form>
-                                @else
-                                    <span class="text-xs text-amber-600">লগইন একাউন্ট নেই</span>
-                                @endif
+                                <form method="POST" action="{{ route('admin.attendance.toggle', $session->id) }}" class="inline">
+                                    @csrf
+                                    <input type="hidden" name="user_id" value="{{ $user?->id ?? '' }}">
+                                    <input type="hidden" name="enrollment_id" value="{{ $enrollment->id }}">
+                                    @if($isPresent)
+                                        <button type="submit"
+                                                title="অনুপস্থিত হিসেবে পরিবর্তন করতে ক্লিক করুন"
+                                                class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition">
+                                            <i class="fa-solid fa-xmark"></i>
+                                            <span>অনুপস্থিত</span>
+                                        </button>
+                                    @else
+                                        <button type="submit"
+                                                title="উপস্থিত হিসেবে মার্ক করতে ক্লিক করুন"
+                                                class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 transition">
+                                            <i class="fa-solid fa-check"></i>
+                                            <span>উপস্থিত</span>
+                                        </button>
+                                    @endif
+                                </form>
                             </td>
                         </tr>
                     @empty
