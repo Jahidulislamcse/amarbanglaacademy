@@ -64,6 +64,25 @@
             deleteUrl: '{{ url('/admin/meetings') }}/' + meeting.id + '/recording'
         };
         this.showRecordingModal = true;
+    },
+    openQuickRecording() {
+        @if(count($meetings) > 0)
+            @php $firstMeeting = $meetings->first(); @endphp
+            this.openRecording({
+                id: {{ $firstMeeting->id }},
+                title: @json($firstMeeting->title),
+                recording_url: @json($firstMeeting->recording_url ?? ''),
+                recording_duration: @json($firstMeeting->recording_duration ?? ''),
+                recording_notes: @json($firstMeeting->recording_notes ?? ''),
+                has_recording: {{ $firstMeeting->hasRecording() ? 'true' : 'false' }}
+            });
+        @else
+            this.showScheduleModal = true;
+        @endif
+    },
+    onSelectRecordingMeeting(id) {
+        this.recordingForm.actionUrl = '{{ url('/admin/meetings') }}/' + id + '/recording';
+        this.recordingForm.deleteUrl = '{{ url('/admin/meetings') }}/' + id + '/recording';
     }
 }">
 
@@ -86,9 +105,16 @@
 
         <div class="flex items-center gap-2.5 flex-wrap">
             <button type="button"
+                    @click="openQuickRecording()"
+                    class="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-md transition transform hover:-translate-y-0.5">
+                <i class="fa-solid fa-circle-play text-white"></i>
+                <span>+ ক্লাস রেকর্ডিং পোস্ট করুন</span>
+            </button>
+
+            <button type="button"
                     @click="showScheduleModal = true"
-                    class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-sm transition">
-                <i class="fa-solid fa-calendar-plus"></i>
+                    class="inline-flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-800 font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl border border-slate-300 shadow-sm transition">
+                <i class="fa-solid fa-calendar-plus text-emerald-600"></i>
                 <span>+ নতুন মিটিং শিডিউল করুন</span>
             </button>
 
@@ -177,6 +203,25 @@
                         <i class="fa-solid fa-arrow-up-right-from-square"></i>
                         <span>মিটিংয়ে যুক্ত হন</span>
                     </a>
+
+                    @if($displayMeeting)
+                        @php
+                            $heroRecJson = [
+                                'id' => $displayMeeting->id,
+                                'title' => $displayMeeting->title,
+                                'recording_url' => $displayMeeting->recording_url,
+                                'recording_duration' => $displayMeeting->recording_duration,
+                                'recording_notes' => $displayMeeting->recording_notes,
+                                'has_recording' => (bool) $displayMeeting->hasRecording(),
+                            ];
+                        @endphp
+                        <button type="button"
+                                @click='openRecording(@json($heroRecJson))'
+                                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 hover:text-white font-bold text-xs sm:text-sm border border-emerald-500/40 shadow transition">
+                            <i class="fa-solid fa-circle-play text-emerald-400"></i>
+                            <span>{{ $displayMeeting->hasRecording() ? 'রেকর্ডিং পরিবর্তন' : 'রেকর্ডিং পোস্ট করুন' }}</span>
+                        </button>
+                    @endif
                 </div>
             </div>
 
@@ -347,9 +392,10 @@
                                     @else
                                         <button type="button"
                                                 @click='openRecording(@json($meetingJson))'
-                                                class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-bold bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 border border-slate-200 hover:border-emerald-200 transition">
-                                            <i class="fa-solid fa-plus text-[10px]"></i>
-                                            <span>রেকর্ডিং দিন</span>
+                                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition transform hover:scale-105"
+                                                title="এই ক্লাসের ভিডিও রেকর্ডিং পোস্ট করুন">
+                                            <i class="fa-solid fa-video text-xs"></i>
+                                            <span>রেকর্ডিং পোস্ট করুন</span>
                                         </button>
                                     @endif
                                 </td>
@@ -745,6 +791,21 @@
                         ইউটিউবের আনলিস্টেড (Unlisted) বা পাবলিক যেকোনো ভিডিও লিংক দিন। শিক্ষার্থী পোর্টালে ভিডিও ফ্রেমের ভেতরে <strong>কোনো ইউটিউব লোগো, বাটন বা লিংক দেখানো হবে না</strong>। এটি সম্পূর্ণ নিজস্ব ক্লাউড স্টোরেজ ভিডিওর মতো প্রিমিয়াম লুকে চলবে।
                     </p>
                 </div>
+
+                @if(count($meetings) > 0)
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">
+                            কোন ক্লাসের রেকর্ডিং পোস্ট করছেন? <span class="text-rose-500">*</span>
+                        </label>
+                        <select class="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-semibold text-slate-800"
+                                x-model="recordingForm.id"
+                                @change="onSelectRecordingMeeting($event.target.value)">
+                            @foreach($meetings as $m)
+                                <option value="{{ $m->id }}">{{ $m->title }} ({{ $m->starts_at ? $m->starts_at->format('d M, Y') : '' }})</option>
+                            @endforeach
+                        </select>
+                    </div>
+                @endif
 
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1.5">
