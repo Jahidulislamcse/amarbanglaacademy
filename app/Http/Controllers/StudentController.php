@@ -63,6 +63,15 @@ class StudentController extends Controller
                 ->get();
         }
 
+        // Fetch all meetings that have published recordings
+        $recordings = [];
+        if ($course) {
+            $recordings = LiveMeeting::where('course_id', $course->id)
+                ->withRecordings()
+                ->orderBy('starts_at', 'asc')
+                ->get();
+        }
+
         return view('student.dashboard', compact(
             'user',
             'enrollment',
@@ -70,7 +79,35 @@ class StudentController extends Controller
             'currentMeeting',
             'scheduledMeetings',
             'attendanceStats',
-            'sessions'
+            'sessions',
+            'recordings'
+        ));
+    }
+
+    /**
+     * Watch Class Recording (Unbranded Secure Video Player)
+     */
+    public function watchRecording(LiveMeeting $meeting)
+    {
+        $user = Auth::user();
+
+        if (!$meeting->hasRecording()) {
+            return redirect()->route('student.dashboard')->with('error', 'এই ক্লাসের রেকর্ডিং এখনো প্রকাশ করা হয়নি।');
+        }
+
+        $course = $meeting->course ?? Course::first();
+
+        // Other recordings in this course for playlist
+        $otherRecordings = LiveMeeting::where('course_id', $course->id)
+            ->withRecordings()
+            ->orderBy('starts_at', 'asc')
+            ->get();
+
+        return view('student.recording-player', compact(
+            'user',
+            'course',
+            'meeting',
+            'otherRecordings'
         ));
     }
 

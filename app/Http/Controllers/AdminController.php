@@ -511,10 +511,17 @@ class AdminController extends Controller
             LiveMeeting::where('course_id', $primaryCourse->id)->update(['is_live_now' => false]);
         }
 
+        $recordingUrl = trim((string) $request->input('recording_url'));
+        $hasRecording = !empty($recordingUrl);
+
         $meeting = LiveMeeting::create([
             'course_id' => $primaryCourse->id,
             'title' => $validated['title'],
             'meeting_url' => $validated['meeting_url'],
+            'recording_url' => $hasRecording ? $recordingUrl : null,
+            'recording_duration' => $request->input('recording_duration'),
+            'recording_notes' => $request->input('recording_notes'),
+            'has_recording' => $hasRecording,
             'meeting_id' => $validated['meeting_id'] ?? null,
             'meeting_passcode' => $validated['meeting_passcode'] ?? null,
             'platform' => $platform,
@@ -602,7 +609,7 @@ class AdminController extends Controller
                 ->update(['is_live_now' => false]);
         }
 
-        $meeting->update([
+        $meetingUpdates = [
             'title' => $validated['title'],
             'meeting_url' => $validated['meeting_url'],
             'meeting_id' => $validated['meeting_id'] ?? null,
@@ -614,7 +621,17 @@ class AdminController extends Controller
             'is_live_now' => $isLiveNow,
             'status' => $isLiveNow ? 'live' : 'scheduled',
             'notes' => $validated['notes'] ?? null,
-        ]);
+        ];
+
+        if ($request->has('recording_url')) {
+            $recUrl = trim((string) $request->input('recording_url'));
+            $meetingUpdates['recording_url'] = !empty($recUrl) ? $recUrl : null;
+            $meetingUpdates['recording_duration'] = $request->input('recording_duration');
+            $meetingUpdates['recording_notes'] = $request->input('recording_notes');
+            $meetingUpdates['has_recording'] = !empty($recUrl);
+        }
+
+        $meeting->update($meetingUpdates);
 
         if ($isLiveNow) {
             $course->update([
@@ -645,6 +662,46 @@ class AdminController extends Controller
         }
 
         return back()->with('success', "মিটিংটি সফলভাবে হালনাগাদ (সম্পাদনা) করা হয়েছে!");
+    }
+
+    /**
+     * Update/Publish Recording for a Class Meeting (YouTube or Storage Video)
+     */
+    public function updateRecording(Request $request, LiveMeeting $meeting)
+    {
+        $validated = $request->validate([
+            'recording_url' => ['required', 'string', 'max:1000'],
+            'recording_duration' => ['nullable', 'string', 'max:50'],
+            'recording_notes' => ['nullable', 'string', 'max:1000'],
+        ], [
+            'recording_url.required' => 'ভিডিও রেকর্ডিং লিংক (YouTube লিংক বা ভিডিও URL) প্রদান করুন।',
+        ]);
+
+        $recordingUrl = trim($validated['recording_url']);
+
+        $meeting->update([
+            'recording_url' => $recordingUrl,
+            'recording_duration' => $validated['recording_duration'] ?? null,
+            'recording_notes' => $validated['recording_notes'] ?? null,
+            'has_recording' => true,
+            'status' => 'completed',
+        ]);
+
+        return back()->with('success', "ক্লাস রেকর্ডিং সফলভাবে সংরক্ষিত ও প্রকাশ করা হয়েছে! (\"{$meeting->title}\")");
+    }
+
+    /**
+     * Remove Recording from a Class Meeting
+     */
+    public function removeRecording(LiveMeeting $meeting)
+    {
+        $meeting->update([
+            'recording_url' => null,
+            'recording_duration' => null,
+            'has_recording' => false,
+        ]);
+
+        return back()->with('success', "ক্লাস রেকর্ডিং সফলভাবে সরিয়ে নেওয়া হয়েছে।");
     }
 
     /**

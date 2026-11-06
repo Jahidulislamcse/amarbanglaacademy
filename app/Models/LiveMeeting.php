@@ -16,6 +16,7 @@ class LiveMeeting extends Model
         'starts_at' => 'datetime',
         'ends_at' => 'datetime',
         'is_live_now' => 'boolean',
+        'has_recording' => 'boolean',
     ];
 
     public function course(): BelongsTo
@@ -31,6 +32,73 @@ class LiveMeeting extends Model
     public function isLive(): bool
     {
         return (bool) $this->is_live_now;
+    }
+
+    /**
+     * Whether this meeting has an available recording
+     */
+    public function hasRecording(): bool
+    {
+        return (bool) $this->has_recording && !empty($this->recording_url);
+    }
+
+    /**
+     * Extract YouTube 11-character Video ID from recording URL
+     */
+    public function getYoutubeIdAttribute(): ?string
+    {
+        return self::extractYoutubeId($this->recording_url);
+    }
+
+    /**
+     * Static helper to extract YouTube ID from any YouTube URL format
+     */
+    public static function extractYoutubeId(?string $url): ?string
+    {
+        if (empty($url)) {
+            return null;
+        }
+
+        $url = trim($url);
+
+        // Raw 11-char ID
+        if (preg_match('/^[a-zA-Z0-9_-]{11}$/', $url)) {
+            return $url;
+        }
+
+        // Standard YouTube URL formats (watch, share, embed, shorts, live)
+        if (preg_match('/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|live\/|shorts\/))([a-zA-Z0-9_-]{11})/i', $url, $matches)) {
+            return $matches[1];
+        }
+
+        return null;
+    }
+
+    /**
+     * Whether the recording is a direct video file (MP4, WebM, etc.)
+     */
+    public function isDirectVideo(): bool
+    {
+        if (empty($this->recording_url)) {
+            return false;
+        }
+
+        $lower = strtolower($this->recording_url);
+        return str_ends_with($lower, '.mp4') ||
+               str_ends_with($lower, '.webm') ||
+               str_ends_with($lower, '.m4v') ||
+               str_contains($lower, '/storage/') ||
+               str_contains($lower, '.mp4?');
+    }
+
+    /**
+     * Scope meetings that have published recordings
+     */
+    public function scopeWithRecordings($query)
+    {
+        return $query->where('has_recording', true)
+                     ->whereNotNull('recording_url')
+                     ->where('recording_url', '!=', '');
     }
 
     /**

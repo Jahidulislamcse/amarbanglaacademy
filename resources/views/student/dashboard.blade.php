@@ -263,6 +263,14 @@
                             <span class="text-[10px] text-slate-400 block">
                                 নির্ধারিত সময়ে বাটনটি সক্রিয় হবে
                             </span>
+                            @if(isset($recordings) && count($recordings) > 0)
+                                <a href="{{ route('student.recordings.watch', $recordings->last()->id) }}"
+                                   class="inline-flex items-center gap-1.5 text-[11px] text-emerald-400 hover:text-emerald-300 font-bold hover:underline pt-1">
+                                    <i class="fa-solid fa-circle-play text-[10px]"></i>
+                                    <span>সর্বশেষ ক্লাস রেকর্ডিং দেখুন</span>
+                                    <i class="fa-solid fa-arrow-right text-[9px]"></i>
+                                </a>
+                            @endif
                         </div>
                     @endif
                 </div>
@@ -415,6 +423,12 @@
                                                 <i class="fa-solid fa-video text-[10px]"></i>
                                                 <span>যুক্ত হন</span>
                                             </a>
+                                        @elseif($m->hasRecording())
+                                            <a href="{{ route('student.recordings.watch', $m->id) }}"
+                                               class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition">
+                                                <i class="fa-solid fa-circle-play text-[10px]"></i>
+                                                <span>রেকর্ডিং দেখুন</span>
+                                            </a>
                                         @else
                                             <span class="text-slate-400 text-xs flex items-center justify-end gap-1">
                                                 <i class="fa-solid fa-lock text-[10px]"></i>
@@ -426,6 +440,65 @@
                             @endforeach
                         </tbody>
                     </table>
+                </div>
+            </div>
+        @endif
+
+        <!-- CLASS RECORDINGS ARCHIVE SECTION (ক্লাস রেকর্ডিং ও ভিডিও লেকচার) -->
+        @if(isset($recordings) && count($recordings) > 0)
+            <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-7 space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg font-bold">
+                            <i class="fa-solid fa-circle-play"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-lg text-slate-900">
+                                ক্লাস রেকর্ডিং ও ভিডিও লেকচার
+                            </h3>
+                            <p class="text-xs text-slate-500 mt-0.5">
+                                পূর্ববর্তী সকল ক্লাসের পূর্ণাঙ্গ রেকর্ডিং (সুরক্ষিত আনব্র্যান্ডেড প্লেয়ার)
+                            </p>
+                        </div>
+                    </div>
+                    <span class="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 self-start sm:self-auto">
+                        উপলব্ধ রেকর্ডিং: {{ count($recordings) }}টি
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    @foreach($recordings as $index => $rec)
+                        <div class="p-4 bg-slate-50 hover:bg-emerald-50/20 rounded-2xl border border-slate-200 hover:border-emerald-300 transition flex flex-col justify-between space-y-3 group">
+                            <div>
+                                <div class="flex items-center justify-between text-[11px] text-slate-500 mb-1.5">
+                                    <span class="font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                                        লেকচার #{{ $index + 1 }}
+                                    </span>
+                                    <span>{{ $rec->starts_at ? $rec->starts_at->format('d M, Y') : 'ক্লাস' }}</span>
+                                </div>
+                                <h4 class="font-bold text-sm text-slate-900 group-hover:text-emerald-800 transition line-clamp-2">
+                                    {{ $rec->title }}
+                                </h4>
+                                @if($rec->recording_notes)
+                                    <p class="text-[11px] text-slate-500 mt-1 line-clamp-1">
+                                        {{ $rec->recording_notes }}
+                                    </p>
+                                @endif
+                            </div>
+
+                            <div class="flex items-center justify-between pt-3 border-t border-slate-200/80">
+                                <span class="text-[11px] text-slate-500 font-mono">
+                                    <i class="fa-regular fa-clock text-emerald-600 mr-1 text-[10px]"></i>
+                                    {{ $rec->recording_duration ?: 'পূর্ণ ক্লাস' }}
+                                </span>
+                                <a href="{{ route('student.recordings.watch', $rec->id) }}"
+                                   class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition group-hover:scale-105">
+                                    <i class="fa-solid fa-play text-[10px]"></i>
+                                    <span>ভিডিও দেখুন</span>
+                                </a>
+                            </div>
+                        </div>
+                    @endforeach
                 </div>
             </div>
         @endif

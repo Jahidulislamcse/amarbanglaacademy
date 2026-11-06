@@ -47,6 +47,7 @@ Route::middleware('auth')->prefix('student')->name('student.')->group(function (
     Route::get('/dashboard', [StudentController::class, 'dashboard'])->name('dashboard');
     Route::get('/classroom', [StudentController::class, 'classroom'])->name('classroom');
     Route::get('/live-class', [StudentController::class, 'joinLiveClass'])->name('live-class');
+    Route::get('/recordings/{meeting}', [StudentController::class, 'watchRecording'])->name('recordings.watch');
 });
 
 // Admin Panel Authentication & Student Management
@@ -63,6 +64,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/live-meetings', [AdminController::class, 'liveMeetings'])->name('live-meetings');
         Route::post('/meetings', [AdminController::class, 'storeMeeting'])->name('meetings.store');
         Route::put('/meetings/{meeting}', [AdminController::class, 'updateMeeting'])->name('meetings.update');
+        Route::post('/meetings/{meeting}/recording', [AdminController::class, 'updateRecording'])->name('meetings.recording.update');
+        Route::delete('/meetings/{meeting}/recording', [AdminController::class, 'removeRecording'])->name('meetings.recording.destroy');
         Route::post('/meetings/{meeting}/toggle-live', [AdminController::class, 'toggleMeetingLive'])->name('meetings.toggle-live');
         Route::delete('/meetings/{meeting}', [AdminController::class, 'destroyMeeting'])->name('meetings.destroy');
         Route::get('/students/export', [AdminController::class, 'exportCsv'])->name('students.export');

@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('course_id')->constrained()->cascadeOnDelete();
             $table->string('title');
-            $table->string('meeting_url', 1000);
+            $table->string('meeting_url', 1000)->nullable();
             $table->string('meeting_id')->nullable();
             $table->string('meeting_passcode')->nullable();
             $table->string('platform')->default('zoom'); // zoom, google_meet, other

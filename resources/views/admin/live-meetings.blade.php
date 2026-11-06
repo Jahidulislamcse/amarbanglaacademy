@@ -6,10 +6,14 @@
 <div class="space-y-6" x-data="{
     showScheduleModal: false,
     showEditModal: false,
+    showRecordingModal: false,
     editForm: {
         id: null,
         title: '',
         meeting_url: '',
+        recording_url: '',
+        recording_duration: '',
+        recording_notes: '',
         meeting_id: '',
         meeting_passcode: '',
         scheduled_date: '',
@@ -19,11 +23,24 @@
         is_live_now: false,
         actionUrl: ''
     },
+    recordingForm: {
+        id: null,
+        title: '',
+        recording_url: '',
+        recording_duration: '',
+        recording_notes: '',
+        has_recording: false,
+        actionUrl: '',
+        deleteUrl: ''
+    },
     openEdit(meeting) {
         this.editForm = {
             id: meeting.id,
             title: meeting.title,
-            meeting_url: meeting.meeting_url,
+            meeting_url: meeting.meeting_url || '',
+            recording_url: meeting.recording_url || '',
+            recording_duration: meeting.recording_duration || '',
+            recording_notes: meeting.recording_notes || '',
             meeting_id: meeting.meeting_id || '',
             meeting_passcode: meeting.meeting_passcode || '',
             scheduled_date: meeting.date_str,
@@ -34,6 +51,19 @@
             actionUrl: '{{ url('/admin/meetings') }}/' + meeting.id
         };
         this.showEditModal = true;
+    },
+    openRecording(meeting) {
+        this.recordingForm = {
+            id: meeting.id,
+            title: meeting.title,
+            recording_url: meeting.recording_url || '',
+            recording_duration: meeting.recording_duration || '',
+            recording_notes: meeting.recording_notes || '',
+            has_recording: Boolean(meeting.has_recording),
+            actionUrl: '{{ url('/admin/meetings') }}/' + meeting.id + '/recording',
+            deleteUrl: '{{ url('/admin/meetings') }}/' + meeting.id + '/recording'
+        };
+        this.showRecordingModal = true;
     }
 }">
 
@@ -217,6 +247,7 @@
                             <th class="py-3 px-4 sm:px-6">ক্লাস শুরুর সময়</th>
                             <th class="py-3 px-4 sm:px-6">ক্লাসের বিষয় / টপিক</th>
                             <th class="py-3 px-4 sm:px-6">প্ল্যাটফর্ম ও লিংক</th>
+                            <th class="py-3 px-4 sm:px-6">ক্লাস রেকর্ডিং</th>
                             <th class="py-3 px-4 sm:px-6 text-center">স্ট্যাটাস</th>
                             <th class="py-3 px-4 sm:px-6 text-right">লাইভ অ্যাকশন</th>
                         </tr>
@@ -257,10 +288,10 @@
                                 <td class="py-3.5 px-4 sm:px-6 whitespace-nowrap">
                                     <a href="{{ $meeting->meeting_url }}" target="_blank"
                                        class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 hover:text-emerald-900 hover:underline">
-                                        @if(str_contains(strtolower($meeting->meeting_url), 'zoom'))
+                                        @if(str_contains(strtolower($meeting->meeting_url ?? ''), 'zoom'))
                                             <i class="fa-solid fa-video text-blue-500"></i>
                                             <span>Zoom লিংক</span>
-                                        @elseif(str_contains(strtolower($meeting->meeting_url), 'meet.google'))
+                                        @elseif(str_contains(strtolower($meeting->meeting_url ?? ''), 'meet.google'))
                                             <i class="fa-solid fa-chalkboard-user text-emerald-600"></i>
                                             <span>Google Meet</span>
                                         @else
@@ -269,6 +300,58 @@
                                         @endif
                                         <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
                                     </a>
+                                </td>
+                                <td class="py-3.5 px-4 sm:px-6 whitespace-nowrap">
+                                    @php
+                                        $meetingJson = [
+                                            'id' => $meeting->id,
+                                            'title' => $meeting->title,
+                                            'meeting_url' => $meeting->meeting_url,
+                                            'recording_url' => $meeting->recording_url,
+                                            'recording_duration' => $meeting->recording_duration,
+                                            'recording_notes' => $meeting->recording_notes,
+                                            'has_recording' => (bool) $meeting->hasRecording(),
+                                            'meeting_id' => $meeting->meeting_id,
+                                            'meeting_passcode' => $meeting->meeting_passcode,
+                                            'date_str' => $meeting->starts_at ? $meeting->starts_at->format('Y-m-d') : date('Y-m-d'),
+                                            'time_str' => $meeting->starts_at ? $meeting->starts_at->format('H:i') : '21:00',
+                                            'schedule_text' => $meeting->schedule_text,
+                                            'notes' => $meeting->notes,
+                                            'is_live_now' => (bool) $meeting->is_live_now,
+                                        ];
+                                    @endphp
+
+                                    @if($meeting->hasRecording())
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                                <i class="fa-solid fa-circle-play text-emerald-600 text-[10px]"></i>
+                                                <span>রেকর্ডিং সক্রিয়</span>
+                                            </span>
+                                            <a href="{{ route('student.recordings.watch', $meeting->id) }}" target="_blank"
+                                               class="p-1 text-emerald-700 hover:text-emerald-900 transition"
+                                               title="সুরক্ষিত প্লেয়ারে প্রিভিউ দেখুন">
+                                                <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
+                                            </a>
+                                            <button type="button"
+                                                    @click='openRecording(@json($meetingJson))'
+                                                    class="p-1 text-slate-400 hover:text-emerald-700 transition"
+                                                    title="রেকর্ডিং পরিবর্তন করুন">
+                                                <i class="fa-solid fa-pen text-xs"></i>
+                                            </button>
+                                        </div>
+                                        @if($meeting->recording_duration)
+                                            <div class="text-[10px] text-slate-400 font-mono mt-0.5">
+                                                {{ $meeting->recording_duration }}
+                                            </div>
+                                        @endif
+                                    @else
+                                        <button type="button"
+                                                @click='openRecording(@json($meetingJson))'
+                                                class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-bold bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 border border-slate-200 hover:border-emerald-200 transition">
+                                            <i class="fa-solid fa-plus text-[10px]"></i>
+                                            <span>রেকর্ডিং দিন</span>
+                                        </button>
+                                    @endif
                                 </td>
                                 <td class="py-3.5 px-4 sm:px-6 text-center whitespace-nowrap">
                                     @if($meeting->is_live_now)
@@ -305,20 +388,6 @@
                                             @endif
                                         </form>
 
-                                        @php
-                                            $meetingJson = [
-                                                'id' => $meeting->id,
-                                                'title' => $meeting->title,
-                                                'meeting_url' => $meeting->meeting_url,
-                                                'meeting_id' => $meeting->meeting_id,
-                                                'meeting_passcode' => $meeting->meeting_passcode,
-                                                'date_str' => $meeting->starts_at ? $meeting->starts_at->format('Y-m-d') : date('Y-m-d'),
-                                                'time_str' => $meeting->starts_at ? $meeting->starts_at->format('H:i') : '21:00',
-                                                'schedule_text' => $meeting->schedule_text,
-                                                'notes' => $meeting->notes,
-                                                'is_live_now' => (bool) $meeting->is_live_now,
-                                            ];
-                                        @endphp
                                         <button type="button"
                                                 @click='openEdit(@json($meetingJson))'
                                                 class="p-1.5 text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition"
@@ -328,6 +397,11 @@
 
                                         <form method="POST" action="{{ route('admin.meetings.destroy', $meeting->id) }}"
                                               onsubmit="return confirm('এই শিডিউল মিটিংটি মুছে ফেলতে চান?')" class="inline">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" title="মুছে ফেলুন" class="p-1.5 text-slate-400 hover:text-red-600 transition">
+                                                <i class="fa-regular fa-trash-can"></i>
+                                            </button>
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" title="মুছে ফেলুন" class="p-1.5 text-slate-400 hover:text-red-600 transition">
@@ -347,6 +421,73 @@
             </div>
         @endif
     </div>
+
+    <!-- Published Class Recordings Archive -->
+    @php
+        $recordedMeetings = collect($meetings)->filter(fn($m) => $m->hasRecording());
+    @endphp
+    @if(count($recordedMeetings) > 0)
+        <div class="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-base font-bold shadow-xs">
+                        <i class="fa-solid fa-film"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-base text-slate-900">
+                            প্রকাশিত ক্লাস রেকর্ডিং আর্কাইভ ({{ count($recordedMeetings) }}টি ক্লাস)
+                        </h3>
+                        <p class="text-xs text-slate-500">
+                            শিক্ষার্থীরা এই ক্লাসগুলোর রেকর্ডিং সুরক্ষিত আনব্র্যান্ডেড প্লেয়ারে দেখতে পাচ্ছে
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                @foreach($recordedMeetings as $rec)
+                    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 hover:border-emerald-300 transition flex flex-col justify-between space-y-3">
+                        <div>
+                            <div class="flex items-center justify-between text-[11px] text-slate-500 mb-1">
+                                <span>{{ $rec->starts_at ? $rec->starts_at->format('d M, Y') : 'ক্লাস' }}</span>
+                                @if($rec->recording_duration)
+                                    <span class="font-mono text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded font-semibold">{{ $rec->recording_duration }}</span>
+                                @endif
+                            </div>
+                            <h4 class="font-bold text-sm text-slate-900 line-clamp-1">
+                                {{ $rec->title }}
+                            </h4>
+                        </div>
+
+                        <div class="flex items-center justify-between pt-2 border-t border-slate-200/80">
+                            <a href="{{ route('student.recordings.watch', $rec->id) }}" target="_blank"
+                               class="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 hover:text-emerald-900">
+                                <i class="fa-solid fa-circle-play text-emerald-600"></i>
+                                <span>সুরক্ষিত প্লেয়ার প্রিভিউ</span>
+                                <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                            </a>
+                            @php
+                                $recJson = [
+                                    'id' => $rec->id,
+                                    'title' => $rec->title,
+                                    'recording_url' => $rec->recording_url,
+                                    'recording_duration' => $rec->recording_duration,
+                                    'recording_notes' => $rec->recording_notes,
+                                    'has_recording' => true,
+                                ];
+                            @endphp
+                            <button type="button"
+                                    @click='openRecording(@json($recJson))'
+                                    class="p-1 text-slate-400 hover:text-emerald-700 transition"
+                                    title="রেকর্ডিং সম্পাদনা">
+                                <i class="fa-regular fa-pen-to-square text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
 
 
 
@@ -564,6 +705,117 @@
                         আপডেট সংরক্ষণ করুন
                     </button>
                 </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Share Class Recording Modal (YouTube / Video URL) -->
+    <div x-show="showRecordingModal"
+         x-cloak
+         class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 relative"
+             @click.away="showRecordingModal = false">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg font-bold">
+                        <i class="fa-solid fa-circle-play"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-base sm:text-lg text-slate-900">
+                            ক্লাস রেকর্ডিং শেয়ার ও প্রকাশ করুন
+                        </h3>
+                        <p class="text-xs text-slate-500 line-clamp-1" x-text="recordingForm.title"></p>
+                    </div>
+                </div>
+                <button type="button" @click="showRecordingModal = false" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <form method="POST" :action="recordingForm.actionUrl" class="space-y-4">
+                @csrf
+
+                <!-- Notice about Unbranded Protection -->
+                <div class="p-3.5 bg-emerald-50/70 border border-emerald-200 rounded-2xl text-xs text-emerald-900 space-y-1">
+                    <div class="font-bold flex items-center gap-1.5 text-emerald-800">
+                        <i class="fa-solid fa-shield-halved text-emerald-600"></i>
+                        <span>সুরক্ষিত আনব্র্যান্ডেড প্লেয়ার সুবিধা:</span>
+                    </div>
+                    <p class="text-[11px] text-emerald-700 leading-relaxed">
+                        ইউটিউবের আনলিস্টেড (Unlisted) বা পাবলিক যেকোনো ভিডিও লিংক দিন। শিক্ষার্থী পোর্টালে ভিডিও ফ্রেমের ভেতরে <strong>কোনো ইউটিউব লোগো, বাটন বা লিংক দেখানো হবে না</strong>। এটি সম্পূর্ণ নিজস্ব ক্লাউড স্টোরেজ ভিডিওর মতো প্রিমিয়াম লুকে চলবে।
+                    </p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5">
+                        ভিডিও রেকর্ডিং লিংক (YouTube লিংক বা ভিডিও URL) <span class="text-rose-500">*</span>
+                    </label>
+                    <input type="text" name="recording_url" required
+                           x-model="recordingForm.recording_url"
+                           placeholder="যেমন: https://www.youtube.com/watch?v=... অথবা https://youtu.be/..."
+                           class="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-mono">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">
+                            স্থিতিকাল / সময় (ঐচ্ছিক)
+                        </label>
+                        <input type="text" name="recording_duration"
+                               x-model="recordingForm.recording_duration"
+                               placeholder="যেমন: ১ ঘণ্টা ৪৫ মিনিট"
+                               class="w-full px-3.5 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">
+                            স্ট্যাটাস
+                        </label>
+                        <div class="px-3.5 py-2 text-xs bg-slate-100 text-slate-700 rounded-xl border border-slate-200 font-semibold flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                            <span>শিক্ষার্থীদের জন্য প্রকাশিত হবে</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5">
+                        লেকচার নোট বা নির্দেশনা (ঐচ্ছিক)
+                    </label>
+                    <textarea name="recording_notes" rows="3"
+                              x-model="recordingForm.recording_notes"
+                              placeholder="ক্লাসের মূল বিষয়বস্তু বা শিক্ষার্থীদের জন্য প্রয়োজনীয় নির্দেশনা..."
+                              class="w-full px-3.5 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"></textarea>
+                </div>
+
+                <div class="flex items-center justify-between pt-3 border-t border-slate-100">
+                    <template x-if="recordingForm.has_recording">
+                        <button type="button"
+                                @click="if(confirm('এই ক্লাসের রেকর্ডিং সরিয়ে ফেলতে চান?')) { $refs.deleteRecordingForm.submit(); }"
+                                class="px-3 py-2 text-xs font-bold text-rose-600 hover:text-rose-800 hover:bg-rose-50 rounded-xl transition">
+                            <i class="fa-regular fa-trash-can mr-1"></i> রেকর্ডিং মুছুন
+                        </button>
+                    </template>
+                    <template x-if="!recordingForm.has_recording">
+                        <div></div>
+                    </template>
+
+                    <div class="flex items-center gap-2">
+                        <button type="button" @click="showRecordingModal = false"
+                                class="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-xl transition">
+                            বাতিল
+                        </button>
+                        <button type="submit"
+                                class="px-5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-sm transition">
+                            রেকর্ডিং প্রকাশ করুন
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Hidden Delete Recording Form -->
+            <form x-ref="deleteRecordingForm" method="POST" :action="recordingForm.deleteUrl" class="hidden">
+                @csrf
+                @method('DELETE')
             </form>
         </div>
     </div>
