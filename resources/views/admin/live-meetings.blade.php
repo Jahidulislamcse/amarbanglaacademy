@@ -3,88 +3,7 @@
 @section('title', 'তারিখ ও সময়ভিত্তিক লাইভ মিটিং শিডিউল - আমার বাংলা একাডেমি এডমিন')
 
 @section('content')
-<div class="space-y-6" x-data="{
-    showScheduleModal: false,
-    showEditModal: false,
-    showRecordingModal: false,
-    editForm: {
-        id: null,
-        title: '',
-        meeting_url: '',
-        recording_url: '',
-        recording_duration: '',
-        recording_notes: '',
-        meeting_id: '',
-        meeting_passcode: '',
-        scheduled_date: '',
-        scheduled_time: '',
-        schedule_text: '',
-        notes: '',
-        is_live_now: false,
-        actionUrl: ''
-    },
-    recordingForm: {
-        id: null,
-        title: '',
-        recording_url: '',
-        recording_duration: '',
-        recording_notes: '',
-        has_recording: false,
-        actionUrl: '',
-        deleteUrl: ''
-    },
-    openEdit(meeting) {
-        this.editForm = {
-            id: meeting.id,
-            title: meeting.title,
-            meeting_url: meeting.meeting_url || '',
-            recording_url: meeting.recording_url || '',
-            recording_duration: meeting.recording_duration || '',
-            recording_notes: meeting.recording_notes || '',
-            meeting_id: meeting.meeting_id || '',
-            meeting_passcode: meeting.meeting_passcode || '',
-            scheduled_date: meeting.date_str,
-            scheduled_time: meeting.time_str,
-            schedule_text: meeting.schedule_text || '',
-            notes: meeting.notes || '',
-            is_live_now: Boolean(meeting.is_live_now),
-            actionUrl: '{{ url('/admin/meetings') }}/' + meeting.id
-        };
-        this.showEditModal = true;
-    },
-    openRecording(meeting) {
-        this.recordingForm = {
-            id: meeting.id,
-            title: meeting.title,
-            recording_url: meeting.recording_url || '',
-            recording_duration: meeting.recording_duration || '',
-            recording_notes: meeting.recording_notes || '',
-            has_recording: Boolean(meeting.has_recording),
-            actionUrl: '{{ url('/admin/meetings') }}/' + meeting.id + '/recording',
-            deleteUrl: '{{ url('/admin/meetings') }}/' + meeting.id + '/recording'
-        };
-        this.showRecordingModal = true;
-    },
-    openQuickRecording() {
-        @if(count($meetings) > 0)
-            @php $firstMeeting = $meetings->first(); @endphp
-            this.openRecording({
-                id: {{ $firstMeeting->id }},
-                title: @json($firstMeeting->title),
-                recording_url: @json($firstMeeting->recording_url ?? ''),
-                recording_duration: @json($firstMeeting->recording_duration ?? ''),
-                recording_notes: @json($firstMeeting->recording_notes ?? ''),
-                has_recording: {{ $firstMeeting->hasRecording() ? 'true' : 'false' }}
-            });
-        @else
-            this.showScheduleModal = true;
-        @endif
-    },
-    onSelectRecordingMeeting(id) {
-        this.recordingForm.actionUrl = '{{ url('/admin/meetings') }}/' + id + '/recording';
-        this.recordingForm.deleteUrl = '{{ url('/admin/meetings') }}/' + id + '/recording';
-    }
-}">
+<div class="space-y-6" x-data="liveMeetingsManager()">
 
     <!-- Page Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -894,5 +813,96 @@ function copyMeetingLink(text, btn) {
         }, 2000);
     });
 }
+
+function liveMeetingsManager() {
+    return {
+        showScheduleModal: false,
+        showEditModal: false,
+        showRecordingModal: false,
+        editForm: {
+            id: null,
+            title: '',
+            meeting_url: '',
+            recording_url: '',
+            recording_duration: '',
+            recording_notes: '',
+            meeting_id: '',
+            meeting_passcode: '',
+            scheduled_date: '',
+            scheduled_time: '',
+            schedule_text: '',
+            notes: '',
+            is_live_now: false,
+            actionUrl: ''
+        },
+        recordingForm: {
+            id: null,
+            title: '',
+            recording_url: '',
+            recording_duration: '',
+            recording_notes: '',
+            has_recording: false,
+            actionUrl: '',
+            deleteUrl: ''
+        },
+        openEdit(meeting) {
+            this.editForm = {
+                id: meeting.id,
+                title: meeting.title || '',
+                meeting_url: meeting.meeting_url || '',
+                recording_url: meeting.recording_url || '',
+                recording_duration: meeting.recording_duration || '',
+                recording_notes: meeting.recording_notes || '',
+                meeting_id: meeting.meeting_id || '',
+                meeting_passcode: meeting.meeting_passcode || '',
+                scheduled_date: meeting.date_str || '',
+                scheduled_time: meeting.time_str || '',
+                schedule_text: meeting.schedule_text || '',
+                notes: meeting.notes || '',
+                is_live_now: Boolean(meeting.is_live_now),
+                actionUrl: '{{ url('/admin/meetings') }}/' + meeting.id
+            };
+            this.showEditModal = true;
+        },
+        openRecording(meeting) {
+            this.recordingForm = {
+                id: meeting.id,
+                title: meeting.title || '',
+                recording_url: meeting.recording_url || '',
+                recording_duration: meeting.recording_duration || '',
+                recording_notes: meeting.recording_notes || '',
+                has_recording: Boolean(meeting.has_recording),
+                actionUrl: '{{ url('/admin/meetings') }}/' + meeting.id + '/recording',
+                deleteUrl: '{{ url('/admin/meetings') }}/' + meeting.id + '/recording'
+            };
+            this.showRecordingModal = true;
+        },
+        openQuickRecording() {
+            @if(count($meetings) > 0)
+                @php $firstMeeting = $meetings->first(); @endphp
+                this.openRecording({
+                    id: {{ $firstMeeting->id }},
+                    title: {!! json_encode($firstMeeting->title) !!},
+                    recording_url: {!! json_encode($firstMeeting->recording_url ?? '') !!},
+                    recording_duration: {!! json_encode($firstMeeting->recording_duration ?? '') !!},
+                    recording_notes: {!! json_encode($firstMeeting->recording_notes ?? '') !!},
+                    has_recording: {{ $firstMeeting->hasRecording() ? 'true' : 'false' }}
+                });
+            @else
+                this.showScheduleModal = true;
+            @endif
+        },
+        onSelectRecordingMeeting(id) {
+            this.recordingForm.actionUrl = '{{ url('/admin/meetings') }}/' + id + '/recording';
+            this.recordingForm.deleteUrl = '{{ url('/admin/meetings') }}/' + id + '/recording';
+        }
+    };
+}
+
+document.addEventListener('alpine:init', () => {
+    if (window.Alpine) {
+        window.Alpine.data('liveMeetingsManager', liveMeetingsManager);
+    }
+});
 </script>
 @endsection
