@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Batch;
 use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\Payment;
@@ -20,9 +21,27 @@ class EpsPaymentTest extends TestCase
         $this->seed(LmsSeeder::class);
     }
 
+    public function test_eps_payment_is_blocked_when_all_batches_are_closed(): void
+    {
+        $course = Course::first();
+
+        $response = $this->post(route('eps.pay', $course->slug), [
+            'student_name' => 'Blocked Student',
+            'student_email' => 'blocked@example.com',
+            'student_phone' => '01812345679',
+        ]);
+
+        $response->assertRedirect(route('courses.checkout', $course->slug));
+        $response->assertSessionHas('error');
+        $this->assertDatabaseMissing('enrollments', ['student_email' => 'blocked@example.com']);
+        $this->assertDatabaseMissing('payments', ['student_email' => 'blocked@example.com']);
+    }
+
     public function test_eps_payment_initiation_redirects_to_gateway(): void
     {
         $course = Course::first();
+        $batch = Batch::where('course_id', $course->id)->first();
+        $batch->update(['enrollment_open' => true]);
 
         // Fake EPS API calls
         Http::fake([
@@ -46,12 +65,14 @@ class EpsPaymentTest extends TestCase
 
         $this->assertDatabaseHas('enrollments', [
             'course_id' => $course->id,
+            'batch_id' => $batch->id,
             'student_email' => 'rafiq@example.com',
             'status' => 'pending',
         ]);
 
         $this->assertDatabaseHas('payments', [
             'course_id' => $course->id,
+            'batch_id' => $batch->id,
             'student_email' => 'rafiq@example.com',
             'payment_method' => 'eps',
             'status' => 'pending',
@@ -144,6 +165,7 @@ class EpsPaymentTest extends TestCase
     public function test_repeated_eps_pay_requests_reuse_pending_enrollment_without_creating_duplicates(): void
     {
         $course = Course::first();
+        Batch::where('course_id', $course->id)->first()->update(['enrollment_open' => true]);
 
         Http::fake([
             '*/Auth/GetToken' => Http::response(['token' => 'mock_jwt_token', 'status' => 'true'], 200),
@@ -179,9 +201,12 @@ class EpsPaymentTest extends TestCase
     public function test_already_active_student_redirects_to_receipt_instead_of_duplicate_enrollment(): void
     {
         $course = Course::first();
+        $batch = Batch::where('course_id', $course->id)->first();
+        $batch->update(['enrollment_open' => true]);
 
         $active = Enrollment::create([
             'course_id' => $course->id,
+            'batch_id' => $batch->id,
             'student_name' => 'Active Student',
             'student_email' => 'active@example.com',
             'student_phone' => '01899999999',
@@ -191,6 +216,7 @@ class EpsPaymentTest extends TestCase
         $payment = Payment::create([
             'enrollment_id' => $active->id,
             'course_id' => $course->id,
+            'batch_id' => $batch->id,
             'student_name' => 'Active Student',
             'student_email' => 'active@example.com',
             'student_phone' => '01899999999',

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Batch;
 use App\Models\Course;
 use Database\Seeders\LmsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -28,6 +29,8 @@ class LmsLandingTest extends TestCase
         $response->assertSee('প্রশিক্ষকবৃন্দ');
         $response->assertSee('বিকাশ');
         $response->assertSee('Zoom');
+        $response->assertSee('১ম ব্যাচ');
+        $response->assertSee('ভর্তি বন্ধ');
     }
 
     public function test_course_detail_page_loads(): void
@@ -43,6 +46,14 @@ class LmsLandingTest extends TestCase
     public function test_checkout_page_loads(): void
     {
         $course = Course::first();
+
+        // By default, 1st batch enrollment is closed
+        $closedResponse = $this->get('/courses/' . $course->slug . '/checkout');
+        $closedResponse->assertStatus(200);
+        $closedResponse->assertSee('বর্তমানে অনলাইন ভর্তি কার্যক্রম বন্ধ রয়েছে');
+
+        // When a batch opens for enrollment, checkout displays the EPS payment form
+        Batch::where('course_id', $course->id)->first()->update(['enrollment_open' => true]);
 
         $response = $this->get('/courses/' . $course->slug . '/checkout');
         $response->assertStatus(200);

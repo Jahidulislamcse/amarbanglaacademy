@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Batch;
 use App\Models\Course;
 use App\Models\Exam;
 use App\Models\Instructor;
@@ -21,6 +22,7 @@ class LmsSeeder extends Seeder
         Schema::disableForeignKeyConstraints();
         DB::table('payments')->truncate();
         DB::table('enrollments')->truncate();
+        DB::table('batches')->truncate();
         DB::table('exams')->truncate();
         DB::table('lessons')->truncate();
         DB::table('modules')->truncate();
@@ -144,6 +146,24 @@ class LmsSeeder extends Seeder
             'is_featured' => true,
             'is_popular' => true,
             'status' => 'published',
+        ]);
+
+        // 3b. Seed 1st Batch (Enrollment Closed Now - Managed Dynamically via Admin Panel)
+        Batch::create([
+            'course_id' => $course->id,
+            'name' => '১ম ব্যাচ',
+            'batch_number' => 1,
+            'start_date' => '2026-11-05',
+            'start_date_text' => '৫ নভেম্বর ২০২৬',
+            'schedule_text' => 'প্রতি বৃহস্পতি, শুক্র ও শনিবার রাত ৯:০০ টা',
+            'seat_limit' => 50,
+            'regular_price' => 3000.00,
+            'discount_price' => 999.00,
+            'discount_badge_text' => '১ম ব্যাচে ৫০% এর বেশি স্পেশাল ছাড়',
+            'offer_label' => 'প্রথম ৫০ জনের জন্য',
+            'enrollment_open' => false,
+            'status' => 'running',
+            'is_active' => true,
         ]);
 
         // Attach Instructors

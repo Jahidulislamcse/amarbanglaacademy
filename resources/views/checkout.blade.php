@@ -3,17 +3,131 @@
 @section('title', 'অনলাইন পেমেন্ট ও ভর্তি - ' . ($course->bangla_title ?? $course->title))
 
 @section('content')
-<div class="bg-slate-100 py-10 sm:py-14" x-data="{ 
-    isSubmitting: false,
-    handleSubmit(e) {
-        if (this.isSubmitting) {
-            e.preventDefault();
-            return false;
-        }
-        this.isSubmitting = true;
+@php
+    $checkoutBatch = $activeBatch ?? $displayBatch;
+    $checkoutIsOpen = isset($isEnrollmentOpen) ? (bool) $isEnrollmentOpen : !is_null($activeBatch);
+    $checkoutBatchList = ($openBatches ?? collect())->map(function ($b) use ($course) {
+        $reg = (int) ($b->effective_regular_price ?? $course->regular_price ?? 3000);
+        $sale = (int) ($b->effective_price ?? $course->effective_price ?? 999);
+        return [
+            'id' => $b->id,
+            'name' => $b->name,
+            'start_date' => $b->formatted_start_date,
+            'schedule' => $b->formatted_schedule,
+            'offer_label' => $b->offer_label ?: ($b->name . ' বিশেষ ছাড়'),
+            'regular_price' => $reg,
+            'effective_price' => $sale,
+            'discount_amount' => max(0, $reg - $sale),
+            'seats_remaining' => $b->seats_remaining,
+        ];
+    })->values();
+    $initialBatch = $checkoutBatchList->firstWhere('id', $checkoutBatch?->id) ?? $checkoutBatchList->first() ?? [
+        'id' => null,
+        'name' => $checkoutBatch?->name ?? ($course->batch_no ?? '১ম ব্যাচ'),
+        'start_date' => $checkoutBatch?->formatted_start_date ?? 'শীঘ্রই ঘোষণা হবে',
+        'schedule' => $checkoutBatch?->formatted_schedule ?? ($course->live_schedule_text ?? 'বৃহস্পতি, শুক্র ও শনি (রাত ৯টা)'),
+        'offer_label' => ($checkoutBatch?->offer_label) ?: (($checkoutBatch?->name ?? 'চলমান ব্যাচ') . ' বিশেষ ছাড়'),
+        'regular_price' => (int) ($checkoutBatch?->effective_regular_price ?? $course->regular_price ?? 3000),
+        'effective_price' => (int) ($checkoutBatch?->effective_price ?? $course->effective_price ?? 999),
+        'discount_amount' => max(0, (int) ($checkoutBatch?->effective_regular_price ?? $course->regular_price ?? 3000) - (int) ($checkoutBatch?->effective_price ?? $course->effective_price ?? 999)),
+        'seats_remaining' => $checkoutBatch?->seats_remaining ?? 0,
+    ];
+@endphp
+
+@if($checkoutIsOpen)
+<script>
+    function checkoutPageData() {
+        const batches = @json($checkoutBatchList);
+        const fallback = @json($initialBatch);
+        return {
+            isSubmitting: false,
+            selectedBatchId: @json($initialBatch['id']),
+            get selectedBatch() {
+                return batches.find(b => Number(b.id) === Number(this.selectedBatchId)) || batches[0] || fallback;
+            },
+            formatMoney(num) {
+                return Number(num || 0).toLocaleString('en-US');
+            },
+            handleSubmit(e) {
+                if (this.isSubmitting) {
+                    e.preventDefault();
+                    return false;
+                }
+                this.isSubmitting = true;
+            }
+        };
     }
-}">
+</script>
+@endif
+
+<div class="bg-slate-100 py-10 sm:py-14" @if($checkoutIsOpen) x-data="checkoutPageData()" @endif>
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+
+        @if(!$checkoutIsOpen)
+            <!-- Enrollment Closed Card -->
+            <div class="max-w-2xl mx-auto bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
+                <div class="bg-gradient-to-r from-slate-900 via-rose-950 to-slate-900 text-white p-7 sm:p-9 text-center space-y-3">
+                    <div class="w-16 h-16 rounded-2xl bg-rose-500/20 border border-rose-400/40 text-rose-300 flex items-center justify-center text-2xl mx-auto shadow-lg">
+                        <i class="fa-solid fa-lock"></i>
+                    </div>
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-rose-600 text-white">
+                        {{ $initialBatch['name'] }} — অনলাইন ভর্তি বন্ধ
+                    </span>
+                    <h1 class="text-2xl sm:text-3xl font-extrabold leading-tight">
+                        বর্তমানে অনলাইন ভর্তি কার্যক্রম বন্ধ রয়েছে
+                    </h1>
+                    <p class="text-xs sm:text-sm text-slate-300 max-w-lg mx-auto leading-relaxed">
+                        <strong>{{ $course->bangla_title ?? $course->title }}</strong> কোর্সের <strong>{{ $initialBatch['name'] }}</strong>-এর নির্ধারিত আসন পূর্ণ হওয়ায় নতুন অনলাইন পেমেন্ট ও ভর্তি সাময়িকভাবে বন্ধ রাখা হয়েছে।
+                    </p>
+                </div>
+
+                <div class="p-6 sm:p-8 space-y-6">
+                    <div class="bg-slate-50 rounded-2xl p-4 sm:p-5 border border-slate-200 space-y-2.5 text-xs">
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-500">কোর্স:</span>
+                            <strong class="text-slate-900">{{ $course->bangla_title ?? $course->title }}</strong>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-500">সর্বশেষ ব্যাচ:</span>
+                            <strong class="text-slate-900">{{ $initialBatch['name'] }} (শুরু: {{ $initialBatch['start_date'] }})</strong>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-500">সাপ্তাহিক ক্লাস রুটিন:</span>
+                            <strong class="text-slate-900">{{ $initialBatch['schedule'] }}</strong>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-500">কারিকুলাম:</span>
+                            <strong class="text-emerald-700">১২টি বিশেষায়িত মডিউল ও লাইভ ক্লাস</strong>
+                        </div>
+                    </div>
+
+                    <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div class="space-y-1">
+                            <h3 class="font-bold text-sm text-emerald-950">পরবর্তী ব্যাচে ভর্তি হতে চান?</h3>
+                            <p class="text-xs text-emerald-800">
+                                নতুন ব্যাচ শুরুর তারিখ ও আসন বুকিংয়ের তথ্য সবার আগে জানতে WhatsApp-এ মেসেজ দিন।
+                            </p>
+                        </div>
+                        <a href="https://wa.me/8801332549549?text={{ urlencode('আসসালামু আলাইকুম, আমি আমার বাংলা একাডেমীর পরবর্তী ব্যাচে ভর্তি হতে আগ্রহী।') }}" target="_blank"
+                           class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-sm transition shrink-0">
+                            <i class="fa-brands fa-whatsapp text-base"></i>
+                            <span>WhatsApp (01332-549549)</span>
+                        </a>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t border-slate-100 text-xs">
+                        <a href="{{ route('home') }}" class="inline-flex items-center gap-1.5 font-bold text-slate-700 hover:text-emerald-700 transition">
+                            <i class="fa-solid fa-arrow-left"></i>
+                            <span>মূল ওয়েবসাইটে ফিরে যান</span>
+                        </a>
+                        <a href="{{ route('login') }}" class="inline-flex items-center gap-1.5 font-bold text-emerald-700 hover:text-emerald-800 transition">
+                            <i class="fa-solid fa-user-graduate"></i>
+                            <span>ইতিমধ্যে ভর্তিকৃত শিক্ষার্থী? লগইন করুন &rarr;</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        @else
         
         <!-- Header -->
         <div class="text-center mb-8">
@@ -41,7 +155,7 @@
                             EPS অনলাইন গেটওয়েতে সাময়িক সংযোগ সমস্যা হয়েছে?
                         </h3>
                         <p class="text-xs text-amber-900 mt-0.5 leading-relaxed">
-                            চিন্তার কোনো কারণ নেই! আপনি সরাসরি নিচের <strong>বিকাশ</strong> অথবা <strong>নগদ</strong> পার্সোনাল নম্বরে কোর্স ফি (৳{{ number_format($course->effective_price) }}) Send Money করে আমাদের WhatsApp-এ TrxID পাঠিয়ে দিন। আমরা সাথে সাথে আপনার ভর্তি কনফার্ম করে দেব।
+                            চিন্তার কোনো কারণ নেই! আপনি সরাসরি নিচের <strong>বিকাশ</strong> অথবা <strong>নগদ</strong> পার্সোনাল নম্বরে কোর্স ফি (<strong x-text="'৳' + formatMoney(selectedBatch.effective_price)">৳{{ number_format($initialBatch['effective_price']) }}</strong>) Send Money করে আমাদের WhatsApp-এ TrxID পাঠিয়ে দিন। আমরা সাথে সাথে আপনার ভর্তি কনফার্ম করে দেব।
                         </p>
                     </div>
 
@@ -94,9 +208,34 @@
               @submit="handleSubmit($event)"
               class="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
             @csrf
+            <input type="hidden" name="batch_id" :value="selectedBatchId">
 
             <!-- Left: Student Info & Payment Selector (7 cols) -->
             <div class="md:col-span-7 space-y-6">
+
+                @if($checkoutBatchList->count() > 1)
+                <!-- 0. Batch Selector (Shown when multiple batches are open simultaneously) -->
+                <div class="bg-white rounded-2xl p-5 sm:p-6 border border-emerald-200 shadow-sm space-y-3">
+                    <h3 class="font-bold text-base text-slate-900 flex items-center gap-2 pb-2 border-b border-slate-100">
+                        <span class="w-6 h-6 rounded-full bg-emerald-600 text-white text-xs font-black flex items-center justify-center"><i class="fa-solid fa-layer-group text-[10px]"></i></span>
+                        <span>ব্যাচ নির্বাচন করুন</span>
+                    </h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                        @foreach($checkoutBatchList as $bOption)
+                            <label @click="selectedBatchId = {{ $bOption['id'] }}"
+                                   :class="Number(selectedBatchId) === {{ $bOption['id'] }} ? 'border-emerald-600 bg-emerald-50/70 ring-1 ring-emerald-500' : 'border-slate-200 hover:border-slate-300 bg-slate-50/40'"
+                                   class="cursor-pointer rounded-xl border-2 p-3.5 flex flex-col justify-between gap-1.5 transition">
+                                <div class="flex items-center justify-between gap-2">
+                                    <span class="font-bold text-sm text-slate-900">{{ $bOption['name'] }}</span>
+                                    <span class="font-black text-emerald-700">৳{{ number_format($bOption['effective_price']) }}</span>
+                                </div>
+                                <div class="text-[11px] text-slate-600">শুরু: {{ $bOption['start_date'] }}</div>
+                                <div class="text-[10px] text-emerald-700 font-semibold">বাকি আসন: {{ $bOption['seats_remaining'] }}টি</div>
+                            </label>
+                        @endforeach
+                    </div>
+                </div>
+                @endif
                 
                 <!-- 1. Student Details -->
                 <div class="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200 shadow-sm space-y-4">
@@ -194,7 +333,7 @@
                             class="w-full py-4 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white font-black text-sm sm:text-base shadow-lg shadow-emerald-600/30 transition duration-200 flex items-center justify-center gap-2">
                         <span x-show="!isSubmitting" class="inline-flex items-center justify-center gap-2">
                             <i class="fa-solid fa-lock text-sm"></i>
-                            <span>নিরাপদ EPS গেটওয়েতে পেমেন্ট করুন (৳{{ number_format($course->effective_price) }})</span>
+                            <span>নিরাপদ EPS গেটওয়েতে পেমেন্ট করুন (৳<span x-text="formatMoney(selectedBatch.effective_price)">{{ number_format($initialBatch['effective_price']) }}</span>)</span>
                             <i class="fa-solid fa-arrow-right text-xs"></i>
                         </span>
                         <span x-show="isSubmitting" class="inline-flex items-center justify-center gap-2" style="display: none;">
@@ -278,7 +417,7 @@
                 <div class="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200 shadow-sm space-y-4">
                     <h3 class="font-bold text-base text-slate-900 pb-3 border-b border-slate-100 flex items-center justify-between">
                         <span>অর্ডার বিবরণী</span>
-                        <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">১ম ব্যাচ</span>
+                        <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800" x-text="selectedBatch.name">{{ $initialBatch['name'] }}</span>
                     </h3>
 
                     <div>
@@ -292,12 +431,16 @@
 
                     <div class="space-y-2.5 text-xs text-slate-600 pt-3 border-t border-slate-100">
                         <div class="flex justify-between">
+                            <span>নির্বাচিত ব্যাচ:</span>
+                            <span class="font-bold text-emerald-800" x-text="selectedBatch.name">{{ $initialBatch['name'] }}</span>
+                        </div>
+                        <div class="flex justify-between">
                             <span>ক্লাস শুরু:</span>
-                            <span class="font-bold text-slate-800">৫ নভেম্বর ২০২৬</span>
+                            <span class="font-bold text-slate-800" x-text="selectedBatch.start_date">{{ $initialBatch['start_date'] }}</span>
                         </div>
                         <div class="flex justify-between">
                             <span>ক্লাসের সময়:</span>
-                            <span class="font-bold text-slate-800">বৃহস্পতি, শুক্র ও শনি (রাত ৯টা)</span>
+                            <span class="font-bold text-slate-800" x-text="selectedBatch.schedule">{{ $initialBatch['schedule'] }}</span>
                         </div>
                         <div class="flex justify-between">
                             <span>মোট ক্লাস:</span>
@@ -315,19 +458,17 @@
 
                     <!-- Fee calculation -->
                     <div class="pt-3 border-t border-slate-100 space-y-2 text-xs">
-                        <div class="flex justify-between text-slate-500">
+                        <div class="flex justify-between text-slate-500" x-show="selectedBatch.regular_price > selectedBatch.effective_price">
                             <span>নিয়মিত কোর্স ফি:</span>
-                            <span class="line-through text-slate-400 font-semibold">৳{{ number_format($course->regular_price) }}</span>
+                            <span class="line-through text-slate-400 font-semibold">৳<span x-text="formatMoney(selectedBatch.regular_price)">{{ number_format($initialBatch['regular_price']) }}</span></span>
                         </div>
-                        @if($course->discount_price)
-                            <div class="flex justify-between text-rose-600 font-bold bg-rose-50 px-2 py-1 rounded-md">
-                                <span>১ম ব্যাচের বিশেষ ছাড় (প্রথম ৫০ জন):</span>
-                                <span>- ৳{{ number_format($course->regular_price - $course->discount_price) }}</span>
-                            </div>
-                        @endif
+                        <div class="flex justify-between text-rose-600 font-bold bg-rose-50 px-2 py-1 rounded-md" x-show="selectedBatch.discount_amount > 0">
+                            <span x-text="selectedBatch.offer_label + ':'">{{ $initialBatch['offer_label'] }}:</span>
+                            <span>- ৳<span x-text="formatMoney(selectedBatch.discount_amount)">{{ number_format($initialBatch['discount_amount']) }}</span></span>
+                        </div>
                         <div class="flex justify-between text-lg font-black text-slate-900 pt-2 border-t border-dashed border-slate-200">
                             <span>সর্বমোট প্রদেয় ফি:</span>
-                            <span class="text-emerald-700 text-xl font-extrabold">৳{{ number_format($course->effective_price) }}</span>
+                            <span class="text-emerald-700 text-xl font-extrabold">৳<span x-text="formatMoney(selectedBatch.effective_price)">{{ number_format($initialBatch['effective_price']) }}</span></span>
                         </div>
                     </div>
 
@@ -357,6 +498,8 @@
             </div>
 
         </form>
+
+        @endif
 
     </div>
 </div>

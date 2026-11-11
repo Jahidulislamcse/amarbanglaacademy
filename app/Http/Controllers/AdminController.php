@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Attendance;
 use App\Models\AttendanceSession;
+use App\Models\Batch;
 use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\LiveMeeting;
@@ -73,29 +74,250 @@ class AdminController extends Controller
     }
 
     /**
+     * Batch Management Index Page
+     */
+    public function batchesIndex(Request $request)
+    {
+        $courses = Course::all(['id', 'title', 'bangla_title', 'regular_price', 'discount_price', 'live_schedule_text']);
+        $primaryCourse = Course::find($request->input('course_id')) ?? Course::first();
+
+        if ($primaryCourse) {
+            self::reconcileEnrolledStudents($primaryCourse);
+        }
+
+        $batches = Batch::with('course')
+            ->when($primaryCourse, fn ($q) => $q->where('course_id', $primaryCourse->id))
+            ->withCount([
+                'enrollments as active_enrollments_count' => fn ($q) => $q->whereIn('status', ['active', 'completed']),
+                'payments as completed_payments_count' => fn ($q) => $q->where('status', 'completed'),
+                'liveMeetings as meetings_count',
+                'attendanceSessions as sessions_count',
+            ])
+            ->orderBy('batch_number', 'asc')
+            ->orderBy('id', 'asc')
+            ->get();
+
+        $openBatch = $primaryCourse?->openEnrollmentBatch();
+
+        return view('admin.batches.index', compact(
+            'primaryCourse',
+            'courses',
+            'batches',
+            'openBatch'
+        ));
+    }
+
+    /**
+     * Create a New Batch (Course content/modules remain shared)
+     */
+    public function storeBatch(Request $request)
+    {
+        $primaryCourse = Course::find($request->input('course_id')) ?? Course::firstOrFail();
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:120'],
+            'batch_number' => ['nullable', 'integer', 'min:1', 'max:9999'],
+            'start_date' => ['nullable', 'date'],
+            'start_date_text' => ['nullable', 'string', 'max:120'],
+            'schedule_text' => ['nullable', 'string', 'max:255'],
+            'seat_limit' => ['nullable', 'integer', 'min:1', 'max:10000'],
+            'seats_remaining_override' => ['nullable', 'integer', 'min:0', 'max:10000'],
+            'regular_price' => ['nullable', 'numeric', 'min:0'],
+            'discount_price' => ['nullable', 'numeric', 'min:0'],
+            'discount_badge_text' => ['nullable', 'string', 'max:255'],
+            'offer_label' => ['nullable', 'string', 'max:255'],
+            'status' => ['nullable', 'string', 'in:upcoming,running,completed'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+        ], [
+            'name.required' => 'ব্যাচের নাম প্রদান করুন (যেমন: ২য় ব্যাচ)।',
+        ]);
+
+        $batchNumber = $validated['batch_number'] ?? ((Batch::where('course_id', $primaryCourse->id)->max('batch_number') ?? 0) + 1);
+        $startDate = !empty($validated['start_date']) ? Carbon::parse($validated['start_date']) : null;
+        $startDateText = trim((string) ($validated['start_date_text'] ?? ''));
+        if (empty($startDateText) && $startDate) {
+            $startDateText = Batch::formatBanglaDate($startDate);
+        }
+
+        $enrollmentOpen = $request->boolean('enrollment_open');
+        $isActive = $request->has('is_active') ? $request->boolean('is_active') : true;
+
+        if ($enrollmentOpen && $request->boolean('close_other_batches')) {
+            Batch::where('course_id', $primaryCourse->id)->update(['enrollment_open' => false]);
+        }
+
+        $batch = Batch::create([
+            'course_id' => $primaryCourse->id,
+            'name' => trim($validated['name']),
+            'batch_number' => $batchNumber,
+            'start_date' => $startDate,
+            'start_date_text' => $startDateText ?: null,
+            'schedule_text' => trim((string) ($validated['schedule_text'] ?? '')) ?: ($primaryCourse->live_schedule_text ?: 'প্রতি বৃহস্পতি, শুক্র ও শনিবার রাত ৯:০০ টা'),
+            'seat_limit' => $validated['seat_limit'] ?? 50,
+            'seats_remaining_override' => $validated['seats_remaining_override'] ?? null,
+            'regular_price' => $validated['regular_price'] ?? $primaryCourse->regular_price,
+            'discount_price' => $validated['discount_price'] ?? $primaryCourse->discount_price,
+            'discount_badge_text' => trim((string) ($validated['discount_badge_text'] ?? '')) ?: null,
+            'offer_label' => trim((string) ($validated['offer_label'] ?? '')) ?: null,
+            'enrollment_open' => $enrollmentOpen,
+            'status' => $validated['status'] ?? ($enrollmentOpen ? 'upcoming' : 'running'),
+            'is_active' => $isActive,
+            'notes' => $validated['notes'] ?? null,
+        ]);
+
+        $this->syncCourseBatchSummary($primaryCourse);
+
+        return back()->with('success', "নতুন ব্যাচ '{$batch->name}' সফলভাবে তৈরি করা হয়েছে!" . ($batch->enrollment_open ? ' (অনলাইন ভর্তি চালু রয়েছে)' : ''));
+    }
+
+    /**
+     * Update Existing Batch Details
+     */
+    public function updateBatch(Request $request, Batch $batch)
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:120'],
+            'batch_number' => ['nullable', 'integer', 'min:1', 'max:9999'],
+            'start_date' => ['nullable', 'date'],
+            'start_date_text' => ['nullable', 'string', 'max:120'],
+            'schedule_text' => ['nullable', 'string', 'max:255'],
+            'seat_limit' => ['nullable', 'integer', 'min:1', 'max:10000'],
+            'seats_remaining_override' => ['nullable', 'integer', 'min:0', 'max:10000'],
+            'regular_price' => ['nullable', 'numeric', 'min:0'],
+            'discount_price' => ['nullable', 'numeric', 'min:0'],
+            'discount_badge_text' => ['nullable', 'string', 'max:255'],
+            'offer_label' => ['nullable', 'string', 'max:255'],
+            'status' => ['nullable', 'string', 'in:upcoming,running,completed'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+        ], [
+            'name.required' => 'ব্যাচের নাম প্রদান করুন।',
+        ]);
+
+        $startDate = !empty($validated['start_date']) ? Carbon::parse($validated['start_date']) : null;
+        $startDateText = trim((string) ($validated['start_date_text'] ?? ''));
+        if (empty($startDateText) && $startDate) {
+            $startDateText = Batch::formatBanglaDate($startDate);
+        }
+
+        $enrollmentOpen = $request->boolean('enrollment_open');
+        $isActive = $request->has('is_active') ? $request->boolean('is_active') : $batch->is_active;
+
+        $batch->update([
+            'name' => trim($validated['name']),
+            'batch_number' => $validated['batch_number'] ?? $batch->batch_number,
+            'start_date' => $startDate,
+            'start_date_text' => $startDateText ?: null,
+            'schedule_text' => trim((string) ($validated['schedule_text'] ?? '')) ?: $batch->schedule_text,
+            'seat_limit' => $validated['seat_limit'] ?? $batch->seat_limit,
+            'seats_remaining_override' => $request->filled('seats_remaining_override') ? (int) $validated['seats_remaining_override'] : null,
+            'regular_price' => $validated['regular_price'] ?? $batch->regular_price,
+            'discount_price' => $validated['discount_price'] ?? $batch->discount_price,
+            'discount_badge_text' => trim((string) ($validated['discount_badge_text'] ?? '')) ?: null,
+            'offer_label' => trim((string) ($validated['offer_label'] ?? '')) ?: null,
+            'enrollment_open' => $enrollmentOpen,
+            'status' => $validated['status'] ?? $batch->status,
+            'is_active' => $isActive,
+            'notes' => $validated['notes'] ?? null,
+        ]);
+
+        if ($batch->course) {
+            $this->syncCourseBatchSummary($batch->course);
+        }
+
+        return back()->with('success', "ব্যাচ '{$batch->name}' সফলভাবে হালনাগাদ করা হয়েছে!");
+    }
+
+    /**
+     * Toggle Enrollment Open/Closed State for a Batch
+     */
+    public function toggleBatchEnrollment(Batch $batch)
+    {
+        $newState = !$batch->enrollment_open;
+
+        $batch->update([
+            'enrollment_open' => $newState,
+            'is_active' => $newState ? true : $batch->is_active,
+        ]);
+
+        if ($batch->course) {
+            $this->syncCourseBatchSummary($batch->course);
+        }
+
+        $msg = $newState
+            ? "{$batch->name}-এর অনলাইন ভর্তি চালু (OPEN) করা হয়েছে! ওয়েবসাইটে এখন শিক্ষার্থীরা এই ব্যাচে ভর্তি হতে পারবে।"
+            : "{$batch->name}-এর অনলাইন ভর্তি বন্ধ (CLOSED) করা হয়েছে!";
+
+        return back()->with('success', $msg);
+    }
+
+    /**
+     * Delete a Batch (Only allowed when no student enrollments or payments are linked)
+     */
+    public function destroyBatch(Batch $batch)
+    {
+        if ($batch->enrollments()->exists() || $batch->payments()->exists()) {
+            return back()->with('error', "'{$batch->name}' ব্যাচে ভর্তিকৃত শিক্ষার্থী/পেমেন্ট রেকর্ড রয়েছে, তাই এটি মুছে ফেলা যাবে না। চাইলে ভর্তি বন্ধ (Close) করে রাখতে পারেন।");
+        }
+
+        $course = $batch->course;
+        $name = $batch->name;
+        $batch->delete();
+
+        if ($course) {
+            $this->syncCourseBatchSummary($course);
+        }
+
+        return back()->with('success', "ব্যাচ '{$name}' সফলভাবে মুছে ফেলা হয়েছে।");
+    }
+
+    /**
+     * Sync parent Course's summary batch_no and start_date from the active/latest batch
+     */
+    protected function syncCourseBatchSummary(Course $course): void
+    {
+        $refBatch = $course->currentOrLatestBatch();
+        if ($refBatch) {
+            $batchNoText = $refBatch->name;
+            $startText = $refBatch->formatted_start_date;
+            if (!empty($startText) && $startText !== 'শীঘ্রই ঘোষণা হবে') {
+                $batchNoText .= " (শুরু: {$startText})";
+            }
+
+            $course->update([
+                'batch_no' => $batchNoText,
+                'start_date' => $refBatch->start_date ?? $course->start_date,
+            ]);
+        }
+    }
+
+    /**
      * Purchased Students List & Dashboard (Excludes pending payments)
      */
     public function students(Request $request)
     {
-        // 1. KPI Stats (Strictly for completed course purchases)
-        $completedPayments = Payment::where('status', 'completed');
+        $batchId = $request->filled('batch_id') ? (int) $request->input('batch_id') : null;
+
+        // 1. KPI Stats (Strictly for completed course purchases, optionally scoped by batch)
+        $completedPayments = Payment::where('status', 'completed')
+            ->when($batchId, fn ($q) => $q->where('batch_id', $batchId));
 
         $stats = [
             'total_students' => (clone $completedPayments)->count(),
             'total_revenue' => (clone $completedPayments)->sum('amount'),
             'eps_count' => (clone $completedPayments)->where('payment_method', 'eps')->count(),
             'mobile_count' => (clone $completedPayments)->whereIn('payment_method', ['bkash', 'nagad', 'rocket', 'card'])->count(),
-            'pending_count' => Payment::where('status', 'pending')->count(),
+            'pending_count' => Payment::where('status', 'pending')->when($batchId, fn ($q) => $q->where('batch_id', $batchId))->count(),
         ];
 
         // 2a. Pending payments needing admin review / manual approval
-        $pendingPayments = Payment::with(['enrollment.user', 'course'])
+        $pendingPayments = Payment::with(['enrollment.user', 'course', 'batch'])
             ->where('status', 'pending')
+            ->when($batchId, fn ($q) => $q->where('batch_id', $batchId))
             ->latest()
             ->get();
 
         // 2b. Query builder: strictly show completed payment registrations
-        $query = Payment::with(['enrollment.user', 'course'])
+        $query = Payment::with(['enrollment.user', 'course', 'batch'])
             ->where('status', 'completed')
             ->latest();
 
@@ -115,6 +337,11 @@ class AdminController extends Controller
             $query->where('payment_method', $method);
         }
 
+        // Batch filter
+        if ($batchId) {
+            $query->where('batch_id', $batchId);
+        }
+
         // Course filter
         if ($courseId = $request->input('course_id')) {
             $query->where('course_id', $courseId);
@@ -122,9 +349,17 @@ class AdminController extends Controller
 
         $payments = $query->paginate(15)->withQueryString();
         $courses = Course::all(['id', 'title', 'bangla_title']);
+        $batches = Batch::orderBy('batch_number', 'asc')->orderBy('id', 'asc')->get();
         $primaryCourse = Course::first();
 
-        return view('admin.students', compact('payments', 'pendingPayments', 'stats', 'courses', 'primaryCourse'));
+        return view('admin.students', compact(
+            'payments',
+            'pendingPayments',
+            'stats',
+            'courses',
+            'batches',
+            'primaryCourse'
+        ));
     }
 
     /**
@@ -156,8 +391,11 @@ class AdminController extends Controller
                 $payment->enrollment->update(['status' => 'pending']);
             }
         } elseif ($validated['status'] === 'completed') {
+            $batchId = $payment->batch_id ?? $payment->course?->currentOrLatestBatch()?->id;
+
             // Find existing enrollment or create new active enrollment
             $enrollment = Enrollment::where('course_id', $payment->course_id)
+                ->when($batchId, fn ($q) => $q->where(fn ($sub) => $sub->where('batch_id', $batchId)->orWhereNull('batch_id')))
                 ->where(function ($q) use ($payment) {
                     $q->where('student_email', $payment->student_email)
                       ->orWhere('student_phone', $payment->student_phone);
@@ -167,6 +405,7 @@ class AdminController extends Controller
             if (!$enrollment) {
                 $enrollment = Enrollment::create([
                     'course_id' => $payment->course_id,
+                    'batch_id' => $batchId,
                     'student_name' => $payment->student_name,
                     'student_email' => $payment->student_email,
                     'student_phone' => $payment->student_phone,
@@ -175,16 +414,25 @@ class AdminController extends Controller
                     'expires_at' => now()->addMonths(12),
                 ]);
             } else {
-                $enrollment->update(['status' => 'active']);
+                $enrollment->update([
+                    'status' => 'active',
+                    'batch_id' => $enrollment->batch_id ?? $batchId,
+                ]);
             }
 
-            $payment->update(['enrollment_id' => $enrollment->id]);
+            $payment->update([
+                'enrollment_id' => $enrollment->id,
+                'batch_id' => $payment->batch_id ?? $enrollment->batch_id,
+            ]);
             self::ensureUserForEnrollment($enrollment);
         }
 
         // Auto-clean duplicates if payment was approved to completed
         if ($validated['status'] === 'completed') {
+            $scopeBatchId = $payment->batch_id ?? $payment->enrollment?->batch_id;
+
             Enrollment::where('course_id', $payment->course_id)
+                ->when($scopeBatchId, fn ($q) => $q->where('batch_id', $scopeBatchId))
                 ->where('id', '!=', $payment->enrollment_id)
                 ->where('status', 'pending')
                 ->where(function ($q) use ($payment) {
@@ -194,6 +442,7 @@ class AdminController extends Controller
                 ->delete();
 
             Payment::where('course_id', $payment->course_id)
+                ->when($scopeBatchId, fn ($q) => $q->where('batch_id', $scopeBatchId))
                 ->where('id', '!=', $payment->id)
                 ->where('status', 'pending')
                 ->where(function ($q) use ($payment) {
@@ -299,11 +548,12 @@ class AdminController extends Controller
         $cleanedEnrollments = 0;
         $cleanedPayments = 0;
 
-        // 1. Delete pending enrollments for students who already have an active enrollment in the same course
-        $activeStudents = Enrollment::where('status', 'active')->get(['id', 'course_id', 'student_email', 'student_phone']);
+        // 1. Delete pending enrollments for students who already have an active enrollment in the same course batch
+        $activeStudents = Enrollment::where('status', 'active')->get(['id', 'course_id', 'batch_id', 'student_email', 'student_phone']);
 
         foreach ($activeStudents as $active) {
             $duplicateEnrollments = Enrollment::where('course_id', $active->course_id)
+                ->when($active->batch_id, fn ($q) => $q->where('batch_id', $active->batch_id))
                 ->where('id', '!=', $active->id)
                 ->where('status', 'pending')
                 ->where(function ($q) use ($active) {
@@ -323,6 +573,7 @@ class AdminController extends Controller
 
             // Cancel any orphaned pending payments for this active student
             $dupPayments = Payment::where('course_id', $active->course_id)
+                ->when($active->batch_id, fn ($q) => $q->where('batch_id', $active->batch_id))
                 ->where('status', 'pending')
                 ->where(function ($q) use ($active) {
                     $q->where('student_email', $active->student_email)
@@ -339,13 +590,14 @@ class AdminController extends Controller
         // 2. For students with multiple pending enrollments (e.g. repeated click attempts),
         // keep only the latest pending enrollment and delete older duplicate pending rows
         $pendingGroups = Enrollment::where('status', 'pending')
-            ->select('course_id', 'student_phone', DB::raw('COUNT(*) as total'), DB::raw('MAX(id) as keep_id'))
-            ->groupBy('course_id', 'student_phone')
+            ->select('course_id', 'batch_id', 'student_phone', DB::raw('COUNT(*) as total'), DB::raw('MAX(id) as keep_id'))
+            ->groupBy('course_id', 'batch_id', 'student_phone')
             ->having('total', '>', 1)
             ->get();
 
         foreach ($pendingGroups as $group) {
             $toDelete = Enrollment::where('course_id', $group->course_id)
+                ->when($group->batch_id, fn ($q) => $q->where('batch_id', $group->batch_id), fn ($q) => $q->whereNull('batch_id'))
                 ->where('student_phone', $group->student_phone)
                 ->where('status', 'pending')
                 ->where('id', '!=', $group->keep_id)
@@ -366,7 +618,7 @@ class AdminController extends Controller
      */
     public function exportCsv(Request $request): StreamedResponse
     {
-        $query = Payment::with(['enrollment', 'course'])
+        $query = Payment::with(['enrollment', 'course', 'batch'])
             ->where('status', 'completed')
             ->latest();
 
@@ -382,6 +634,10 @@ class AdminController extends Controller
 
         if ($method = $request->input('method')) {
             $query->where('payment_method', $method);
+        }
+
+        if ($batchId = $request->input('batch_id')) {
+            $query->where('batch_id', $batchId);
         }
 
         if ($courseId = $request->input('course_id')) {
@@ -412,6 +668,7 @@ class AdminController extends Controller
                 'মোবাইল নম্বর (Phone)',
                 'ইমেইল (Email)',
                 'কোর্স (Course)',
+                'ব্যাচ (Batch)',
                 'ফি (Amount BDT)',
                 'পেমেন্ট মাধ্যম (Payment Method)',
                 'ট্রানজেকশন আইডি (Transaction ID)',
@@ -455,6 +712,7 @@ class AdminController extends Controller
                     $payment->student_phone,
                     $payment->student_email,
                     $payment->course?->bangla_title ?? $payment->course?->title ?? 'N/A',
+                    $payment->batch?->name ?? $payment->course?->batch_no ?? 'N/A',
                     $payment->amount,
                     $methodName,
                     $payment->transaction_id,
@@ -473,23 +731,42 @@ class AdminController extends Controller
     /**
      * Dedicated Live Meetings Management Dashboard
      */
-    public function liveMeetings()
+    public function liveMeetings(Request $request)
     {
         $primaryCourse = Course::first();
-        $totalStudents = Enrollment::where('status', 'active')->count();
+        $batches = $primaryCourse
+            ? Batch::where('course_id', $primaryCourse->id)
+                ->orderBy('batch_number', 'asc')
+                ->orderBy('id', 'asc')
+                ->get()
+            : collect();
+        $selectedBatchId = $request->filled('batch_id') ? (int) $request->input('batch_id') : null;
 
-        $meetings = [];
+        $totalStudents = Enrollment::where('status', 'active')
+            ->when($selectedBatchId, fn ($q) => $q->where('batch_id', $selectedBatchId))
+            ->count();
+
+        $meetings = collect();
         $activeMeeting = null;
 
         if ($primaryCourse) {
-            $meetings = LiveMeeting::where('course_id', $primaryCourse->id)
+            $meetings = LiveMeeting::with('batch')
+                ->where('course_id', $primaryCourse->id)
+                ->when($selectedBatchId, fn ($q) => $q->where('batch_id', $selectedBatchId))
                 ->orderBy('starts_at', 'desc')
                 ->get();
 
-            $activeMeeting = $primaryCourse->currentOrNextMeeting();
+            $activeMeeting = $primaryCourse->currentOrNextMeeting($selectedBatchId);
         }
 
-        return view('admin.live-meetings', compact('primaryCourse', 'totalStudents', 'meetings', 'activeMeeting'));
+        return view('admin.live-meetings', compact(
+            'primaryCourse',
+            'totalStudents',
+            'meetings',
+            'activeMeeting',
+            'batches',
+            'selectedBatchId'
+        ));
     }
 
     /**
@@ -506,6 +783,7 @@ class AdminController extends Controller
         }
 
         $validated = $request->validate([
+            'batch_id' => ['nullable', 'exists:batches,id'],
             'title' => ['required', 'string', 'max:255'],
             'meeting_url' => ['required', 'url', 'max:1000'],
             'meeting_id' => ['nullable', 'string', 'max:100'],
@@ -522,6 +800,7 @@ class AdminController extends Controller
             'scheduled_time.required' => 'ক্লাস শুরুর সময় নির্ধারণ করুন।',
         ]);
 
+        $batchId = !empty($validated['batch_id']) ? (int) $validated['batch_id'] : null;
         $startsAt = Carbon::parse($validated['scheduled_date'] . ' ' . $validated['scheduled_time']);
         $endsAt = $startsAt->copy()->addHours(2);
 
@@ -535,8 +814,12 @@ class AdminController extends Controller
         $isLiveNow = $request->boolean('is_live_now');
 
         if ($isLiveNow) {
-            // Unset other live meetings for this course
-            LiveMeeting::where('course_id', $primaryCourse->id)->update(['is_live_now' => false]);
+            // Unset other live meetings for this batch (or entire course if global)
+            $resetQuery = LiveMeeting::where('course_id', $primaryCourse->id);
+            if ($batchId) {
+                $resetQuery->where('batch_id', $batchId);
+            }
+            $resetQuery->update(['is_live_now' => false]);
         }
 
         $recordingUrl = trim((string) $request->input('recording_url'));
@@ -544,6 +827,7 @@ class AdminController extends Controller
 
         $meeting = LiveMeeting::create([
             'course_id' => $primaryCourse->id,
+            'batch_id' => $batchId,
             'title' => $validated['title'],
             'meeting_url' => $validated['meeting_url'],
             'recording_url' => $hasRecording ? $recordingUrl : null,
@@ -563,19 +847,28 @@ class AdminController extends Controller
         ]);
 
         // Sync with course
-        $primaryCourse->update([
-            'live_meeting_url' => $meeting->meeting_url,
-            'live_meeting_id' => $meeting->meeting_id,
-            'live_meeting_passcode' => $meeting->meeting_passcode,
-            'live_class_topic' => $meeting->title,
-            'live_schedule_text' => $meeting->formatted_schedule,
-            'is_live_now' => $isLiveNow,
-        ]);
+        $hasAnyLiveMeeting = LiveMeeting::where('course_id', $primaryCourse->id)
+            ->where('is_live_now', true)
+            ->exists();
+
+        if ($isLiveNow || !$hasAnyLiveMeeting) {
+            $primaryCourse->update([
+                'live_meeting_url' => $meeting->meeting_url,
+                'live_meeting_id' => $meeting->meeting_id,
+                'live_meeting_passcode' => $meeting->meeting_passcode,
+                'live_class_topic' => $meeting->title,
+                'live_schedule_text' => $meeting->formatted_schedule,
+                'is_live_now' => $hasAnyLiveMeeting,
+            ]);
+        } else {
+            $primaryCourse->update(['is_live_now' => $hasAnyLiveMeeting]);
+        }
 
         if ($isLiveNow) {
             AttendanceSession::firstOrCreate(
                 [
                     'course_id' => $primaryCourse->id,
+                    'batch_id' => $meeting->batch_id,
                     'session_date' => $startsAt->toDateString(),
                 ],
                 [
@@ -602,6 +895,7 @@ class AdminController extends Controller
         }
 
         $validated = $request->validate([
+            'batch_id' => ['nullable', 'exists:batches,id'],
             'title' => ['required', 'string', 'max:255'],
             'meeting_url' => ['required', 'url', 'max:1000'],
             'meeting_id' => ['nullable', 'string', 'max:100'],
@@ -618,6 +912,7 @@ class AdminController extends Controller
             'scheduled_time.required' => 'ক্লাস শুরুর সময় নির্ধারণ করুন।',
         ]);
 
+        $batchId = !empty($validated['batch_id']) ? (int) $validated['batch_id'] : null;
         $startsAt = Carbon::parse($validated['scheduled_date'] . ' ' . $validated['scheduled_time']);
         $endsAt = $startsAt->copy()->addHours(2);
 
@@ -632,12 +927,16 @@ class AdminController extends Controller
         $course = $meeting->course;
 
         if ($isLiveNow) {
-            LiveMeeting::where('course_id', $course->id)
-                ->where('id', '!=', $meeting->id)
-                ->update(['is_live_now' => false]);
+            $resetQuery = LiveMeeting::where('course_id', $course->id)
+                ->where('id', '!=', $meeting->id);
+            if ($batchId) {
+                $resetQuery->where('batch_id', $batchId);
+            }
+            $resetQuery->update(['is_live_now' => false]);
         }
 
         $meetingUpdates = [
+            'batch_id' => $batchId,
             'title' => $validated['title'],
             'meeting_url' => $validated['meeting_url'],
             'meeting_id' => $validated['meeting_id'] ?? null,
@@ -661,6 +960,10 @@ class AdminController extends Controller
 
         $meeting->update($meetingUpdates);
 
+        $hasAnyLiveMeeting = LiveMeeting::where('course_id', $course->id)
+            ->where('is_live_now', true)
+            ->exists();
+
         if ($isLiveNow) {
             $course->update([
                 'live_meeting_url' => $meeting->meeting_url,
@@ -674,6 +977,7 @@ class AdminController extends Controller
             AttendanceSession::firstOrCreate(
                 [
                     'course_id' => $course->id,
+                    'batch_id' => $meeting->batch_id,
                     'session_date' => $startsAt->toDateString(),
                 ],
                 [
@@ -684,9 +988,7 @@ class AdminController extends Controller
                 ]
             );
         } else {
-            if ($course->is_live_now && $course->live_meeting_url === $meeting->meeting_url) {
-                $course->update(['is_live_now' => false]);
-            }
+            $course->update(['is_live_now' => $hasAnyLiveMeeting]);
         }
 
         return back()->with('success', "মিটিংটি সফলভাবে হালনাগাদ (সম্পাদনা) করা হয়েছে!");
@@ -744,11 +1046,18 @@ class AdminController extends Controller
                 'is_live_now' => false,
                 'status' => 'completed',
             ]);
-            $course->update(['is_live_now' => false]);
+            $hasAnyLiveMeeting = LiveMeeting::where('course_id', $course->id)
+                ->where('is_live_now', true)
+                ->exists();
+            $course->update(['is_live_now' => $hasAnyLiveMeeting]);
             $msg = 'লাইভ মিটিং সফলভাবে বন্ধ করা হয়েছে। শিক্ষার্থীরা এখন পরবর্তী সময়সূচি দেখবে।';
         } else {
-            // Turn off other meetings
-            LiveMeeting::where('course_id', $course->id)->update(['is_live_now' => false]);
+            // Turn off other live meetings for this batch (or entire course if global)
+            $resetQuery = LiveMeeting::where('course_id', $course->id);
+            if ($meeting->batch_id) {
+                $resetQuery->where('batch_id', $meeting->batch_id);
+            }
+            $resetQuery->update(['is_live_now' => false]);
 
             $meeting->update([
                 'is_live_now' => true,
@@ -764,10 +1073,11 @@ class AdminController extends Controller
                 'is_live_now' => true,
             ]);
 
-            // Ensure attendance session exists
+            // Ensure attendance session exists (scoped by batch)
             AttendanceSession::firstOrCreate(
                 [
                     'course_id' => $course->id,
+                    'batch_id' => $meeting->batch_id,
                     'session_date' => now()->toDateString(),
                 ],
                 [
@@ -793,8 +1103,11 @@ class AdminController extends Controller
         $wasLive = $meeting->is_live_now;
         $meeting->delete();
 
-        if ($wasLive) {
-            $course->update(['is_live_now' => false]);
+        if ($wasLive && $course) {
+            $hasAnyLiveMeeting = LiveMeeting::where('course_id', $course->id)
+                ->where('is_live_now', true)
+                ->exists();
+            $course->update(['is_live_now' => $hasAnyLiveMeeting]);
         }
 
         return back()->with('success', 'মিটিংটি সফলভাবে মুছে ফেলা হয়েছে।');
@@ -902,6 +1215,7 @@ class AdminController extends Controller
             'student_phone' => ['required', 'string', 'max:25'],
             'student_email' => ['nullable', 'email', 'max:100'],
             'course_id' => ['required', 'exists:courses,id'],
+            'batch_id' => ['nullable', 'exists:batches,id'],
             'amount' => ['required', 'numeric', 'min:0'],
             'payment_method' => ['required', 'string', 'max:50'],
             'transaction_id' => ['nullable', 'string', 'max:100'],
@@ -917,6 +1231,7 @@ class AdminController extends Controller
         ]);
 
         $course = Course::findOrFail($validated['course_id']);
+        $batchId = !empty($validated['batch_id']) ? (int) $validated['batch_id'] : $course->currentOrLatestBatch()?->id;
         $rawPhone = trim($validated['student_phone']);
         $cleanPhone = preg_replace('/[^0-9]/', '', $rawPhone);
         
@@ -947,19 +1262,27 @@ class AdminController extends Controller
             $user->plain_password = $rawPassword;
             $user->save();
 
-            // 2. Find or create Enrollment
-            $enrollment = Enrollment::where('course_id', $course->id)
+            // 2. Find or create Enrollment (scoped by batch when batch exists)
+            $enrollmentQuery = Enrollment::where('course_id', $course->id)
                 ->where(function ($q) use ($rawPhone, $cleanPhone, $email) {
                     $q->where('student_phone', $rawPhone)
                       ->orWhere('student_phone', $cleanPhone)
                       ->orWhere('student_email', $email);
-                })
-                ->first();
+                });
+
+            if ($batchId) {
+                $enrollmentQuery->where(function ($q) use ($batchId) {
+                    $q->where('batch_id', $batchId)->orWhereNull('batch_id');
+                });
+            }
+
+            $enrollment = $enrollmentQuery->first();
 
             if (!$enrollment) {
                 $enrollment = Enrollment::create([
                     'user_id' => $user->id,
                     'course_id' => $course->id,
+                    'batch_id' => $batchId,
                     'student_name' => $validated['student_name'],
                     'student_email' => $email,
                     'student_phone' => $rawPhone,
@@ -970,6 +1293,7 @@ class AdminController extends Controller
             } else {
                 $enrollment->update([
                     'user_id' => $user->id,
+                    'batch_id' => $enrollment->batch_id ?? $batchId,
                     'student_name' => $validated['student_name'],
                     'student_email' => $email,
                     'student_phone' => $rawPhone,
@@ -982,19 +1306,21 @@ class AdminController extends Controller
             Payment::create([
                 'enrollment_id' => $enrollment->id,
                 'course_id' => $course->id,
+                'batch_id' => $batchId ?? $enrollment->batch_id,
                 'student_name' => $validated['student_name'],
                 'student_email' => $email,
                 'student_phone' => $rawPhone,
                 'amount' => (float) $validated['amount'],
                 'payment_method' => $validated['payment_method'],
                 'transaction_id' => $trxId,
-                'sender_phone' => $validated['sender_phone'] ?: $rawPhone,
+                'sender_phone' => ($validated['sender_phone'] ?? null) ?: $rawPhone,
                 'status' => 'completed',
-                'notes' => $validated['notes'] ?: 'এডমিন প্যানেল থেকে ম্যানুয়ালি ভর্তি নিশ্চিতকৃত।',
+                'notes' => ($validated['notes'] ?? null) ?: 'এডমিন প্যানেল থেকে ম্যানুয়ালি ভর্তি নিশ্চিতকৃত।',
             ]);
 
-            // Auto-clean any other duplicate pending enrollments for this student
+            // Auto-clean any other duplicate pending enrollments for this student in same batch
             Enrollment::where('course_id', $course->id)
+                ->when($batchId, fn ($q) => $q->where(fn ($sub) => $sub->where('batch_id', $batchId)->orWhereNull('batch_id')))
                 ->where('id', '!=', $enrollment->id)
                 ->where('status', 'pending')
                 ->where(function ($q) use ($rawPhone, $cleanPhone, $email) {
@@ -1025,6 +1351,11 @@ class AdminController extends Controller
             return;
         }
 
+        $defaultBatchId = Batch::where('course_id', $courseId)
+            ->orderBy('batch_number', 'asc')
+            ->orderBy('id', 'asc')
+            ->value('id');
+
         // 1. Ensure every completed payment for this course has an active Enrollment
         $completedPayments = Payment::where(function ($q) use ($courseId) {
                 $q->where('course_id', $courseId)
@@ -1044,7 +1375,7 @@ class AdminController extends Controller
             }
 
             if (!$enrollment) {
-                $enrollment = Enrollment::where(function ($q) use ($rawPhone, $cleanPhone, $email) {
+                $enrollmentQuery = Enrollment::where(function ($q) use ($rawPhone, $cleanPhone, $email) {
                     if (!empty($rawPhone)) {
                         $q->where('student_phone', $rawPhone);
                         if (!empty($cleanPhone)) {
@@ -1056,12 +1387,23 @@ class AdminController extends Controller
                     }
                 })->where(function ($q) use ($courseId) {
                     $q->where('course_id', $courseId)->orWhereNull('course_id');
-                })->first();
+                });
+
+                if ($payment->batch_id) {
+                    $enrollmentQuery->where(function ($q) use ($payment) {
+                        $q->where('batch_id', $payment->batch_id)->orWhereNull('batch_id');
+                    });
+                }
+
+                $enrollment = $enrollmentQuery->first();
             }
+
+            $targetBatchId = $payment->batch_id ?? $enrollment?->batch_id ?? $defaultBatchId;
 
             if (!$enrollment) {
                 $enrollment = Enrollment::create([
                     'course_id' => $courseId,
+                    'batch_id' => $targetBatchId,
                     'student_name' => $payment->student_name,
                     'student_email' => $email,
                     'student_phone' => $rawPhone,
@@ -1077,6 +1419,9 @@ class AdminController extends Controller
                 if (!$enrollment->course_id) {
                     $updates['course_id'] = $courseId;
                 }
+                if (!$enrollment->batch_id && $targetBatchId) {
+                    $updates['batch_id'] = $targetBatchId;
+                }
                 if (!empty($payment->student_name) && $enrollment->student_name !== $payment->student_name) {
                     $updates['student_name'] = $payment->student_name;
                 }
@@ -1088,17 +1433,24 @@ class AdminController extends Controller
                 }
             }
 
-            if ($payment->enrollment_id !== $enrollment->id || $payment->course_id !== $courseId) {
-                $payment->update([
-                    'enrollment_id' => $enrollment->id,
-                    'course_id' => $courseId,
-                ]);
+            $paymentUpdates = [];
+            if ($payment->enrollment_id !== $enrollment->id) {
+                $paymentUpdates['enrollment_id'] = $enrollment->id;
+            }
+            if ($payment->course_id !== $courseId) {
+                $paymentUpdates['course_id'] = $courseId;
+            }
+            if (!$payment->batch_id && ($enrollment->batch_id ?? $targetBatchId)) {
+                $paymentUpdates['batch_id'] = $enrollment->batch_id ?? $targetBatchId;
+            }
+            if (!empty($paymentUpdates)) {
+                $payment->update($paymentUpdates);
             }
 
             self::ensureUserForEnrollment($enrollment);
         }
 
-        // 2. Also ensure any existing active or completed enrollments have valid user_id & course_id
+        // 2. Also ensure any existing active or completed enrollments have valid user_id, course_id & batch_id
         $enrollments = Enrollment::where(function ($q) use ($courseId) {
                 $q->where('course_id', $courseId)->orWhereNull('course_id');
             })
@@ -1112,6 +1464,9 @@ class AdminController extends Controller
             }
             if (!$enr->course_id) {
                 $updates['course_id'] = $courseId;
+            }
+            if (!$enr->batch_id && $defaultBatchId) {
+                $updates['batch_id'] = $defaultBatchId;
             }
             if (!empty($updates)) {
                 $enr->update($updates);
@@ -1196,37 +1551,65 @@ class AdminController extends Controller
         $primaryCourse = Course::find($request->input('course_id')) ?? Course::first();
         self::reconcileEnrolledStudents($primaryCourse);
 
+        $batches = $primaryCourse
+            ? Batch::where('course_id', $primaryCourse->id)
+                ->orderBy('batch_number', 'asc')
+                ->orderBy('id', 'asc')
+                ->get()
+            : collect();
+        $selectedBatchId = $request->filled('batch_id') ? (int) $request->input('batch_id') : null;
+
         $totalActiveStudents = Enrollment::where('course_id', $primaryCourse?->id)
+            ->when($selectedBatchId, fn ($q) => $q->where('batch_id', $selectedBatchId))
             ->whereIn('status', ['active', 'completed'])
             ->count();
 
-        $sessions = AttendanceSession::where('course_id', $primaryCourse?->id)
+        $batchStudentCounts = Enrollment::where('course_id', $primaryCourse?->id)
+            ->whereIn('status', ['active', 'completed'])
+            ->whereNotNull('batch_id')
+            ->selectRaw('batch_id, COUNT(*) as total')
+            ->groupBy('batch_id')
+            ->pluck('total', 'batch_id');
+
+        $sessions = AttendanceSession::with('batch')
+            ->where('course_id', $primaryCourse?->id)
+            ->when($selectedBatchId, fn ($q) => $q->where('batch_id', $selectedBatchId))
             ->withCount(['attendances as present_count' => function ($q) {
                 $q->whereIn('status', ['present', 'late']);
             }])
             ->orderBy('session_date', 'desc')
             ->orderBy('id', 'desc')
-            ->paginate(15);
+            ->paginate(15)
+            ->withQueryString();
 
         $totalSessions = AttendanceSession::where('course_id', $primaryCourse?->id)
+            ->when($selectedBatchId, fn ($q) => $q->where('batch_id', $selectedBatchId))
             ->where('status', '!=', 'cancelled')
             ->count();
 
         // Calculate average attendance across sessions
         $allSessions = AttendanceSession::where('course_id', $primaryCourse?->id)
+            ->when($selectedBatchId, fn ($q) => $q->where('batch_id', $selectedBatchId))
             ->where('status', '!=', 'cancelled')
             ->withCount(['attendances as present_count' => fn($q) => $q->whereIn('status', ['present', 'late'])])
             ->get();
 
         $avgPercentage = 0;
         if ($allSessions->count() > 0 && $totalActiveStudents > 0) {
+            $totalPossible = $allSessions->sum(function ($s) use ($batchStudentCounts, $totalActiveStudents) {
+                return $s->batch_id && isset($batchStudentCounts[$s->batch_id])
+                    ? (int) $batchStudentCounts[$s->batch_id]
+                    : $totalActiveStudents;
+            });
             $totalPresentSum = $allSessions->sum('present_count');
-            $avgPercentage = (int) round(($totalPresentSum / ($allSessions->count() * $totalActiveStudents)) * 100);
+            $avgPercentage = $totalPossible > 0 ? (int) round(($totalPresentSum / $totalPossible) * 100) : 0;
         }
 
         // Today's attendance session if any
         $todaySession = AttendanceSession::where('course_id', $primaryCourse?->id)
+            ->when($selectedBatchId, fn ($q) => $q->where('batch_id', $selectedBatchId))
             ->whereDate('session_date', now()->toDateString())
+            ->withCount(['attendances as present_count' => fn($q) => $q->whereIn('status', ['present', 'late'])])
             ->first();
 
         $courses = Course::all();
@@ -1234,8 +1617,11 @@ class AdminController extends Controller
         return view('admin.attendance.index', compact(
             'primaryCourse',
             'courses',
+            'batches',
+            'selectedBatchId',
             'sessions',
             'totalActiveStudents',
+            'batchStudentCounts',
             'totalSessions',
             'avgPercentage',
             'todaySession'
@@ -1249,6 +1635,7 @@ class AdminController extends Controller
     {
         $primaryCourse = Course::find($request->input('course_id')) ?? Course::first();
         $validated = $request->validate([
+            'batch_id' => ['nullable', 'exists:batches,id'],
             'title' => ['required', 'string', 'max:255'],
             'session_date' => ['required', 'date'],
             'notes' => ['nullable', 'string', 'max:500'],
@@ -1256,6 +1643,7 @@ class AdminController extends Controller
 
         $session = AttendanceSession::create([
             'course_id' => $primaryCourse->id,
+            'batch_id' => !empty($validated['batch_id']) ? (int) $validated['batch_id'] : null,
             'title' => $validated['title'],
             'session_date' => $validated['session_date'],
             'started_at' => now(),
@@ -1274,13 +1662,15 @@ class AdminController extends Controller
      */
     public function showAttendanceSession(AttendanceSession $session)
     {
+        $session->load('batch');
         $course = $session->course ?? Course::first();
         self::reconcileEnrolledStudents($course);
 
-        // Get all active enrolled students with user relation
+        // Get all active enrolled students for this session's batch (or all batches if batch_id is null)
         $enrollments = Enrollment::where('course_id', $course->id)
+            ->when($session->batch_id, fn ($q) => $q->where('batch_id', $session->batch_id))
             ->whereIn('status', ['active', 'completed'])
-            ->with('user')
+            ->with(['user', 'batch'])
             ->orderBy('student_name', 'asc')
             ->get();
 
@@ -1325,6 +1715,7 @@ class AdminController extends Controller
         if (!$enrollment && $userId) {
             $enrollment = Enrollment::where('user_id', $userId)
                 ->where('course_id', $session->course_id)
+                ->when($session->batch_id, fn ($q) => $q->where('batch_id', $session->batch_id))
                 ->first();
         }
 
@@ -1391,6 +1782,7 @@ class AdminController extends Controller
         self::reconcileEnrolledStudents($course);
 
         $enrollments = Enrollment::where('course_id', $session->course_id)
+            ->when($session->batch_id, fn ($q) => $q->where('batch_id', $session->batch_id))
             ->whereIn('status', ['active', 'completed'])
             ->get();
 
@@ -1438,13 +1830,26 @@ class AdminController extends Controller
         self::reconcileEnrolledStudents($primaryCourse);
         $search = trim((string) $request->input('search', ''));
 
-        $totalSessions = AttendanceSession::where('course_id', $primaryCourse?->id)
+        $batches = $primaryCourse
+            ? Batch::where('course_id', $primaryCourse->id)
+                ->orderBy('batch_number', 'asc')
+                ->orderBy('id', 'asc')
+                ->get()
+            : collect();
+        $selectedBatchId = $request->filled('batch_id') ? (int) $request->input('batch_id') : null;
+
+        $allCourseSessions = AttendanceSession::where('course_id', $primaryCourse?->id)
             ->where('status', '!=', 'cancelled')
-            ->count();
+            ->get(['id', 'batch_id']);
+
+        $totalSessions = $selectedBatchId
+            ? $allCourseSessions->filter(fn ($s) => $s->batch_id === $selectedBatchId || is_null($s->batch_id))->count()
+            : $allCourseSessions->count();
 
         $studentsQuery = Enrollment::where('course_id', $primaryCourse?->id)
+            ->when($selectedBatchId, fn ($q) => $q->where('batch_id', $selectedBatchId))
             ->whereIn('status', ['active', 'completed'])
-            ->with(['user.attendances' => function ($q) use ($primaryCourse) {
+            ->with(['batch', 'user.attendances' => function ($q) use ($primaryCourse) {
                 $q->where('course_id', $primaryCourse?->id);
             }]);
 
@@ -1459,6 +1864,15 @@ class AdminController extends Controller
         $students = $studentsQuery->orderBy('student_name', 'asc')->paginate(30)->withQueryString();
         $courses = Course::all();
 
-        return view('admin.attendance.students', compact('primaryCourse', 'courses', 'students', 'totalSessions', 'search'));
+        return view('admin.attendance.students', compact(
+            'primaryCourse',
+            'courses',
+            'batches',
+            'selectedBatchId',
+            'students',
+            'totalSessions',
+            'allCourseSessions',
+            'search'
+        ));
     }
 }

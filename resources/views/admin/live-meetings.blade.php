@@ -48,11 +48,12 @@
     <!-- Active / Current Meeting Hero Card -->
     @php
         $displayMeeting = $activeMeeting;
-        $isLive = ($displayMeeting && $displayMeeting->is_live_now) || ($primaryCourse && $primaryCourse->is_live_now);
+        $isLive = $displayMeeting ? (bool) $displayMeeting->is_live_now : (empty($selectedBatchId) && $primaryCourse && $primaryCourse->is_live_now);
         $meetingTopic = $displayMeeting?->title ?: ($primaryCourse?->live_class_topic ?: 'সাংবাদিকতা, আইন ও উপস্থাপনা — অনলাইন লাইভ সেশন');
-        $meetingUrl = $displayMeeting?->meeting_url ?: ($primaryCourse?->live_meeting_url ?: '');
-        $meetingId = $displayMeeting?->meeting_id ?: ($primaryCourse?->live_meeting_id ?: '');
-        $meetingPasscode = $displayMeeting?->meeting_passcode ?: ($primaryCourse?->live_meeting_passcode ?: '');
+        $meetingUrl = $displayMeeting?->meeting_url ?: (empty($selectedBatchId) ? ($primaryCourse?->live_meeting_url ?: '') : '');
+        $meetingId = $displayMeeting?->meeting_id ?: (empty($selectedBatchId) ? ($primaryCourse?->live_meeting_id ?: '') : '');
+        $meetingPasscode = $displayMeeting?->meeting_passcode ?: (empty($selectedBatchId) ? ($primaryCourse?->live_meeting_passcode ?: '') : '');
+        $meetingBatchLabel = $displayMeeting?->batch?->name ?? ($selectedBatchId ? (($batches ?? collect())->firstWhere('id', $selectedBatchId)?->name ?? 'নির্বাচিত ব্যাচ') : ($primaryCourse?->batch_no ?? 'সকল ব্যাচ'));
     @endphp
 
     @if($meetingUrl)
@@ -91,7 +92,7 @@
                             {{ $meetingTopic }}
                         </h2>
                         <p class="text-xs text-emerald-200/80 mt-0.5">
-                            কোর্স: <strong class="text-white">{{ $primaryCourse?->bangla_title ?? 'সাংবাদিকতা, আইন ও উপস্থাপনা' }}</strong> ({{ $primaryCourse?->batch_no ?? '১ম ব্যাচ' }})
+                            কোর্স: <strong class="text-white">{{ $primaryCourse?->bangla_title ?? 'সাংবাদিকতা, আইন ও উপস্থাপনা' }}</strong> &bull; ব্যাচ: <strong class="text-amber-300">{{ $meetingBatchLabel }}</strong>
                         </p>
                     </div>
                 </div>
@@ -192,7 +193,20 @@
                     প্রতিটি ক্লাসের নির্দিষ্ট তারিখ, শুরুর সময় এবং লাইভ স্ট্যাটাস পরিচালনা করুন
                 </p>
             </div>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 flex-wrap">
+                @if(isset($batches) && $batches->count() > 0)
+                    <form method="GET" action="{{ route('admin.live-meetings') }}" class="flex items-center gap-1.5">
+                        <select name="batch_id" onchange="this.form.submit()"
+                                class="px-3 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-semibold text-slate-700">
+                            <option value="">সকল ব্যাচ ({{ count($meetings) }})</option>
+                            @foreach($batches as $b)
+                                <option value="{{ $b->id }}" {{ ($selectedBatchId ?? null) == $b->id ? 'selected' : '' }}>
+                                    {{ $b->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </form>
+                @endif
                 <button type="button"
                         @click="showScheduleModal = true"
                         class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs border border-emerald-200 transition">
@@ -242,12 +256,17 @@
                                     <div class="font-bold text-slate-900">
                                         {{ $meeting->title }}
                                     </div>
-                                    @if($meeting->meeting_id || $meeting->meeting_passcode)
-                                        <div class="text-[10px] text-slate-400 font-mono mt-0.5">
-                                            @if($meeting->meeting_id) ID: {{ $meeting->meeting_id }} @endif
-                                            @if($meeting->meeting_passcode) • পাসকোড: {{ $meeting->meeting_passcode }} @endif
-                                        </div>
-                                    @endif
+                                    <div class="flex items-center gap-1.5 flex-wrap mt-1">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold {{ $meeting->batch ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-slate-100 text-slate-600 border border-slate-200' }}">
+                                            {{ $meeting->batch?->name ?? 'সকল ব্যাচ' }}
+                                        </span>
+                                        @if($meeting->meeting_id || $meeting->meeting_passcode)
+                                            <span class="text-[10px] text-slate-400 font-mono">
+                                                @if($meeting->meeting_id) ID: {{ $meeting->meeting_id }} @endif
+                                                @if($meeting->meeting_passcode) • পাসকোড: {{ $meeting->meeting_passcode }} @endif
+                                            </span>
+                                        @endif
+                                    </div>
                                 </td>
                                 <td class="py-3.5 px-4 sm:px-6 whitespace-nowrap">
                                     <a href="{{ $meeting->meeting_url }}" target="_blank"
@@ -269,6 +288,7 @@
                                     @php
                                         $meetingJson = [
                                             'id' => $meeting->id,
+                                            'batch_id' => $meeting->batch_id ? (string) $meeting->batch_id : '',
                                             'title' => $meeting->title,
                                             'meeting_url' => $meeting->meeting_url,
                                             'recording_url' => $meeting->recording_url,
@@ -362,11 +382,6 @@
 
                                         <form method="POST" action="{{ route('admin.meetings.destroy', $meeting->id) }}"
                                               onsubmit="return confirm('এই শিডিউল মিটিংটি মুছে ফেলতে চান?')" class="inline">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" title="মুছে ফেলুন" class="p-1.5 text-slate-400 hover:text-red-600 transition">
-                                                <i class="fa-regular fa-trash-can"></i>
-                                            </button>
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" title="মুছে ফেলুন" class="p-1.5 text-slate-400 hover:text-red-600 transition">
@@ -475,6 +490,23 @@
             <form method="POST" action="{{ route('admin.meetings.store') }}" class="space-y-4">
                 @csrf
 
+                @if(isset($batches) && $batches->count() > 0)
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">
+                            কোন ব্যাচের ক্লাস?
+                        </label>
+                        <select name="batch_id"
+                                class="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-semibold text-slate-800">
+                            <option value="">সকল ব্যাচ (কমন মিটিং)</option>
+                            @foreach($batches as $b)
+                                <option value="{{ $b->id }}" {{ ($selectedBatchId ?? null) == $b->id ? 'selected' : '' }}>
+                                    {{ $b->name }} ({{ $b->enrollment_open ? 'ভর্তি চালু' : 'ভর্তি বন্ধ' }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                @endif
+
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1.5">
                         ক্লাসের বিষয় / শিরোনাম <span class="text-rose-500">*</span>
@@ -582,6 +614,21 @@
             <form method="POST" :action="editForm.actionUrl" class="space-y-4">
                 @csrf
                 @method('PUT')
+
+                @if(isset($batches) && $batches->count() > 0)
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">
+                            কোন ব্যাচের ক্লাস?
+                        </label>
+                        <select name="batch_id" x-model="editForm.batch_id"
+                                class="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-semibold text-slate-800">
+                            <option value="">সকল ব্যাচ (কমন মিটিং)</option>
+                            @foreach($batches as $b)
+                                <option value="{{ $b->id }}">{{ $b->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                @endif
 
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1.5">
@@ -821,6 +868,7 @@ function liveMeetingsManager() {
         showRecordingModal: false,
         editForm: {
             id: null,
+            batch_id: '',
             title: '',
             meeting_url: '',
             recording_url: '',
@@ -848,6 +896,7 @@ function liveMeetingsManager() {
         openEdit(meeting) {
             this.editForm = {
                 id: meeting.id,
+                batch_id: meeting.batch_id ? String(meeting.batch_id) : '',
                 title: meeting.title || '',
                 meeting_url: meeting.meeting_url || '',
                 recording_url: meeting.recording_url || '',

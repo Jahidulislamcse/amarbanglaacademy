@@ -76,24 +76,85 @@ class Course extends Model
         return $this->hasMany(Attendance::class);
     }
 
+    public function batches(): HasMany
+    {
+        return $this->hasMany(Batch::class)->orderBy('batch_number', 'asc')->orderBy('id', 'asc');
+    }
+
+    /**
+     * Get the currently open enrollment batch (latest active batch with enrollment_open = true)
+     */
+    public function openEnrollmentBatch(): ?Batch
+    {
+        return $this->batches()
+            ->where('is_active', true)
+            ->where('enrollment_open', true)
+            ->orderBy('batch_number', 'desc')
+            ->orderBy('id', 'desc')
+            ->first();
+    }
+
+    /**
+     * Get all batches currently open for enrollment
+     */
+    public function openEnrollmentBatches()
+    {
+        return $this->batches()
+            ->where('is_active', true)
+            ->where('enrollment_open', true)
+            ->orderBy('batch_number', 'asc')
+            ->get();
+    }
+
+    /**
+     * Get open enrollment batch or fall back to latest batch
+     */
+    public function currentOrLatestBatch(): ?Batch
+    {
+        return $this->openEnrollmentBatch()
+            ?? $this->batches()->where('is_active', true)->orderBy('batch_number', 'desc')->orderBy('id', 'desc')->first()
+            ?? $this->batches()->orderBy('batch_number', 'desc')->orderBy('id', 'desc')->first();
+    }
+
+    /**
+     * Check whether online enrollment is currently open for any batch of this course
+     */
+    public function isEnrollmentOpen(): bool
+    {
+        return $this->batches()
+            ->where('is_active', true)
+            ->where('enrollment_open', true)
+            ->exists();
+    }
+
     public function liveMeetings(): HasMany
     {
         return $this->hasMany(LiveMeeting::class)->orderBy('starts_at', 'asc');
     }
 
     /**
-     * Get current active live meeting, or next upcoming scheduled meeting
+     * Get current active live meeting, or next upcoming scheduled meeting (optionally scoped to a batch)
      */
-    public function currentOrNextMeeting(): ?LiveMeeting
+    public function currentOrNextMeeting(?int $batchId = null): ?LiveMeeting
     {
+        $baseQuery = function () use ($batchId) {
+            $q = $this->liveMeetings();
+            if ($batchId) {
+                $q->where(function ($sub) use ($batchId) {
+                    $sub->where('batch_id', $batchId)->orWhereNull('batch_id');
+                });
+            }
+            return $q;
+        };
+
         // 1. Check if any meeting is explicitly marked live now
-        $liveMeeting = $this->liveMeetings()->where('is_live_now', true)->latest('starts_at')->first();
+        $liveMeeting = $baseQuery()->where('is_live_now', true)->latest('starts_at')->first();
         if ($liveMeeting) {
             return $liveMeeting;
         }
 
         // 2. Next upcoming scheduled meeting (today or future)
-        $nextMeeting = $this->liveMeetings()
+        $nextMeeting = $baseQuery()
             ->where('status', '!=', 'cancelled')
             ->where('starts_at', '>=', now()->subHours(2))
             ->orderBy('starts_at', 'asc')
@@ -104,7 +165,7 @@ class Course extends Model
         }
 
         // 3. Fallback to latest meeting
-        return $this->liveMeetings()->latest('starts_at')->first();
+        return $baseQuery()->latest('starts_at')->first();
     }
 
     public function getEffectivePriceAttribute(): float

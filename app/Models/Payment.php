@@ -21,6 +21,11 @@ class Payment extends Model
         return $this->belongsTo(Course::class);
     }
 
+    public function batch(): BelongsTo
+    {
+        return $this->belongsTo(Batch::class);
+    }
+
     public function enrollment(): BelongsTo
     {
         return $this->belongsTo(Enrollment::class);

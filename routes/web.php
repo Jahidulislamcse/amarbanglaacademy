@@ -61,6 +61,14 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/', fn () => redirect()->route('admin.students'))->name('dashboard');
         Route::get('/students', [AdminController::class, 'students'])->name('students');
         Route::post('/students/store', [AdminController::class, 'storeStudent'])->name('students.store');
+
+        // Batch Management (Dynamic Batches with Shared Course Content)
+        Route::get('/batches', [AdminController::class, 'batchesIndex'])->name('batches.index');
+        Route::post('/batches', [AdminController::class, 'storeBatch'])->name('batches.store');
+        Route::put('/batches/{batch}', [AdminController::class, 'updateBatch'])->name('batches.update');
+        Route::post('/batches/{batch}/toggle-enrollment', [AdminController::class, 'toggleBatchEnrollment'])->name('batches.toggle-enrollment');
+        Route::delete('/batches/{batch}', [AdminController::class, 'destroyBatch'])->name('batches.destroy');
+
         Route::get('/live-meetings', [AdminController::class, 'liveMeetings'])->name('live-meetings');
         Route::post('/meetings', [AdminController::class, 'storeMeeting'])->name('meetings.store');
         Route::put('/meetings/{meeting}', [AdminController::class, 'updateMeeting'])->name('meetings.update');

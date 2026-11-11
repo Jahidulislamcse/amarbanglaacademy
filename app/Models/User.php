@@ -50,19 +50,28 @@ class User extends Authenticatable
     }
 
     /**
-     * Get attendance statistics for the user in a course
+     * Get attendance statistics for the user in a course (optionally scoped to batch)
      */
-    public function attendanceStatsForCourse(?int $courseId = null): array
+    public function attendanceStatsForCourse(?int $courseId = null, ?int $batchId = null): array
     {
         $sessionQuery = AttendanceSession::where('status', '!=', 'cancelled');
         if ($courseId) {
             $sessionQuery->where('course_id', $courseId);
         }
-        $totalSessions = $sessionQuery->count();
+        if ($batchId) {
+            $sessionQuery->where(function ($q) use ($batchId) {
+                $q->where('batch_id', $batchId)->orWhereNull('batch_id');
+            });
+        }
+        $sessionIds = $sessionQuery->pluck('id');
+        $totalSessions = $sessionIds->count();
 
         $attQuery = $this->attendances()->whereIn('status', ['present', 'late']);
         if ($courseId) {
             $attQuery->where('course_id', $courseId);
+        }
+        if ($batchId) {
+            $attQuery->whereIn('attendance_session_id', $sessionIds);
         }
         $presentCount = $attQuery->count();
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Batch;
 use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\Payment;
@@ -15,13 +16,19 @@ class LmsController extends Controller
      */
     public function index()
     {
-        // Get flagship featured course with modules, lessons, instructors, exams
-        $flagshipCourse = Course::with(['modules.lessons', 'modules.exams', 'instructors', 'exams'])
+        // Get flagship featured course with modules, lessons, instructors, exams, batches
+        $flagshipCourse = Course::with(['modules.lessons', 'modules.exams', 'instructors', 'exams', 'batches'])
             ->where('is_featured', true)
-            ->first() ?? Course::with(['modules.lessons', 'instructors'])->first();
+            ->first() ?? Course::with(['modules.lessons', 'instructors', 'batches'])->first();
+
+        // Active / Latest batch info for dynamic enrollment state
+        $openBatches = $flagshipCourse ? $flagshipCourse->openEnrollmentBatches() : collect();
+        $activeBatch = $flagshipCourse?->openEnrollmentBatch();
+        $displayBatch = $activeBatch ?? $flagshipCourse?->currentOrLatestBatch();
+        $isEnrollmentOpen = !is_null($activeBatch);
 
         // Get all other published courses
-        $courses = Course::with(['instructors'])
+        $courses = Course::with(['instructors', 'batches'])
             ->where('status', 'published')
             ->get();
 
@@ -31,10 +38,18 @@ class LmsController extends Controller
             'course_count' => Course::count(),
             'satisfaction_rate' => '98.7%',
             'instructors_count' => '15+',
-            'active_live_batches' => '8',
+            'active_live_batches' => max(1, Batch::where('is_active', true)->count()),
         ];
 
-        return view('landing', compact('flagshipCourse', 'courses', 'stats'));
+        return view('landing', compact(
+            'flagshipCourse',
+            'courses',
+            'stats',
+            'openBatches',
+            'activeBatch',
+            'displayBatch',
+            'isEnrollmentOpen'
+        ));
     }
 
     /**
@@ -42,25 +57,54 @@ class LmsController extends Controller
      */
     public function courseDetail(string $slug)
     {
-        $course = Course::with(['modules.lessons', 'modules.exams', 'instructors', 'exams'])
+        $course = Course::with(['modules.lessons', 'modules.exams', 'instructors', 'exams', 'batches'])
             ->where('slug', $slug)
             ->firstOrFail();
+
+        $openBatches = $course->openEnrollmentBatches();
+        $activeBatch = $course->openEnrollmentBatch();
+        $displayBatch = $activeBatch ?? $course->currentOrLatestBatch();
+        $isEnrollmentOpen = !is_null($activeBatch);
 
         $relatedCourses = Course::where('id', '!=', $course->id)
             ->where('status', 'published')
             ->take(3)
             ->get();
 
-        return view('courses.show', compact('course', 'relatedCourses'));
+        return view('courses.show', compact(
+            'course',
+            'relatedCourses',
+            'openBatches',
+            'activeBatch',
+            'displayBatch',
+            'isEnrollmentOpen'
+        ));
     }
 
     /**
      * Checkout Page for Online Payment
      */
-    public function checkout(string $slug)
+    public function checkout(Request $request, string $slug)
     {
-        $course = Course::with('instructors')->where('slug', $slug)->firstOrFail();
-        return view('checkout', compact('course'));
+        $course = Course::with(['instructors', 'batches'])->where('slug', $slug)->firstOrFail();
+        $openBatches = $course->openEnrollmentBatches();
+
+        $requestedBatchId = $request->query('batch');
+        $activeBatch = $requestedBatchId
+            ? $openBatches->firstWhere('id', (int) $requestedBatchId)
+            : null;
+        $activeBatch = $activeBatch ?? $course->openEnrollmentBatch();
+
+        $displayBatch = $activeBatch ?? $course->currentOrLatestBatch();
+        $isEnrollmentOpen = !is_null($activeBatch);
+
+        return view('checkout', compact(
+            'course',
+            'openBatches',
+            'activeBatch',
+            'displayBatch',
+            'isEnrollmentOpen'
+        ));
     }
 
     /**
@@ -80,7 +124,7 @@ class LmsController extends Controller
      */
     public function paymentSuccess(int $id)
     {
-        $payment = Payment::with(['course.modules.lessons', 'enrollment'])->findOrFail($id);
+        $payment = Payment::with(['course.modules.lessons', 'enrollment.batch', 'batch'])->findOrFail($id);
         return view('payment-success', compact('payment'));
     }
 

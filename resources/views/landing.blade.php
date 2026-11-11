@@ -6,6 +6,28 @@
 
 @section('content')
 
+@php
+    $heroBatch = $activeBatch ?? $displayBatch;
+    $heroIsOpen = isset($isEnrollmentOpen) ? (bool) $isEnrollmentOpen : (!is_null($activeBatch));
+    $heroBatchName = $heroBatch?->name ?? '১ম ব্যাচ';
+    $heroStartDate = $heroBatch?->formatted_start_date ?? '৫ নভেম্বর ২০২৬';
+    $heroSchedule = $heroBatch?->formatted_schedule ?? 'বৃহস্পতি, শুক্র ও শনি রাত ৯টায়';
+    $heroPrice = (int) ($heroBatch?->effective_price ?? $flagshipCourse?->effective_price ?? 999);
+    $heroRegularPrice = (int) ($heroBatch?->effective_regular_price ?? $flagshipCourse?->regular_price ?? 3000);
+    $heroDiscountPct = (int) ($heroBatch?->discount_percentage ?? $flagshipCourse?->discount_percentage ?? 0);
+    $heroPriceBn = \App\Models\Batch::toBanglaNumber(number_format($heroPrice));
+    $heroRegularPriceBn = \App\Models\Batch::toBanglaNumber(number_format($heroRegularPrice));
+    $heroDiscountPctBn = \App\Models\Batch::toBanglaNumber($heroDiscountPct);
+    $heroSeatLimit = (int) ($heroBatch?->seat_limit ?? 50);
+    $heroSeatsRemaining = (int) ($heroBatch?->seats_remaining ?? 0);
+    $heroSeatsBooked = (int) ($heroBatch?->seats_booked ?? $heroSeatLimit);
+    $heroSeatLimitBn = \App\Models\Batch::toBanglaNumber($heroSeatLimit);
+    $heroSeatsRemainingBn = \App\Models\Batch::toBanglaNumber($heroSeatsRemaining);
+    $heroSeatsBookedBn = \App\Models\Batch::toBanglaNumber($heroSeatsBooked);
+    $heroOfferLabel = $heroBatch?->offer_label ?: ($heroBatchName . '-এর প্রথম ' . $heroSeatLimitBn . ' জনের জন্য:');
+    $heroBadgeText = $heroBatch?->discount_badge_text ?: ($heroDiscountPct > 0 ? "{$heroBatchName}-এ {$heroDiscountPctBn}% স্পেশাল ছাড়" : "{$heroBatchName} বিশেষ অফার");
+@endphp
+
 <!-- Facebook SDK Script for Embedded Reel -->
 <div id="fb-root"></div>
 <script async defer crossorigin="anonymous" src="https://connect.facebook.net/bn_IN/sdk.js#xfbml=1&version=v20.0"></script>
@@ -96,12 +118,12 @@
                 <!-- Key Specs Grid -->
                 <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 text-left pt-1">
                     <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
-                        <span class="text-[11px] text-slate-400 block"><i class="fa-solid fa-calendar-day text-amber-400 mr-1"></i> ১ম ব্যাচ শুরু:</span>
-                        <strong class="text-xs sm:text-sm text-white">৫ নভেম্বর ২০২৬</strong>
+                        <span class="text-[11px] text-slate-400 block"><i class="fa-solid fa-calendar-day text-amber-400 mr-1"></i> {{ $heroBatchName }} শুরু:</span>
+                        <strong class="text-xs sm:text-sm text-white">{{ $heroStartDate }}</strong>
                     </div>
                     <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
                         <span class="text-[11px] text-slate-400 block"><i class="fa-solid fa-clock text-emerald-400 mr-1"></i> ক্লাসের সময়:</span>
-                        <strong class="text-xs sm:text-sm text-white">বৃহস্পতি, শুক্র ও শনি রাত ৯টায়</strong>
+                        <strong class="text-xs sm:text-sm text-white">{{ $heroSchedule }}</strong>
                     </div>
                     <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 col-span-2 sm:col-span-1">
                         <span class="text-[11px] text-slate-400 block"><i class="fa-solid fa-layer-group text-teal-400 mr-1"></i> মোট ক্লাস:</span>
@@ -109,34 +131,69 @@
                     </div>
                 </div>
 
-                <!-- Special Discount Banner -->
-                <div class="p-4 rounded-2xl bg-gradient-to-r from-amber-950/90 via-slate-900 to-emerald-950/90 border-2 border-amber-500/60 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-center sm:text-left">
-                    <div>
-                        <div class="flex items-center justify-center sm:justify-start gap-2">
-                            <span class="px-2.5 py-0.5 rounded text-[11px] font-black bg-rose-600 text-white uppercase tracking-wider">
-                                বিশেষ ছাড়
+                <!-- Special Discount Banner OR Enrollment Closed Notice -->
+                @if($heroIsOpen)
+                    <div class="p-4 rounded-2xl bg-gradient-to-r from-amber-950/90 via-slate-900 to-emerald-950/90 border-2 border-amber-500/60 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-center sm:text-left">
+                        <div>
+                            <div class="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
+                                <span class="px-2.5 py-0.5 rounded text-[11px] font-black bg-rose-600 text-white uppercase tracking-wider">
+                                    বিশেষ ছাড়
+                                </span>
+                                <span class="text-xs text-slate-300">{{ $heroOfferLabel }}</span>
+                            </div>
+                            <div class="flex items-baseline justify-center sm:justify-start gap-3 mt-1 flex-wrap">
+                                <span class="text-3xl sm:text-4xl font-black text-amber-400">৳{{ $heroPriceBn }}</span>
+                                @if($heroRegularPrice > $heroPrice)
+                                    <span class="text-sm text-slate-400 line-through">নিয়মিত মূল্য: ৳{{ $heroRegularPriceBn }}</span>
+                                @endif
+                                @if($heroDiscountPct > 0)
+                                    <span class="text-xs font-bold text-emerald-400 bg-emerald-900/80 px-2 py-0.5 rounded">{{ $heroDiscountPctBn }}% ছাড়</span>
+                                @endif
+                            </div>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <span class="text-[11px] text-amber-300 font-semibold block sm:text-right">
+                                <i class="fa-solid fa-bolt mr-1"></i> আসন সংখ্যা সীমিত! ({{ $heroSeatsRemainingBn }}টি বাকি)
                             </span>
-                            <span class="text-xs text-slate-300">প্রথম ব্যাচের প্রথম ৫০ জনের জন্য:</span>
-                        </div>
-                        <div class="flex items-baseline justify-center sm:justify-start gap-3 mt-1">
-                            <span class="text-3xl sm:text-4xl font-black text-amber-400">৳৯৯৯</span>
-                            <span class="text-sm text-slate-400 line-through">নিয়মিত মূল্য: ৳৩,০০০</span>
-                            <span class="text-xs font-bold text-emerald-400 bg-emerald-900/80 px-2 py-0.5 rounded">৬৭% ছাড়</span>
                         </div>
                     </div>
-                    <div class="flex-shrink-0">
-                        <span class="text-[11px] text-amber-300 font-semibold block sm:text-right">
-                            <i class="fa-solid fa-bolt mr-1"></i> আসন সংখ্যা সীমিত!
-                        </span>
+                @else
+                    <div class="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-rose-950/90 via-slate-900 to-slate-950 border-2 border-rose-500/50 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-center sm:text-left">
+                        <div>
+                            <div class="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
+                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[11px] font-black bg-rose-600 text-white uppercase tracking-wider">
+                                    <i class="fa-solid fa-lock text-[10px]"></i> ভর্তি বন্ধ
+                                </span>
+                                <span class="text-xs text-rose-200 font-semibold">{{ $heroBatchName }} — অনলাইন ভর্তি সম্পন্ন</span>
+                            </div>
+                            <div class="text-lg sm:text-xl font-black text-white mt-1.5">
+                                বর্তমানে {{ $heroBatchName }}-এর অনলাইন ভর্তি বন্ধ রয়েছে
+                            </div>
+                            <p class="text-xs text-slate-300 mt-1">
+                                পরবর্তী ব্যাচের সময়সূচি ও আসন বুকিংয়ের তথ্যের জন্য আমাদের WhatsApp-এ যোগাযোগ করুন।
+                            </p>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <span class="inline-flex items-center gap-1.5 text-[11px] text-amber-300 font-semibold bg-slate-800/90 px-3 py-1.5 rounded-xl border border-slate-700">
+                                <i class="fa-regular fa-clock"></i> নির্ধারিত ফি: ৳{{ $heroPriceBn }}
+                            </span>
+                        </div>
                     </div>
-                </div>
+                @endif
 
                 <!-- Primary Action CTA Buttons -->
                 <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 pt-2">
-                    <a href="{{ route('courses.checkout', $flagshipCourse->slug) }}" class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-7 py-3.5 sm:py-4 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-600 hover:to-teal-700 text-white font-extrabold text-sm sm:text-base shadow-xl shadow-emerald-600/30 hover:scale-[1.02] transition-all duration-200">
-                        <i class="fa-solid fa-credit-card"></i>
-                        <span>ভর্তি নিশ্চিত করুন (মাত্র ৯৯৯ টাকা)</span>
-                    </a>
+                    @if($heroIsOpen)
+                        <a href="{{ route('courses.checkout', $flagshipCourse->slug) }}" class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-7 py-3.5 sm:py-4 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-600 hover:to-teal-700 text-white font-extrabold text-sm sm:text-base shadow-xl shadow-emerald-600/30 hover:scale-[1.02] transition-all duration-200">
+                            <i class="fa-solid fa-credit-card"></i>
+                            <span>ভর্তি নিশ্চিত করুন (মাত্র ৳{{ $heroPriceBn }} টাকা)</span>
+                        </a>
+                    @else
+                        <a href="https://wa.me/8801332549549?text={{ urlencode('আসসালামু আলাইকুম, আমি আমার বাংলা একাডেমীর পরবর্তী ব্যাচে ভর্তি হতে আগ্রহী।') }}" target="_blank" class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-7 py-3.5 sm:py-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-extrabold text-sm sm:text-base shadow-xl shadow-emerald-600/20 transition-all duration-200">
+                            <i class="fa-brands fa-whatsapp text-lg"></i>
+                            <span>পরবর্তী ব্যাচের তথ্য নিন (WhatsApp)</span>
+                        </a>
+                    @endif
                     <a href="#course-curriculum" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 sm:py-4 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 font-bold text-sm transition duration-200">
                         <i class="fa-solid fa-list-check text-amber-400"></i>
                         <span>১২টি মডিউল কারিকুলাম</span>
@@ -166,18 +223,30 @@
             <div class="hidden lg:block lg:col-span-5 space-y-3">
                 
                 <!-- Upper Portion: Batch Seat Counter & Live Urgency -->
-                <div class="p-3.5 rounded-2xl bg-slate-900/90 border border-amber-500/50 shadow-lg flex items-center justify-between gap-3 text-xs">
-                    <div class="flex items-center gap-2">
-                        <span class="relative flex h-2.5 w-2.5">
-                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
+                @if($heroIsOpen)
+                    <div class="p-3.5 rounded-2xl bg-slate-900/90 border border-amber-500/50 shadow-lg flex items-center justify-between gap-3 text-xs">
+                        <div class="flex items-center gap-2">
+                            <span class="relative flex h-2.5 w-2.5">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
+                            </span>
+                            <span class="text-amber-300 font-bold">{{ $heroBatchName }}-এ আর মাত্র {{ $heroSeatsRemainingBn }}টি আসন অবশিষ্ট!</span>
+                        </div>
+                        <span class="px-2 py-0.5 rounded-md bg-emerald-900/90 text-emerald-300 font-mono text-[11px] font-bold border border-emerald-700">
+                            {{ $heroSeatsBookedBn }}/{{ $heroSeatLimitBn }} সিট বুকড
                         </span>
-                        <span class="text-amber-300 font-bold">১ম ব্যাচে আর মাত্র ১৮টি আসন অবশিষ্ট!</span>
                     </div>
-                    <span class="px-2 py-0.5 rounded-md bg-emerald-900/90 text-emerald-300 font-mono text-[11px] font-bold border border-emerald-700">
-                        ৩২/৫০ সিট বুকড
-                    </span>
-                </div>
+                @else
+                    <div class="p-3.5 rounded-2xl bg-slate-900/90 border border-rose-500/50 shadow-lg flex items-center justify-between gap-3 text-xs">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                            <span class="text-rose-300 font-bold">{{ $heroBatchName }} — অনলাইন ভর্তি বন্ধ রয়েছে</span>
+                        </div>
+                        <span class="px-2 py-0.5 rounded-md bg-rose-950/90 text-rose-300 text-[11px] font-bold border border-rose-800">
+                            আসন পূর্ণ
+                        </span>
+                    </div>
+                @endif
 
                 <!-- Middle Portion: Video Player Card (Exact 16:9 Aspect Ratio) -->
                 <div class="relative w-full rounded-2xl bg-slate-900 border-2 border-emerald-500/50 p-3 shadow-2xl ring-1 ring-emerald-500/30 space-y-2.5">
@@ -244,12 +313,19 @@
                         </span>
                     </div>
 
-                    <a href="{{ route('courses.checkout', $flagshipCourse->slug) }}" 
-                       class="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition hover:scale-[1.01]">
-                        <i class="fa-solid fa-lock text-xs"></i>
-                        <span>অনলাইনে ভর্তি নিশ্চিত করুন (৳৯৯৯)</span>
-                        <i class="fa-solid fa-arrow-right text-xs"></i>
-                    </a>
+                    @if($heroIsOpen)
+                        <a href="{{ route('courses.checkout', $flagshipCourse->slug) }}" 
+                           class="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition hover:scale-[1.01]">
+                            <i class="fa-solid fa-lock text-xs"></i>
+                            <span>অনলাইনে ভর্তি নিশ্চিত করুন (৳{{ $heroPriceBn }})</span>
+                            <i class="fa-solid fa-arrow-right text-xs"></i>
+                        </a>
+                    @else
+                        <div class="w-full py-3 px-4 rounded-xl bg-slate-800/90 border border-rose-500/40 text-rose-200 font-bold text-xs sm:text-sm flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-lock text-rose-400 text-xs"></i>
+                            <span>বর্তমানে অনলাইন ভর্তি বন্ধ রয়েছে</span>
+                        </div>
+                    @endif
                 </div>
 
             </div>
@@ -601,7 +677,11 @@
                 কোর্স ফি ও বিশেষ ছাড়ের সুবিধা
             </h2>
             <p class="text-slate-500 text-xs sm:text-sm mt-1">
-                ঘরে বসেই বিকাশ, নগদ বা রকেটের মাধ্যমে মাত্র ৯৯৯ টাকায় ভর্তি নিশ্চিত করুন
+                @if($heroIsOpen)
+                    ঘরে বসেই বিকাশ, নগদ বা রকেটের মাধ্যমে মাত্র ৳{{ $heroPriceBn }} টাকায় ভর্তি নিশ্চিত করুন
+                @else
+                    বিকাশ, নগদ ও রকেট পেমেন্ট সাপোর্টেড — বর্তমানে {{ $heroBatchName }}-এর অনলাইন ভর্তি বন্ধ রয়েছে
+                @endif
             </p>
         </div>
 
@@ -609,18 +689,30 @@
             
             <div class="flex flex-col sm:flex-row items-center justify-between pb-6 border-b border-slate-800 gap-4 text-center sm:text-left">
                 <div>
-                    <span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-400 text-slate-950">
-                        ১ম ব্যাচে ৫০% এর বেশি স্পেশাল ছাড়
-                    </span>
-                    <h3 class="text-xl sm:text-2xl font-bold mt-2 text-white">সাংবাদিকতা, আইন ও উপস্থাপনা</h3>
+                    @if($heroIsOpen)
+                        <span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-400 text-slate-950">
+                            {{ $heroBadgeText }}
+                        </span>
+                    @else
+                        <span class="px-3 py-1 rounded-full text-xs font-bold bg-rose-600 text-white">
+                            <i class="fa-solid fa-lock text-[10px] mr-1"></i> {{ $heroBatchName }} — ভর্তি বন্ধ
+                        </span>
+                    @endif
+                    <h3 class="text-xl sm:text-2xl font-bold mt-2 text-white">{{ $flagshipCourse->bangla_title ?? 'সাংবাদিকতা, আইন ও উপস্থাপনা' }}</h3>
                     <p class="text-xs text-slate-300 mt-1">১ মাসের প্রশিক্ষণ কোর্স • মোট ১২টি অনলাইন লাইভ ক্লাস</p>
                 </div>
                 <div class="text-center sm:text-right">
                     <div class="flex items-baseline justify-center sm:justify-end gap-2.5">
-                        <span class="text-4xl sm:text-5xl font-black text-amber-400">৳৯৯৯</span>
-                        <span class="text-base text-slate-400 line-through">৳৩,০০০</span>
+                        <span class="text-4xl sm:text-5xl font-black text-amber-400">৳{{ $heroPriceBn }}</span>
+                        @if($heroRegularPrice > $heroPrice)
+                            <span class="text-base text-slate-400 line-through">৳{{ $heroRegularPriceBn }}</span>
+                        @endif
                     </div>
-                    <span class="text-xs text-rose-400 font-semibold block mt-1">প্রথম ৫০ জনের জন্য নির্ধারিত</span>
+                    @if($heroIsOpen)
+                        <span class="text-xs text-rose-400 font-semibold block mt-1">{{ $heroOfferLabel }}</span>
+                    @else
+                        <span class="text-xs text-amber-300 font-semibold block mt-1">পরবর্তী ব্যাচের ভর্তি শীঘ্রই ঘোষণা করা হবে</span>
+                    @endif
                 </div>
             </div>
 
@@ -664,14 +756,28 @@
                     </div>
                 </div>
 
-                <a href="{{ route('courses.checkout', $flagshipCourse->slug) }}" 
-                   class="w-full py-3.5 sm:py-4 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-sm sm:text-base shadow-lg shadow-emerald-500/30 flex items-center justify-center gap-2 transition duration-200 hover:scale-[1.01]">
-                    <i class="fa-solid fa-lock text-sm"></i>
-                    <span>অনলাইনে এখনই ভর্তি নিশ্চিত করুন (৳৯৯৯)</span>
-                </a>
+                @if($heroIsOpen)
+                    <a href="{{ route('courses.checkout', $flagshipCourse->slug) }}" 
+                       class="w-full py-3.5 sm:py-4 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-sm sm:text-base shadow-lg shadow-emerald-500/30 flex items-center justify-center gap-2 transition duration-200 hover:scale-[1.01]">
+                        <i class="fa-solid fa-lock text-sm"></i>
+                        <span>অনলাইনে এখনই ভর্তি নিশ্চিত করুন (৳{{ $heroPriceBn }})</span>
+                    </a>
+                @else
+                    <div class="space-y-3">
+                        <div class="w-full py-3.5 sm:py-4 px-4 rounded-2xl bg-slate-800/90 border border-rose-500/50 text-rose-200 font-bold text-sm sm:text-base flex items-center justify-center gap-2 text-center">
+                            <i class="fa-solid fa-lock text-rose-400"></i>
+                            <span>{{ $heroBatchName }}-এর অনলাইন ভর্তি সাময়িকভাবে বন্ধ রয়েছে</span>
+                        </div>
+                        <a href="https://wa.me/8801332549549?text={{ urlencode('আসসালামু আলাইকুম, আমি আমার বাংলা একাডেমীর পরবর্তী ব্যাচে ভর্তি হতে আগ্রহী।') }}" target="_blank"
+                           class="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs sm:text-sm shadow-lg flex items-center justify-center gap-2 transition">
+                            <i class="fa-brands fa-whatsapp text-base"></i>
+                            <span>পরবর্তী ব্যাচের আসন ও তথ্য জানতে WhatsApp করুন</span>
+                        </a>
+                    </div>
+                @endif
 
                 <p class="text-center text-[11px] text-slate-400">
-                    <i class="fa-solid fa-headset mr-1 text-emerald-400"></i> যেকোনো প্রয়োজনে ফোন করুন: <strong>+৮৮০ ১৭০০-০০০০০০</strong> (সকাল ৯টা - রাত ১১টা)
+                    <i class="fa-solid fa-headset mr-1 text-emerald-400"></i> যেকোনো প্রয়োজনে হোয়াটসঅ্যাপ / কল করুন: <strong>০১৩৩২-৫৪৯৫৪৯</strong> (সকাল ৯টা - রাত ১১টা)
                 </p>
             </div>
 
@@ -732,7 +838,7 @@
                     <i class="fa-solid fa-chevron-down text-slate-400 text-xs transition-transform" :class="openFaq === 4 ? 'rotate-180 text-emerald-600' : ''"></i>
                 </button>
                 <div x-show="openFaq === 4" class="p-4 sm:p-5 pt-0 text-slate-600 leading-relaxed border-t border-slate-100">
-                    ‘ভর্তি নিশ্চিত করুন’ বোতামে ক্লিক করে আপনার নাম, মোবাইল নম্বর ও ইমেইল দিয়ে বিকাশ, নগদ বা রকেটের মাধ্যমে মাত্র ৯৯৯ টাকা ফি পরিশোধ করুন। পেমেন্ট সম্পূর্ণ হওয়ামাত্রই লাইভ ক্লাসের লিংক ও প্রাইভেট গ্রুপের ইনভাইটেশন পেয়ে যাবেন।
+                    ভর্তি চালু থাকাকালীন ‘ভর্তি নিশ্চিত করুন’ বোতামে ক্লিক করে আপনার নাম, মোবাইল নম্বর ও ইমেইল দিয়ে বিকাশ, নগদ বা রকেটের মাধ্যমে নির্ধারিত কোর্স ফি (৳{{ $heroPriceBn }}) পরিশোধ করুন। পেমেন্ট সম্পূর্ণ হওয়ামাত্রই লাইভ ক্লাসের লিংক ও প্রাইভেট গ্রুপের ইনভাইটেশন পেয়ে যাবেন।
                 </div>
             </div>
 
@@ -745,19 +851,36 @@
 <!-- ==================== 8. FINAL CTA (BOTTOM PADDING FOR STICKY BAR) ==================== -->
 <section class="py-12 sm:py-16 bg-gradient-to-r from-emerald-900 via-teal-900 to-slate-950 text-white text-center pb-24 sm:pb-16">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
-        <span class="inline-block px-3 py-1 rounded-full text-xs font-bold bg-amber-400 text-slate-950 uppercase">
-            ১ম ব্যাচ শুরু: ৫ নভেম্বর ২০২৬
-        </span>
+        @if($heroIsOpen)
+            <span class="inline-block px-3 py-1 rounded-full text-xs font-bold bg-amber-400 text-slate-950 uppercase">
+                {{ $heroBatchName }} শুরু: {{ $heroStartDate }}
+            </span>
+        @else
+            <span class="inline-block px-3 py-1 rounded-full text-xs font-bold bg-rose-600 text-white uppercase">
+                <i class="fa-solid fa-lock text-[10px] mr-1"></i> {{ $heroBatchName }} — অনলাইন ভর্তি বন্ধ
+            </span>
+        @endif
         <h2 class="text-2xl sm:text-4xl font-black">
             সাংবাদিকতা ও উপস্থাপনায় নিজেকে একধাপ এগিয়ে রাখুন
         </h2>
         <p class="text-emerald-100 text-xs sm:text-sm max-w-xl mx-auto">
-            প্রথম ব্যাচের ৫০টি সীমিত আসনের মধ্যে আপনার আসনটি নিশ্চিত করতে আজই যোগাযোগ করুন।
+            @if($heroIsOpen)
+                {{ $heroBatchName }}-এর {{ $heroSeatLimitBn }}টি সীমিত আসনের মধ্যে আপনার আসনটি নিশ্চিত করতে আজই ভর্তি সম্পন্ন করুন।
+            @else
+                {{ $heroBatchName }}-এর আসন পূর্ণ হওয়ায় অনলাইন ভর্তি বন্ধ রয়েছে। পরবর্তী ব্যাচের ভর্তি শুরু হওয়ার সাথে সাথে জানতে আমাদের WhatsApp হেল্পলাইনে যোগাযোগ করুন।
+            @endif
         </p>
         <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-            <a href="{{ route('courses.checkout', $flagshipCourse->slug) }}" class="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-sm shadow-xl transition">
-                ভর্তি নিশ্চিত করুন (৳৯৯৯)
-            </a>
+            @if($heroIsOpen)
+                <a href="{{ route('courses.checkout', $flagshipCourse->slug) }}" class="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-sm shadow-xl transition">
+                    ভর্তি নিশ্চিত করুন (৳{{ $heroPriceBn }})
+                </a>
+            @else
+                <span class="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-slate-800/90 border border-rose-500/40 text-rose-200 font-black text-sm shadow-md inline-flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-lock text-rose-400"></i>
+                    <span>বর্তমানে ভর্তি বন্ধ রয়েছে</span>
+                </span>
+            @endif
             <a href="https://wa.me/8801332549549" target="_blank" class="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700 text-white font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2">
                 <i class="fa-brands fa-whatsapp text-emerald-400 text-base"></i>
                 <span>হোয়াটসঅ্যাপে কাউন্সেলিং নিন (০১৩৩২-৫৪৯৫৪৯)</span>

@@ -3,6 +3,14 @@
 @section('title', ($course->bangla_title ?? $course->title) . ' - Amar Bangla Academy')
 
 @section('content')
+@php
+    $showBatch = $activeBatch ?? $displayBatch;
+    $showIsOpen = isset($isEnrollmentOpen) ? (bool) $isEnrollmentOpen : !is_null($activeBatch);
+    $showBatchName = $showBatch?->name ?? $course->batch_no;
+    $showPrice = (int) ($showBatch?->effective_price ?? $course->effective_price);
+    $showRegularPrice = (int) ($showBatch?->effective_regular_price ?? $course->regular_price);
+    $showDiscountPct = (int) ($showBatch?->discount_percentage ?? $course->discount_percentage ?? 0);
+@endphp
 <!-- Course Header Hero -->
 <section class="bg-gradient-to-b from-emerald-950 via-slate-900 to-slate-900 text-white py-12 sm:py-16">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -17,8 +25,17 @@
                         <span class="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse"></span> {{ $course->live_platform }}
                     </span>
                     <span class="px-3 py-1 rounded-full text-xs font-bold bg-slate-800 text-slate-300">
-                        {{ $course->batch_no }}
+                        {{ $showBatchName }}
                     </span>
+                    @if($showIsOpen)
+                        <span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-400 text-slate-950">
+                            ভর্তি চলছে
+                        </span>
+                    @else
+                        <span class="px-3 py-1 rounded-full text-xs font-bold bg-rose-600 text-white">
+                            <i class="fa-solid fa-lock text-[10px] mr-1"></i> ভর্তি বন্ধ
+                        </span>
+                    @endif
                 </div>
 
                 <h1 class="text-2xl sm:text-4xl font-extrabold text-white leading-tight">
@@ -59,25 +76,38 @@
 
                     <div class="flex items-baseline justify-between">
                         <div>
-                            <span class="text-xs text-slate-400 block">কোর্স ফি</span>
+                            <span class="text-xs text-slate-400 block">কোর্স ফি ({{ $showBatchName }})</span>
                             <div class="flex items-baseline gap-2">
-                                <span class="text-3xl font-black text-emerald-700">৳{{ number_format($course->effective_price) }}</span>
-                                @if($course->discount_price)
-                                    <span class="text-sm text-slate-400 line-through">৳{{ number_format($course->regular_price) }}</span>
+                                <span class="text-3xl font-black text-emerald-700">৳{{ number_format($showPrice) }}</span>
+                                @if($showRegularPrice > $showPrice)
+                                    <span class="text-sm text-slate-400 line-through">৳{{ number_format($showRegularPrice) }}</span>
                                 @endif
                             </div>
                         </div>
-                        @if($course->discount_percentage)
+                        @if($showDiscountPct > 0)
                             <span class="px-2.5 py-1 rounded-lg text-xs font-bold bg-rose-100 text-rose-700">
-                                {{ $course->discount_percentage }}% ছাড়
+                                {{ $showDiscountPct }}% ছাড়
                             </span>
                         @endif
                     </div>
 
-                    <a href="{{ route('courses.checkout', $course->slug) }}" class="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-sm shadow-md transition">
-                        <span>ভর্তি নিশ্চিত করুন (বিকাশ / নগদ)</span>
-                        <i class="fa-solid fa-arrow-right text-xs"></i>
-                    </a>
+                    @if($showIsOpen)
+                        <a href="{{ route('courses.checkout', $course->slug) }}" class="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-sm shadow-md transition">
+                            <span>ভর্তি নিশ্চিত করুন (বিকাশ / নগদ)</span>
+                            <i class="fa-solid fa-arrow-right text-xs"></i>
+                        </a>
+                    @else
+                        <div class="space-y-2.5">
+                            <div class="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 font-bold text-xs text-center">
+                                <i class="fa-solid fa-lock"></i>
+                                <span>{{ $showBatchName }}-এর অনলাইন ভর্তি বর্তমানে বন্ধ</span>
+                            </div>
+                            <a href="https://wa.me/8801332549549" target="_blank" class="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition">
+                                <i class="fa-brands fa-whatsapp text-sm"></i>
+                                <span>পরবর্তী ব্যাচের তথ্য জানতে WhatsApp করুন</span>
+                            </a>
+                        </div>
+                    @endif
 
                     <div class="text-center text-xs text-slate-500">
                         <i class="fa-solid fa-shield-halved text-emerald-600 mr-1"></i> ৭ দিনের মানিব্যাক গ্যারান্টি
@@ -153,9 +183,15 @@
                         <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-emerald-600"></i> ভেরিফায়েবল সার্টিফিকেট</li>
                         <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-emerald-600"></i> লাইফটাইম কোর্স রেকর্ডিং অ্যাক্সেস</li>
                     </ul>
-                    <a href="{{ route('courses.checkout', $course->slug) }}" class="w-full block text-center py-3 rounded-xl bg-emerald-600 text-white font-bold text-xs shadow hover:bg-emerald-700 transition">
-                        এনরোল করুন
-                    </a>
+                    @if($showIsOpen)
+                        <a href="{{ route('courses.checkout', $course->slug) }}" class="w-full block text-center py-3 rounded-xl bg-emerald-600 text-white font-bold text-xs shadow hover:bg-emerald-700 transition">
+                            এনরোল করুন
+                        </a>
+                    @else
+                        <div class="w-full block text-center py-2.5 px-3 rounded-xl bg-slate-100 text-rose-700 font-bold text-xs border border-rose-200">
+                            <i class="fa-solid fa-lock mr-1"></i> বর্তমানে ভর্তি বন্ধ রয়েছে
+                        </div>
+                    @endif
                 </div>
             </div>
 

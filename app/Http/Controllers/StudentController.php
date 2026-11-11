@@ -20,7 +20,7 @@ class StudentController extends Controller
         $user = Auth::user();
 
         // Find active enrollment for the student
-        $enrollment = Enrollment::with(['course.modules.lessons'])
+        $enrollment = Enrollment::with(['course.modules.lessons', 'batch'])
             ->where(function ($q) use ($user) {
                 $q->where('user_id', $user->id)
                   ->orWhere('student_email', $user->email);
@@ -37,29 +37,49 @@ class StudentController extends Controller
             $enrollment->update(['user_id' => $user->id, 'status' => 'active']);
         }
 
-        // Get main course details with syllabus modules
+        // Get main course details with syllabus modules (shared across all batches)
         $course = $enrollment?->course ?? Course::with(['modules.lessons', 'instructors'])->first();
+        $studentBatch = $enrollment?->batch;
+        $studentBatchId = $enrollment?->batch_id;
 
-        // Active or next scheduled live meeting
-        $currentMeeting = $course?->currentOrNextMeeting();
+        // Active or next scheduled live meeting scoped to student's batch (or global)
+        $currentMeeting = $course?->currentOrNextMeeting($studentBatchId);
 
-        // All scheduled live meetings for student schedule timeline
+        if ($currentMeeting) {
+            $isLiveNow = (bool) $currentMeeting->is_live_now;
+        } elseif ($studentBatchId && $course && $course->liveMeetings()->exists()) {
+            $isLiveNow = false;
+        } else {
+            $isLiveNow = (bool) $course?->is_live_now;
+        }
+
+        // All scheduled live meetings for student schedule timeline (batch + global)
         $scheduledMeetings = [];
         if ($course) {
             $scheduledMeetings = LiveMeeting::where('course_id', $course->id)
                 ->where('status', '!=', 'cancelled')
+                ->when($studentBatchId, function ($q) use ($studentBatchId) {
+                    $q->where(function ($sub) use ($studentBatchId) {
+                        $sub->where('batch_id', $studentBatchId)->orWhereNull('batch_id');
+                    });
+                })
                 ->orderBy('starts_at', 'asc')
                 ->get();
         }
 
-        // Calculate attendance stats for student
-        $attendanceStats = $user->attendanceStatsForCourse($course?->id);
+        // Calculate attendance stats for student in their batch
+        $attendanceStats = $user->attendanceStatsForCourse($course?->id, $studentBatchId);
 
         // Fetch all class sessions with this student's attendance record
         $sessions = [];
         if ($course) {
             $sessions = AttendanceSession::where('course_id', $course->id)
                 ->where('status', '!=', 'cancelled')
+                ->when($studentBatchId, function ($q) use ($studentBatchId) {
+                    $q->where(function ($sub) use ($studentBatchId) {
+                        $sub->where('batch_id', $studentBatchId)->orWhereNull('batch_id');
+                    });
+                })
                 ->with(['attendances' => function ($q) use ($user) {
                     $q->where('user_id', $user->id);
                 }])
@@ -68,11 +88,16 @@ class StudentController extends Controller
                 ->get();
         }
 
-        // Fetch all meetings that have published recordings
+        // Fetch all meetings that have published recordings for this batch (or global)
         $recordings = [];
         if ($course) {
             $recordings = LiveMeeting::where('course_id', $course->id)
                 ->withRecordings()
+                ->when($studentBatchId, function ($q) use ($studentBatchId) {
+                    $q->where(function ($sub) use ($studentBatchId) {
+                        $sub->where('batch_id', $studentBatchId)->orWhereNull('batch_id');
+                    });
+                })
                 ->orderBy('starts_at', 'asc')
                 ->get();
         }
@@ -81,7 +106,9 @@ class StudentController extends Controller
             'user',
             'enrollment',
             'course',
+            'studentBatch',
             'currentMeeting',
+            'isLiveNow',
             'scheduledMeetings',
             'attendanceStats',
             'sessions',
@@ -100,11 +127,34 @@ class StudentController extends Controller
             return redirect()->route('student.dashboard')->with('error', 'এই ক্লাসের রেকর্ডিং এখনো প্রকাশ করা হয়নি।');
         }
 
-        $course = $meeting->course ?? Course::first();
+        $enrollment = Enrollment::with('batch')
+            ->where(function ($q) use ($user) {
+                $q->where('user_id', $user->id)
+                  ->orWhere('student_email', $user->email);
+                if (!empty($user->phone)) {
+                    $q->orWhere('student_phone', $user->phone);
+                }
+            })
+            ->whereIn('status', ['active', 'completed'])
+            ->latest()
+            ->first();
 
-        // Other recordings in this course for playlist
+        $studentBatchId = $enrollment?->batch_id;
+        if ($user->isStudent() && $studentBatchId && $meeting->batch_id && $meeting->batch_id !== $studentBatchId) {
+            return redirect()->route('student.dashboard')->with('error', 'এই রেকর্ডিংটি আপনার নির্ধারিত ব্যাচের জন্য নয়।');
+        }
+
+        $course = $meeting->course ?? Course::first();
+        $scopeBatchId = $user->isStudent() ? $studentBatchId : $meeting->batch_id;
+
+        // Other recordings in this course batch (or global) for playlist
         $otherRecordings = LiveMeeting::where('course_id', $course->id)
             ->withRecordings()
+            ->when($scopeBatchId, function ($q) use ($scopeBatchId) {
+                $q->where(function ($sub) use ($scopeBatchId) {
+                    $sub->where('batch_id', $scopeBatchId)->orWhereNull('batch_id');
+                });
+            })
             ->orderBy('starts_at', 'asc')
             ->get();
 
@@ -123,7 +173,7 @@ class StudentController extends Controller
     {
         $user = Auth::user();
 
-        $enrollment = Enrollment::with(['course'])
+        $enrollment = Enrollment::with(['course', 'batch'])
             ->where(function ($q) use ($user) {
                 $q->where('user_id', $user->id)
                   ->orWhere('student_email', $user->email);
@@ -136,13 +186,24 @@ class StudentController extends Controller
             ->first();
 
         $course = $enrollment?->course ?? Course::first();
+        $studentBatchId = $enrollment?->batch_id;
 
         // Check date/time based meeting first, then fallback to course attributes
-        $currentMeeting = $course?->currentOrNextMeeting();
+        $currentMeeting = $course?->currentOrNextMeeting($studentBatchId);
 
-        $isLive = ($currentMeeting && $currentMeeting->is_live_now) || ($course?->is_live_now);
+        if ($currentMeeting) {
+            $isLive = (bool) $currentMeeting->is_live_now;
+        } elseif ($studentBatchId && $course && $course->liveMeetings()->exists()) {
+            $isLive = false;
+        } else {
+            $isLive = (bool) $course?->is_live_now;
+        }
+
         $meetingUrl = trim((string) ($currentMeeting?->meeting_url ?? $course?->live_meeting_url ?? ''));
-        $scheduleText = $currentMeeting?->formatted_schedule ?? $course?->live_schedule_text ?? 'রাত ৯:০০ টা';
+        $scheduleText = $currentMeeting?->formatted_schedule
+            ?? $enrollment?->batch?->formatted_schedule
+            ?? $course?->live_schedule_text
+            ?? 'রাত ৯:০০ টা';
 
         // If not live yet and user is a student, redirect to dashboard with schedule notice
         if ($user->role === 'student' && !$isLive) {
@@ -157,11 +218,13 @@ class StudentController extends Controller
 
             $session = AttendanceSession::where('course_id', $course->id)
                 ->whereDate('session_date', $sessionDate)
+                ->when($studentBatchId, fn ($q) => $q->where('batch_id', $studentBatchId))
                 ->first();
 
             if (!$session) {
                 $session = AttendanceSession::create([
                     'course_id' => $course->id,
+                    'batch_id' => $studentBatchId,
                     'title' => $topic,
                     'session_date' => $sessionDate,
                     'started_at' => now(),

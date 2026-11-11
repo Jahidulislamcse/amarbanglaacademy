@@ -57,21 +57,48 @@
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased font-bangla flex flex-col min-h-screen" x-data="{ mobileMenuOpen: false }">
 
+    @php
+        $layoutCourse = \App\Models\Course::with('batches')->where('is_featured', true)->first()
+            ?? \App\Models\Course::with('batches')->first();
+        $layoutOpenBatch = $layoutCourse?->openEnrollmentBatch();
+        $layoutDisplayBatch = $layoutOpenBatch ?? $layoutCourse?->currentOrLatestBatch();
+        $layoutEnrollmentOpen = !is_null($layoutOpenBatch);
+        $layoutCheckoutUrl = $layoutCourse
+            ? route('courses.checkout', $layoutCourse->slug)
+            : route('courses.checkout', 'journalism-law-presentation');
+        $layoutPrice = (int) ($layoutDisplayBatch?->effective_price ?? $layoutCourse?->effective_price ?? 999);
+        $layoutRegularPrice = (int) ($layoutDisplayBatch?->effective_regular_price ?? $layoutCourse?->regular_price ?? 3000);
+        $layoutPriceBn = \App\Models\Batch::toBanglaNumber(number_format($layoutPrice));
+        $layoutRegularPriceBn = \App\Models\Batch::toBanglaNumber(number_format($layoutRegularPrice));
+    @endphp
+
     <!-- Top Announcement Bar (Mobile Responsive & Properly Spaced) -->
     <div class="bg-gradient-to-r from-emerald-950 via-teal-900 to-slate-950 text-white text-xs py-2 sm:py-2.5 px-3 sm:px-6 shadow-sm border-b border-emerald-800/40">
         <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2.5 text-center sm:text-left">
             
             <!-- Left: Urgency Badge & Offer Text -->
             <div class="flex items-center justify-center sm:justify-start gap-2.5 sm:gap-3 flex-wrap">
-                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-black bg-amber-400 text-slate-950 shadow-xs flex-shrink-0">
-                    <i class="fa-solid fa-fire text-rose-600 text-[11px]"></i> ১ম ব্যাচে ভর্তি চলছে
-                </span>
-                <span class="hidden md:inline text-xs font-medium text-slate-200">
-                    ন্যাশনাল জার্নালিস্ট ক্লাবের পৃষ্ঠপোষকতায় “সাংবাদিকতা, আইন ও উপস্থাপনা” কোর্স — প্রথম ৫০ জনের জন্য মাত্র ৯৯৯ টাকা!
-                </span>
-                <span class="md:hidden text-[11px] sm:text-xs font-semibold text-emerald-100">
-                    প্রথম ৫০ জনের বিশেষ অফার মাত্র ৯৯৯ টাকা!
-                </span>
+                @if($layoutEnrollmentOpen)
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-black bg-amber-400 text-slate-950 shadow-xs flex-shrink-0">
+                        <i class="fa-solid fa-fire text-rose-600 text-[11px]"></i> {{ $layoutOpenBatch->name }}-এ ভর্তি চলছে
+                    </span>
+                    <span class="hidden md:inline text-xs font-medium text-slate-200">
+                        ন্যাশনাল জার্নালিস্ট ক্লাবের পৃষ্ঠপোষকতায় “{{ $layoutCourse?->bangla_title ?? 'সাংবাদিকতা, আইন ও উপস্থাপনা' }}” কোর্স — {{ $layoutOpenBatch->offer_label ?: ('প্রথম ' . \App\Models\Batch::toBanglaNumber($layoutOpenBatch->seat_limit) . ' জনের জন্য') }} মাত্র ৳{{ $layoutPriceBn }} টাকা!
+                    </span>
+                    <span class="md:hidden text-[11px] sm:text-xs font-semibold text-emerald-100">
+                        {{ $layoutOpenBatch->offer_label ?: ($layoutOpenBatch->name . ' বিশেষ অফার') }} — মাত্র ৳{{ $layoutPriceBn }} টাকা!
+                    </span>
+                @else
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-black bg-rose-600 text-white shadow-xs flex-shrink-0">
+                        <i class="fa-solid fa-lock text-[10px]"></i> {{ $layoutDisplayBatch?->name ?? '১ম ব্যাচ' }} — ভর্তি বন্ধ
+                    </span>
+                    <span class="hidden md:inline text-xs font-medium text-slate-200">
+                        “{{ $layoutCourse?->bangla_title ?? 'সাংবাদিকতা, আইন ও উপস্থাপনা' }}” কোর্সের {{ $layoutDisplayBatch?->name ?? 'চলমান ব্যাচ' }}-এর অনলাইন ভর্তি বন্ধ রয়েছে। পরবর্তী ব্যাচের আপডেটের জন্য WhatsApp-এ যুক্ত হন।
+                    </span>
+                    <span class="md:hidden text-[11px] sm:text-xs font-semibold text-amber-200">
+                        ভর্তি বন্ধ রয়েছে • পরবর্তী ব্যাচের আপডেট পেতে যোগাযোগ করুন
+                    </span>
+                @endif
             </div>
 
             <!-- Right: Student Login, WhatsApp Helpline & Email -->
@@ -152,10 +179,17 @@
                         <span class="hidden lg:inline">০১৩৩২-৫৪৯৫৪৯ (হোয়াটসঅ্যাপ)</span>
                         <span class="lg:hidden">হোয়াটসঅ্যাপ</span>
                     </a>
-                    <a href="{{ route('courses.checkout', 'journalism-law-presentation') }}" class="inline-flex items-center gap-1.5 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs sm:text-sm font-extrabold shadow-md shadow-emerald-600/25 transition">
-                        <span>ভর্তি নিশ্চিত করুন</span>
-                        <i class="fa-solid fa-arrow-right text-[10px]"></i>
-                    </a>
+                    @if($layoutEnrollmentOpen)
+                        <a href="{{ $layoutCheckoutUrl }}" class="inline-flex items-center gap-1.5 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs sm:text-sm font-extrabold shadow-md shadow-emerald-600/25 transition">
+                            <span>ভর্তি নিশ্চিত করুন</span>
+                            <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                        </a>
+                    @else
+                        <a href="{{ $layoutCheckoutUrl }}" class="inline-flex items-center gap-1.5 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-amber-300 border border-slate-700 text-xs sm:text-sm font-extrabold shadow-xs transition">
+                            <i class="fa-solid fa-lock text-[11px]"></i>
+                            <span>ভর্তি বন্ধ</span>
+                        </a>
+                    @endif
                 </div>
 
             </div>
@@ -254,7 +288,11 @@
                         <li><a href="{{ route('courses.show', 'journalism-law-presentation') }}" class="hover:text-emerald-400 transition font-semibold text-white">সাংবাদিকতা, আইন ও উপস্থাপনা</a></li>
                         <li><a href="{{ route('home') }}#course-curriculum" class="hover:text-emerald-400 transition">১২টি মডিউল কারিকুলাম</a></li>
                         <li><a href="{{ route('home') }}#instructors" class="hover:text-emerald-400 transition">প্রশিক্ষক পরিচিতি</a></li>
-                        <li><a href="{{ route('home') }}#fees-payment" class="text-amber-400 hover:underline inline-flex items-center gap-1 mt-1 font-semibold">বিশেষ ছাড় মাত্র ৯৯৯ টাকা &rarr;</a></li>
+                        @if($layoutEnrollmentOpen)
+                            <li><a href="{{ route('home') }}#fees-payment" class="text-amber-400 hover:underline inline-flex items-center gap-1 mt-1 font-semibold">{{ $layoutOpenBatch->name }} • কোর্স ফি মাত্র ৳{{ $layoutPriceBn }} &rarr;</a></li>
+                        @else
+                            <li><a href="{{ route('home') }}#fees-payment" class="text-rose-400 hover:underline inline-flex items-center gap-1 mt-1 font-semibold">{{ $layoutDisplayBatch?->name ?? '১ম ব্যাচ' }} — ভর্তি বন্ধ &rarr;</a></li>
+                        @endif
                     </ul>
                 </div>
 
@@ -317,19 +355,36 @@
 
     <!-- Floating Sticky Mobile Conversion Bar (Bottom) -->
     <div class="fixed bottom-0 left-0 right-0 z-50 bg-slate-950/95 backdrop-blur-md border-t border-slate-700/80 p-3 sm:hidden shadow-2xl">
-        <div class="flex items-center justify-between gap-3">
-            <div>
-                <div class="flex items-baseline gap-1.5">
-                    <span class="text-xl font-black text-amber-400">৳৯৯৯</span>
-                    <span class="text-xs text-slate-400 line-through">৳৩,০০০</span>
+        @if($layoutEnrollmentOpen)
+            <div class="flex items-center justify-between gap-3">
+                <div>
+                    <div class="flex items-baseline gap-1.5">
+                        <span class="text-xl font-black text-amber-400">৳{{ $layoutPriceBn }}</span>
+                        @if($layoutRegularPrice > $layoutPrice)
+                            <span class="text-xs text-slate-400 line-through">৳{{ $layoutRegularPriceBn }}</span>
+                        @endif
+                    </div>
+                    <span class="text-[10px] text-emerald-400 font-semibold block leading-tight">{{ $layoutOpenBatch->offer_label ?: ($layoutOpenBatch->name . ' — আসন সীমিত') }}</span>
                 </div>
-                <span class="text-[10px] text-emerald-400 font-semibold block leading-tight">প্রথম ৫০ জনের বিশেষ অফার</span>
+                <a href="{{ $layoutCheckoutUrl }}" class="flex-1 max-w-[210px] text-center py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-xs shadow-lg shadow-emerald-600/40 flex items-center justify-center gap-1.5 transition">
+                    <span>ভর্তি নিশ্চিত করুন</span>
+                    <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                </a>
             </div>
-            <a href="{{ route('courses.checkout', 'journalism-law-presentation') }}" class="flex-1 max-w-[210px] text-center py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-xs shadow-lg shadow-emerald-600/40 flex items-center justify-center gap-1.5 transition">
-                <span>ভর্তি নিশ্চিত করুন</span>
-                <i class="fa-solid fa-arrow-right text-[10px]"></i>
-            </a>
-        </div>
+        @else
+            <div class="flex items-center justify-between gap-3">
+                <div>
+                    <span class="inline-flex items-center gap-1 text-xs font-black text-rose-400">
+                        <i class="fa-solid fa-lock text-[10px]"></i> ভর্তি বন্ধ রয়েছে
+                    </span>
+                    <span class="text-[10px] text-slate-300 font-medium block leading-tight">{{ $layoutDisplayBatch?->name ?? '১ম ব্যাচ' }} • পরবর্তী ব্যাচের জন্য যোগাযোগ করুন</span>
+                </div>
+                <a href="https://wa.me/8801332549549" target="_blank" class="flex-1 max-w-[190px] text-center py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-lg flex items-center justify-center gap-1.5 transition">
+                    <i class="fa-brands fa-whatsapp text-sm"></i>
+                    <span>পরবর্তী ব্যাচের তথ্য</span>
+                </a>
+            </div>
+        @endif
     </div>
 
     @stack('scripts')

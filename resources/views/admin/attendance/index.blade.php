@@ -23,7 +23,7 @@
         </div>
 
         <div class="flex items-center gap-2.5 flex-wrap">
-            <a href="{{ route('admin.attendance.students') }}"
+            <a href="{{ route('admin.attendance.students', $selectedBatchId ? ['batch_id' => $selectedBatchId] : []) }}"
                class="inline-flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs sm:text-sm px-4 py-2.5 rounded-xl border border-slate-300 transition">
                 <i class="fa-solid fa-users-viewfinder text-slate-600"></i>
                 <span>শিক্ষার্থীভিত্তিক উপস্থিতি তালিকা</span>
@@ -105,9 +105,24 @@
                     প্রতিটি ক্লাস সেশনের তারিখ, বিষয় ও উপস্থিতির বিস্তারিত শিট
                 </p>
             </div>
-            <span class="text-xs font-semibold text-slate-500 bg-slate-50 px-3 py-1 rounded-full border border-slate-200">
-                মোট সেশন: {{ $sessions->total() }}টি
-            </span>
+            <div class="flex items-center gap-2 flex-wrap">
+                @if(isset($batches) && $batches->count() > 0)
+                    <form method="GET" action="{{ route('admin.attendance.index') }}">
+                        <select name="batch_id" onchange="this.form.submit()"
+                                class="px-3 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-semibold text-slate-700">
+                            <option value="">সকল ব্যাচ</option>
+                            @foreach($batches as $b)
+                                <option value="{{ $b->id }}" {{ ($selectedBatchId ?? null) == $b->id ? 'selected' : '' }}>
+                                    {{ $b->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </form>
+                @endif
+                <span class="text-xs font-semibold text-slate-500 bg-slate-50 px-3 py-1 rounded-full border border-slate-200">
+                    মোট সেশন: {{ $sessions->total() }}টি
+                </span>
+            </div>
         </div>
 
         @if($sessions->count() > 0)
@@ -125,7 +140,10 @@
                     <tbody class="divide-y divide-slate-100">
                         @foreach($sessions as $session)
                             @php
-                                $percent = $totalActiveStudents > 0 ? round(($session->present_count / $totalActiveStudents) * 100) : 0;
+                                $sessionDenom = ($session->batch_id && isset($batchStudentCounts[$session->batch_id]))
+                                    ? (int) $batchStudentCounts[$session->batch_id]
+                                    : $totalActiveStudents;
+                                $percent = $sessionDenom > 0 ? round(($session->present_count / $sessionDenom) * 100) : 0;
                             @endphp
                             <tr class="hover:bg-slate-50/70 transition">
                                 <td class="py-3.5 px-4 sm:px-6 whitespace-nowrap">
@@ -137,8 +155,11 @@
                                     </div>
                                 </td>
                                 <td class="py-3.5 px-4 sm:px-6">
-                                    <div class="font-bold text-slate-900 flex items-center gap-2">
+                                    <div class="font-bold text-slate-900 flex items-center gap-2 flex-wrap">
                                         <span>{{ $session->title }}</span>
+                                        <span class="px-2 py-0.5 rounded-md text-[10px] font-bold {{ $session->batch ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-slate-100 text-slate-600 border border-slate-200' }}">
+                                            {{ $session->batch?->name ?? 'সকল ব্যাচ' }}
+                                        </span>
                                         @if($session->session_date->isToday())
                                             <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
                                                 আজকের ক্লাস
@@ -152,7 +173,7 @@
                                 <td class="py-3.5 px-4 sm:px-6 text-center whitespace-nowrap">
                                     <div class="inline-flex flex-col items-center">
                                         <span class="font-black {{ $percent >= 70 ? 'text-emerald-700' : 'text-amber-700' }} text-sm">
-                                            {{ $session->present_count }} / {{ $totalActiveStudents }} জন ({{ $percent }}%)
+                                            {{ $session->present_count }} / {{ $sessionDenom }} জন ({{ $percent }}%)
                                         </span>
                                         <div class="w-24 bg-slate-100 rounded-full h-1.5 mt-1 overflow-hidden">
                                             <div class="h-full {{ $percent >= 70 ? 'bg-emerald-500' : 'bg-amber-500' }} rounded-full" style="width: {{ min(100, $percent) }}%"></div>
@@ -238,6 +259,23 @@
 
             <form method="POST" action="{{ route('admin.attendance.sessions.store') }}" class="space-y-4">
                 @csrf
+
+                @if(isset($batches) && $batches->count() > 0)
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">
+                            কোন ব্যাচের সেশন?
+                        </label>
+                        <select name="batch_id"
+                                class="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition font-semibold text-slate-800">
+                            <option value="">সকল ব্যাচ (কমন সেশন)</option>
+                            @foreach($batches as $b)
+                                <option value="{{ $b->id }}" {{ ($selectedBatchId ?? null) == $b->id ? 'selected' : '' }}>
+                                    {{ $b->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                @endif
 
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1.5">

@@ -32,18 +32,29 @@
     </div>
 
     <!-- Filter & Search Bar -->
-    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
-        <form method="GET" action="{{ route('admin.attendance.students') }}" class="w-full sm:w-80 flex items-center gap-2">
-            <div class="relative w-full">
+    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col lg:flex-row items-center justify-between gap-3">
+        <form method="GET" action="{{ route('admin.attendance.students') }}" class="w-full lg:w-auto flex flex-wrap sm:flex-nowrap items-center gap-2 flex-1 max-w-2xl">
+            <div class="relative flex-1 min-w-[200px]">
                 <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
                 <input type="text" name="search" value="{{ $search }}"
                        placeholder="শিক্ষার্থীর নাম, ফোন বা ইমেইল খুঁজুন..."
                        class="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
             </div>
+            @if(isset($batches) && $batches->count() > 0)
+                <select name="batch_id"
+                        class="px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-semibold text-slate-700">
+                    <option value="">সকল ব্যাচ</option>
+                    @foreach($batches as $b)
+                        <option value="{{ $b->id }}" {{ ($selectedBatchId ?? null) == $b->id ? 'selected' : '' }}>
+                            {{ $b->name }}
+                        </option>
+                    @endforeach
+                </select>
+            @endif
             <button type="submit" class="px-3.5 py-2 text-xs font-bold bg-slate-900 text-white rounded-xl shrink-0">
                 খুঁজুন
             </button>
-            @if($search)
+            @if($search || ($selectedBatchId ?? null))
                 <a href="{{ route('admin.attendance.students') }}" class="text-xs text-rose-600 hover:underline shrink-0">
                     রিসেট
                 </a>
@@ -76,8 +87,16 @@
                     @forelse($students as $idx => $student)
                         @php
                             $user = $student->user;
-                            $attendedCount = $user ? $user->attendances->filter(fn($a) => $a->isPresent())->count() : 0;
-                            $pct = $totalSessions > 0 ? (int) round(($attendedCount / $totalSessions) * 100) : 100;
+                            $studentBatchId = $student->batch_id;
+                            $applicableSessions = isset($allCourseSessions)
+                                ? $allCourseSessions->filter(fn($s) => $studentBatchId ? ($s->batch_id === $studentBatchId || is_null($s->batch_id)) : true)
+                                : collect();
+                            $applicableIds = $applicableSessions->pluck('id');
+                            $studentTotalSessions = isset($allCourseSessions) ? $applicableSessions->count() : $totalSessions;
+                            $attendedCount = $user
+                                ? $user->attendances->filter(fn($a) => $a->isPresent() && (!isset($allCourseSessions) || $applicableIds->contains($a->attendance_session_id)))->count()
+                                : 0;
+                            $pct = $studentTotalSessions > 0 ? (int) round(($attendedCount / $studentTotalSessions) * 100) : 100;
                         @endphp
                         <tr class="hover:bg-slate-50/70 transition">
                             <td class="py-3 px-4 sm:px-6 text-center font-bold text-slate-400">
@@ -90,8 +109,15 @@
                                     </div>
                                     <div>
                                         <div class="font-bold text-slate-900">{{ $student->student_name }}</div>
-                                        <div class="text-[10px] text-slate-400 font-mono">
-                                            ID: {{ $user?->username ?? ('STU-' . $student->id) }}
+                                        <div class="flex items-center gap-1.5 flex-wrap mt-0.5">
+                                            <span class="text-[10px] text-slate-400 font-mono">
+                                                ID: {{ $user?->username ?? ('STU-' . $student->id) }}
+                                            </span>
+                                            @if($student->batch)
+                                                <span class="text-[10px] font-bold bg-emerald-50 text-emerald-700 px-1.5 py-0.2 rounded border border-emerald-200">
+                                                    {{ $student->batch->name }}
+                                                </span>
+                                            @endif
                                         </div>
                                     </div>
                                 </div>
@@ -101,7 +127,7 @@
                                 <div class="text-[11px] text-slate-400">{{ $student->student_email }}</div>
                             </td>
                             <td class="py-3 px-4 sm:px-6 text-center font-bold text-slate-700">
-                                {{ $totalSessions }} টি
+                                {{ $studentTotalSessions }} টি
                             </td>
                             <td class="py-3 px-4 sm:px-6 text-center font-black text-emerald-700">
                                 {{ $attendedCount }} টি

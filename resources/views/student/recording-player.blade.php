@@ -100,7 +100,7 @@
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-800">
                         <div>
                             <span class="text-[11px] font-bold text-emerald-400 uppercase tracking-wider">
-                                {{ $course?->bangla_title ?? 'সাংবাদিকতা, আইন ও উপস্থাপনা' }} ({{ $course?->batch_no ?? '১ম ব্যাচ' }})
+                                {{ $course?->bangla_title ?? 'সাংবাদিকতা, আইন ও উপস্থাপনা' }} ({{ $meeting->batch?->name ?? $course?->batch_no ?? '১ম ব্যাচ' }})
                             </span>
                             <h2 class="text-lg sm:text-xl font-bold text-white mt-1">
                                 {{ $meeting->title }}

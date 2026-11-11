@@ -60,17 +60,27 @@
             <h2 class="text-xl font-bold text-slate-900">কোর্স ভিত্তিক লাইভ ক্লাসসমূহ:</h2>
 
             @foreach($courses as $course)
+                @php
+                    $liveDisplayBatch = $course->currentOrLatestBatch();
+                    $liveBatchOpen = $course->isEnrollmentOpen();
+                @endphp
                 <div class="bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-2">
                         <div>
-                            <span class="text-xs text-emerald-700 font-bold block">{{ $course->batch_no }}</span>
+                            <span class="text-xs text-emerald-700 font-bold block">{{ $liveDisplayBatch?->name ?? $course->batch_no }}</span>
                             <h3 class="text-lg font-bold text-slate-900">{{ $course->bangla_title ?? $course->title }}</h3>
                         </div>
                         <div class="text-xs text-slate-500 flex items-center gap-2">
-                            <span class="px-2.5 py-1 rounded bg-slate-100 font-semibold"><i class="fa-solid fa-clock mr-1 text-slate-400"></i>{{ $course->live_schedule_text }}</span>
-                            <a href="{{ route('courses.checkout', $course->slug) }}" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition">
-                                এনরোল করুন
-                            </a>
+                            <span class="px-2.5 py-1 rounded bg-slate-100 font-semibold"><i class="fa-solid fa-clock mr-1 text-slate-400"></i>{{ $liveDisplayBatch?->formatted_schedule ?? $course->live_schedule_text }}</span>
+                            @if($liveBatchOpen)
+                                <a href="{{ route('courses.checkout', $course->slug) }}" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition">
+                                    এনরোল করুন
+                                </a>
+                            @else
+                                <span class="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 font-bold border border-slate-200">
+                                    ভর্তি বন্ধ
+                                </span>
+                            @endif
                         </div>
                     </div>
 

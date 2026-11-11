@@ -101,6 +101,29 @@
                 মূল মেনু ও কার্যক্রম
             </div>
 
+            <!-- Batch Management Link -->
+            @php
+                $isBatches = request()->routeIs('admin.batches.*');
+                $courseMeta = \App\Models\Course::with('batches')->first();
+                $openBatchCount = $courseMeta ? $courseMeta->openEnrollmentBatches()->count() : \App\Models\Batch::where('enrollment_open', true)->where('is_active', true)->count();
+            @endphp
+            <a href="{{ route('admin.batches.index') }}"
+               class="flex items-center justify-between px-3.5 py-3 rounded-xl text-xs font-bold transition group {{ $isBatches ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20' : 'hover:bg-slate-800/80 hover:text-white text-slate-300' }}">
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-layer-group text-base {{ $isBatches ? 'text-white' : 'text-amber-400 group-hover:text-amber-300' }}"></i>
+                    <span>ব্যাচ ম্যানেজমেন্ট</span>
+                </div>
+                @if($openBatchCount > 0)
+                    <span class="text-[10px] px-2 py-0.5 rounded-full font-bold {{ $isBatches ? 'bg-emerald-800 text-emerald-100' : 'bg-emerald-950 text-emerald-300 border border-emerald-700/60' }}">
+                        ভর্তি চালু
+                    </span>
+                @else
+                    <span class="text-[10px] px-2 py-0.5 rounded-full font-bold {{ $isBatches ? 'bg-emerald-800 text-amber-200' : 'bg-rose-950/70 text-rose-300 border border-rose-800/60' }}">
+                        ভর্তি বন্ধ
+                    </span>
+                @endif
+            </a>
+
             <!-- Students & Roster Link -->
             @php $isStudents = request()->routeIs('admin.students') || request()->routeIs('admin.dashboard'); @endphp
             <a href="{{ route('admin.students') }}"
@@ -129,7 +152,6 @@
             <!-- Live Meeting Manager Link -->
             @php
                 $isMeeting = request()->routeIs('admin.live-meetings');
-                $courseMeta = \App\Models\Course::first();
                 $isLiveNow = $courseMeta?->is_live_now;
             @endphp
             <a href="{{ route('admin.live-meetings') }}"

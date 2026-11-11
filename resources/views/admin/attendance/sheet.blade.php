@@ -13,9 +13,12 @@
                 <span>/</span>
                 <span class="text-slate-800 font-semibold">হাজিরা শিট</span>
             </div>
-            <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2.5">
+            <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2.5 flex-wrap">
                 <i class="fa-solid fa-clipboard-check text-emerald-600"></i>
                 <span>{{ $session->title }}</span>
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold {{ $session->batch ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-slate-100 text-slate-600 border border-slate-200' }}">
+                    {{ $session->batch?->name ?? 'সকল ব্যাচ' }}
+                </span>
             </h1>
             <p class="text-xs sm:text-sm text-slate-500 mt-1">
                 তারিখ: <strong>{{ $session->session_date->format('d M, Y') }}</strong> ({{ $session->session_date->isoFormat('dddd') }})
@@ -127,8 +130,15 @@
                                     </div>
                                     <div>
                                         <div class="font-bold text-slate-900">{{ $enrollment->student_name }}</div>
-                                        <div class="text-[11px] text-slate-400 font-mono">
-                                            ID: {{ $user?->username ?? ('STU-' . $enrollment->id) }}
+                                        <div class="flex items-center gap-1.5 flex-wrap mt-0.5">
+                                            <span class="text-[11px] text-slate-400 font-mono">
+                                                ID: {{ $user?->username ?? ('STU-' . $enrollment->id) }}
+                                            </span>
+                                            @if($enrollment->batch)
+                                                <span class="text-[10px] font-bold bg-emerald-50 text-emerald-700 px-1.5 py-0.2 rounded border border-emerald-200">
+                                                    {{ $enrollment->batch->name }}
+                                                </span>
+                                            @endif
                                         </div>
                                     </div>
                                 </div>

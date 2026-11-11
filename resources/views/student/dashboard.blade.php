@@ -54,12 +54,15 @@
 }">
 
     @php
-        $activeMeeting = $currentMeeting ?? $course?->currentOrNextMeeting();
-        $isLiveNow = ($activeMeeting && $activeMeeting->is_live_now) || ($course?->is_live_now);
+        $activeMeeting = $currentMeeting ?? $course?->currentOrNextMeeting($enrollment?->batch_id);
+        $isLiveNow = isset($isLiveNow)
+            ? (bool) $isLiveNow
+            : (($activeMeeting && $activeMeeting->is_live_now) || ($course?->is_live_now));
         $liveTopic = $activeMeeting?->title ?: ($course?->live_class_topic ?? ($course?->bangla_title ?? 'সাংবাদিকতা, আইন ও উপস্থাপনা'));
-        $liveSchedule = $activeMeeting?->formatted_schedule ?: ($course?->live_schedule_text ?? 'রাত ৯:০০ টা');
+        $liveSchedule = $activeMeeting?->formatted_schedule ?: ($studentBatch?->formatted_schedule ?? ($course?->live_schedule_text ?? 'রাত ৯:০০ টা'));
         $liveMeetingId = $activeMeeting?->meeting_id ?: $course?->live_meeting_id;
         $liveMeetingPasscode = $activeMeeting?->meeting_passcode ?: $course?->live_meeting_passcode;
+        $batchDisplayName = $studentBatch?->name ?? $course?->batch_no ?? '১ম ব্যাচ';
     @endphp
 
     <!-- Top Student Header -->
@@ -75,9 +78,10 @@
                         </div>
                         <div class="leading-tight">
                             <span class="text-base sm:text-lg font-bold text-slate-900 group-hover:text-emerald-700 transition">আমার বাংলা একাডেমি</span>
-                            <div class="flex items-center gap-1.5">
+                            <div class="flex items-center gap-1.5 flex-wrap">
                                 <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                                 <span class="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">শিক্ষার্থী পোর্টাল</span>
+                                <span class="text-[11px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">{{ $batchDisplayName }}</span>
                             </div>
                         </div>
                     </a>
@@ -345,7 +349,7 @@
                     <div class="text-xs sm:text-sm font-bold text-slate-900">
                         প্রতি বৃহস্পতি, শুক্র ও শনিবার
                     </div>
-                    <div class="text-[10px] text-emerald-700 font-semibold mt-0.5">রাত ৯:০০ টা ({{ $course?->batch_no ?? '১ম ব্যাচ' }})</div>
+                    <div class="text-[10px] text-emerald-700 font-semibold mt-0.5">রাত ৯:০০ টা ({{ $batchDisplayName }})</div>
                 </div>
             </div>
 
@@ -555,7 +559,7 @@
                 </div>
                 <div>
                     <h3 class="font-extrabold text-sm sm:text-base text-slate-900">
-                        ১ম ব্যাচের অফিসিয়াল WhatsApp গ্রুপে যুক্ত থাকুন
+                        {{ $batchDisplayName }}-এর অফিসিয়াল WhatsApp গ্রুপে যুক্ত থাকুন
                     </h3>
                     <p class="text-xs text-slate-600 mt-0.5">
                         সকল জরুরি নোটিশ, ক্লাসের লিংক, রেকর্ডিং এবং ট্রেইনারদের সাথে সরাসরি প্রশ্নোত্তর এই গ্রুপে পরিচালিত হয়।

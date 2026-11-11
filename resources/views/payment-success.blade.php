@@ -49,7 +49,7 @@
                     </div>
                     <div class="grid grid-cols-2 gap-3 text-slate-600">
                         <div><span class="block text-slate-400">কোর্সের নাম:</span><strong class="text-slate-800">{{ $payment->course->bangla_title ?? $payment->course->title }}</strong></div>
-                        <div><span class="block text-slate-400">ব্যাচ:</span><strong class="text-slate-800">{{ $payment->course->batch_no }}</strong></div>
+                        <div><span class="block text-slate-400">ব্যাচ:</span><strong class="text-slate-800">{{ $payment->batch?->name ?? $payment->enrollment?->batch?->name ?? $payment->course->batch_no }}</strong></div>
                         <div><span class="block text-slate-400">শিক্ষার্থীর নাম:</span><strong class="text-slate-800">{{ $payment->student_name }}</strong></div>
                         <div><span class="block text-slate-400">যোগাযোগের ইমেইল:</span><strong class="text-slate-800">{{ $payment->student_email }}</strong></div>
                         <div><span class="block text-slate-400">পেমেন্ট মেথড:</span><strong class="uppercase text-slate-800">{{ $payment->payment_method === 'eps' ? 'EPS অনলাইন গেটওয়ে (স্বয়ংক্রিয়)' : strtoupper($payment->payment_method) }}</strong></div>
@@ -117,7 +117,7 @@
                         </div>
                         <div class="flex items-center justify-between">
                             <span class="text-slate-400">ক্লাস শিডিউল:</span>
-                            <span class="font-bold text-slate-200">{{ $payment->course->live_schedule_text }}</span>
+                            <span class="font-bold text-slate-200">{{ $payment->batch?->formatted_schedule ?? $payment->course->live_schedule_text }}</span>
                         </div>
                     </div>
                     <div class="flex flex-col sm:flex-row gap-3 pt-2">

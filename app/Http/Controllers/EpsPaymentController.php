@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Batch;
 use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\Payment;
@@ -17,7 +18,27 @@ class EpsPaymentController extends Controller
      */
     public function pay(Request $request, string $slug, EpsGateway $eps)
     {
-        $course = Course::where('slug', $slug)->firstOrFail();
+        $course = Course::with('batches')->where('slug', $slug)->firstOrFail();
+
+        // Resolve active enrollment batch dynamically
+        $batch = null;
+        if ($request->filled('batch_id')) {
+            $batch = Batch::where('id', (int) $request->input('batch_id'))
+                ->where('course_id', $course->id)
+                ->first();
+
+            if (!$batch || !$batch->isEnrollmentOpen()) {
+                return redirect()->route('courses.checkout', $course->slug)
+                    ->with('error', 'দুঃখিত! নির্বাচিত ব্যাচের অনলাইন ভর্তি বর্তমানে বন্ধ রয়েছে।');
+            }
+        } else {
+            $batch = $course->openEnrollmentBatch();
+        }
+
+        if (!$batch || !$batch->isEnrollmentOpen()) {
+            return redirect()->route('courses.checkout', $course->slug)
+                ->with('error', 'দুঃখিত! বর্তমানে অনলাইন ভর্তি কার্যক্রম বন্ধ রয়েছে। পরবর্তী ব্যাচের তথ্যের জন্য WhatsApp-এ (01332-549549) যোগাযোগ করুন।');
+        }
 
         $validated = $request->validate([
             'student_name' => 'required|string|max:100',
@@ -25,10 +46,11 @@ class EpsPaymentController extends Controller
             'student_phone' => 'required|string|max:20',
         ]);
 
-        $amount = (float) $course->effective_price;
+        $amount = (float) $batch->effective_price;
 
-        // 0. If student already has an active enrollment in this course, redirect to their existing receipt
+        // 0. If student already has an active enrollment in this course batch, redirect to their existing receipt
         $activeEnrollment = Enrollment::where('course_id', $course->id)
+            ->where('batch_id', $batch->id)
             ->where('status', 'active')
             ->where(function ($q) use ($validated) {
                 $q->where('student_email', $validated['student_email'])
@@ -45,7 +67,7 @@ class EpsPaymentController extends Controller
 
             if ($completedPayment) {
                 return redirect()->route('payment.success', $completedPayment->id)
-                    ->with('info', 'আপনি ইতিমধ্যে এই কোর্সে সফলভাবে ভর্তি হয়েছেন!');
+                    ->with('info', 'আপনি ইতিমধ্যে এই ব্যাচে সফলভাবে ভর্তি হয়েছেন!');
             }
         }
 
@@ -56,6 +78,7 @@ class EpsPaymentController extends Controller
 
             // 1. Reuse existing pending enrollment if available, avoiding duplicate rows
             $enrollment = Enrollment::where('course_id', $course->id)
+                ->where('batch_id', $batch->id)
                 ->where('status', 'pending')
                 ->where(function ($q) use ($validated) {
                     $q->where('student_email', $validated['student_email'])
@@ -66,6 +89,7 @@ class EpsPaymentController extends Controller
 
             if ($enrollment) {
                 $enrollment->update([
+                    'batch_id' => $batch->id,
                     'student_name' => $validated['student_name'],
                     'student_email' => $validated['student_email'],
                     'student_phone' => $validated['student_phone'],
@@ -73,6 +97,7 @@ class EpsPaymentController extends Controller
             } else {
                 $enrollment = Enrollment::create([
                     'course_id' => $course->id,
+                    'batch_id' => $batch->id,
                     'student_name' => $validated['student_name'],
                     'student_email' => $validated['student_email'],
                     'student_phone' => $validated['student_phone'],
@@ -82,8 +107,9 @@ class EpsPaymentController extends Controller
                 ]);
             }
 
-            // Remove any extra duplicate pending enrollments for this student
+            // Remove any extra duplicate pending enrollments for this student in this batch
             Enrollment::where('course_id', $course->id)
+                ->where('batch_id', $batch->id)
                 ->where('id', '!=', $enrollment->id)
                 ->where('status', 'pending')
                 ->where(function ($q) use ($validated) {
@@ -104,6 +130,7 @@ class EpsPaymentController extends Controller
             $payment = Payment::create([
                 'enrollment_id' => $enrollment->id,
                 'course_id' => $course->id,
+                'batch_id' => $batch->id,
                 'student_name' => $validated['student_name'],
                 'student_email' => $validated['student_email'],
                 'student_phone' => $validated['student_phone'],
@@ -112,7 +139,7 @@ class EpsPaymentController extends Controller
                 'transaction_id' => $transactionId,
                 'sender_phone' => $validated['student_phone'],
                 'status' => 'pending',
-                'notes' => 'EPS payment initiated. Awaiting gateway completion.',
+                'notes' => 'EPS payment initiated for ' . $batch->name . '. Awaiting gateway completion.',
             ]);
 
             DB::commit();
@@ -120,6 +147,7 @@ class EpsPaymentController extends Controller
             // Store transaction data in session for backup
             session()->put('eps_pending_' . $transactionId, [
                 'course_id' => $course->id,
+                'batch_id' => $batch->id,
                 'course_slug' => $course->slug,
                 'enrollment_id' => $enrollment->id,
                 'payment_id' => $payment->id,
@@ -137,7 +165,7 @@ class EpsPaymentController extends Controller
                 'customer_name' => $validated['student_name'],
                 'customer_email' => $validated['student_email'],
                 'customer_phone' => $validated['student_phone'],
-                'product_name' => $course->title,
+                'product_name' => $course->title . ' (' . $batch->name . ')',
             ]);
 
             $redirectUrl = data_get($response, 'RedirectURL');
@@ -233,8 +261,9 @@ class EpsPaymentController extends Controller
                     ]);
                 }
 
-                // Auto-cancel any other pending payment attempts for this student in this course
+                // Auto-cancel any other pending payment attempts for this student in this course batch
                 Payment::where('course_id', $payment->course_id)
+                    ->when($payment->batch_id, fn ($q) => $q->where('batch_id', $payment->batch_id))
                     ->where('id', '!=', $payment->id)
                     ->where('status', 'pending')
                     ->where(function ($q) use ($payment) {
@@ -246,8 +275,9 @@ class EpsPaymentController extends Controller
                         'notes' => 'Auto-cancelled: Student completed payment #' . $payment->id,
                     ]);
 
-                // Delete any duplicate pending enrollments for this student in this course
+                // Delete any duplicate pending enrollments for this student in this course batch
                 Enrollment::where('course_id', $payment->course_id)
+                    ->when($payment->batch_id, fn ($q) => $q->where('batch_id', $payment->batch_id))
                     ->where('id', '!=', $payment->enrollment_id)
                     ->where('status', 'pending')
                     ->where(function ($q) use ($payment) {
@@ -259,6 +289,7 @@ class EpsPaymentController extends Controller
                 // Recover from session if payment record was missing
                 $enrollment = Enrollment::find($sessionData['enrollment_id']) ?? Enrollment::create([
                     'course_id' => $sessionData['course_id'],
+                    'batch_id' => $sessionData['batch_id'] ?? null,
                     'student_name' => $sessionData['student_name'],
                     'student_email' => $sessionData['student_email'],
                     'student_phone' => $sessionData['student_phone'],
@@ -270,6 +301,7 @@ class EpsPaymentController extends Controller
                 $payment = Payment::create([
                     'enrollment_id' => $enrollment->id,
                     'course_id' => $sessionData['course_id'],
+                    'batch_id' => $sessionData['batch_id'] ?? $enrollment->batch_id ?? null,
                     'student_name' => $sessionData['student_name'],
                     'student_email' => $sessionData['student_email'],
                     'student_phone' => $sessionData['student_phone'],
