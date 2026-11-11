@@ -6,6 +6,11 @@
     <title>{{ $meeting->title }} — ক্লাস রেকর্ডিং | আমার বাংলা একাডেমি</title>
     <meta name="robots" content="noindex, nofollow">
 
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{{ asset('images/favicon.png') }}">
+    <link rel="shortcut icon" href="{{ asset('favicon.ico') }}">
+    <link rel="apple-touch-icon" href="{{ asset('images/favicon.png') }}">
+
     <!-- Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -83,16 +88,16 @@
            class="fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-gradient-to-b from-slate-950 via-slate-900 to-emerald-950/95 text-slate-300 border-r border-slate-800/90 flex flex-col shadow-2xl">
 
         <!-- Drawer Brand Header -->
-        <div class="h-16 px-5 flex items-center justify-between border-b border-slate-800/80 shrink-0">
-            <a href="{{ $dashUrl }}" class="flex items-center gap-3 group min-w-0">
-                <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 text-white flex items-center justify-center font-bold text-lg shadow-md shadow-emerald-600/30 shrink-0">
-                    আ
+        <div class="h-16 px-4 flex items-center justify-between gap-2 border-b border-slate-800/80 shrink-0">
+            <a href="{{ $dashUrl }}" class="flex items-center gap-2.5 group min-w-0">
+                <div class="bg-white rounded-xl px-2 py-1 shadow-sm shrink-0 group-hover:scale-[1.02] transition-transform">
+                    <img src="{{ asset('images/AmarBanglaAcademy.png') }}"
+                         alt="আমার বাংলা একাডেমি"
+                         class="h-7 w-auto object-contain">
                 </div>
                 <div class="leading-tight min-w-0">
-                    <span class="text-sm font-extrabold text-white tracking-tight group-hover:text-emerald-300 transition block truncate">
-                        আমার বাংলা একাডেমি
-                    </span>
-                    <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block mt-0.5">
+                    <span class="sr-only">আমার বাংলা একাডেমি</span>
+                    <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block truncate">
                         Student LMS Portal
                     </span>
                 </div>

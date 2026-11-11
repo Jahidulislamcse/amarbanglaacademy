@@ -8,6 +8,11 @@
     <title>@yield('title', 'Amar Bangla Academy - আধুনিক লার্নিং ম্যানেজমেন্ট সিস্টেম (LMS)')</title>
     <meta name="description" content="@yield('meta_description', 'আমার বাংলা একাডেমি — লাইভ জুম ও গুগল মিট ক্লাস, মডিউল ভিত্তিক কারিকুলাম, অনলাইন এক্সাম, এবং বিকাশ/নগদ পেমেন্ট সহ সম্পূর্ণ আধুনিক LMS।')">
 
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{{ asset('images/favicon.png') }}">
+    <link rel="shortcut icon" href="{{ asset('favicon.ico') }}">
+    <link rel="apple-touch-icon" href="{{ asset('images/favicon.png') }}">
+
     <!-- Google Fonts: Hind Siliguri (Bangla) & Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -136,20 +141,15 @@
 
     <!-- Clean Conversion Header (No Menu) -->
     <header class="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-xs">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16 sm:h-20">
+        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16 sm:h-20 gap-2">
                 
                 <!-- Logo & Academy Name -->
-                <a href="{{ route('home') }}" class="flex items-center gap-2.5 sm:gap-3 group">
-                    <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-tr from-emerald-700 to-teal-500 flex items-center justify-center text-white shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform duration-200">
-                        <i class="fa-solid fa-graduation-cap text-xl sm:text-2xl"></i>
-                    </div>
-                    <div>
-                        <span class="text-lg sm:text-2xl font-bold tracking-tight text-slate-900 block leading-tight">
-                            আমার বাংলা <span class="text-emerald-700">একাডেমি</span>
-                        </span>
-                        <span class="text-[10px] sm:text-[11px] font-medium text-slate-500 tracking-wide uppercase">Amar Bangla Academy</span>
-                    </div>
+                <a href="{{ route('home') }}" class="flex items-center gap-2 group shrink-0">
+                    <img src="{{ asset('images/AmarBanglaAcademy.png') }}"
+                         alt="আমার বাংলা একাডেমি — Amar Bangla Academy"
+                         class="h-8 min-[380px]:h-10 sm:h-12 w-auto object-contain group-hover:scale-[1.03] transition-transform duration-200">
+                    <span class="sr-only">আমার বাংলা একাডেমি (Amar Bangla Academy)</span>
                 </a>
 
                 <!-- Quick Action Contact, Login & Enroll -->
@@ -250,11 +250,12 @@
                 
                 <!-- About Academy -->
                 <div class="lg:col-span-2 space-y-4">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center text-white shadow">
-                            <i class="fa-solid fa-graduation-cap text-xl"></i>
+                    <div class="inline-flex items-center gap-3">
+                        <div class="bg-white rounded-xl px-3 py-1.5 shadow-sm inline-flex items-center">
+                            <img src="{{ asset('images/AmarBanglaAcademy.png') }}"
+                                 alt="আমার বাংলা একাডেমি"
+                                 class="h-9 sm:h-10 w-auto object-contain">
                         </div>
-                        <span class="text-xl font-bold text-white">আমার বাংলা একাডেমি</span>
                     </div>
                     <p class="text-sm text-slate-400 leading-relaxed max-w-sm">
                         দক্ষতা অর্জনে কোনো ভাষা বা ভৌগোলিক সীমাবদ্ধতা থাকতে পারে না। বিশ্বমানের সফটওয়্যার ইঞ্জিনিয়ারিং, আইটি স্কিলস ও প্রফেশনাল ক্যারিয়ার কোর্স এখন সম্পূর্ণ বাংলায়।

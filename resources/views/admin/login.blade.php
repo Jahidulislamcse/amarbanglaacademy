@@ -7,6 +7,11 @@
 
     <title>এডমিন লগইন - আমার বাংলা একাডেমি</title>
 
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{{ asset('images/favicon.png') }}">
+    <link rel="shortcut icon" href="{{ asset('favicon.ico') }}">
+    <link rel="apple-touch-icon" href="{{ asset('images/favicon.png') }}">
+
     <!-- Google Fonts: Hind Siliguri & Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -57,13 +62,13 @@
     }">
         <!-- Brand Header -->
         <div class="text-center mb-6">
-            <a href="{{ route('home') }}" class="inline-flex items-center gap-3 group">
-                <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-emerald-600 to-emerald-400 text-white flex items-center justify-center font-bold text-2xl shadow-lg shadow-emerald-500/20">
-                    আ
-                </div>
+            <a href="{{ route('home') }}" class="inline-flex items-center justify-center bg-white rounded-2xl px-4 py-2 shadow-xl hover:scale-[1.02] transition-transform">
+                <img src="{{ asset('images/AmarBanglaAcademy.png') }}"
+                     alt="আমার বাংলা একাডেমি"
+                     class="h-11 sm:h-12 w-auto object-contain">
             </a>
-            <h1 class="text-2xl font-bold text-white mt-3">আমার বাংলা একাডেমি</h1>
-            <p class="text-xs text-emerald-300 font-medium tracking-wide mt-1">কোর্স এডমিন ও শিক্ষার্থী ম্যানেজমেন্ট পোর্টাল</p>
+            <h1 class="sr-only">আমার বাংলা একাডেমি</h1>
+            <p class="text-xs text-emerald-300 font-semibold tracking-wide mt-2.5">কোর্স এডমিন ও শিক্ষার্থী ম্যানেজমেন্ট পোর্টাল</p>
         </div>
 
         <!-- Login Card -->

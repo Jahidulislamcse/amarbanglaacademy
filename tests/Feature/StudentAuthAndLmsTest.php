@@ -334,5 +334,10 @@ class StudentAuthAndLmsTest extends TestCase
         // Live CTA must NOT appear anywhere while offline
         $response->assertDontSee('লাইভ ক্লাসে যোগ দিন');
         $response->assertDontSee('সরাসরি ক্লাসে যোগ দিন');
+
+        // Portal renders brand logo and favicon tags
+        $response->assertSee('images/AmarBanglaAcademy.png', false);
+        $response->assertSee('images/favicon.png', false);
+        $response->assertSee('favicon.ico', false);
     }
 }

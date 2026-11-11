@@ -153,6 +153,9 @@ class ClassRecordingSystemTest extends TestCase
         $response->assertSee('id="recording-playlist"', false);
         $response->assertSee('প্লেলিস্ট');
         $response->assertSee('পোর্টাল থেকে লগআউট');
+        $response->assertSee('images/AmarBanglaAcademy.png', false);
+        $response->assertSee('images/favicon.png', false);
+        $response->assertSee('favicon.ico', false);
         $this->assertStringNotContainsString("\u{FFFD}", $response->getContent());
     }
 

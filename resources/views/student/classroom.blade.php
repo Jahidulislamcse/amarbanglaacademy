@@ -6,6 +6,11 @@
     <title>{{ $course?->live_class_topic ?? 'অনলাইন লাইভ ক্লাসরুম' }} - আমার বাংলা একাডেমি</title>
     <meta name="robots" content="noindex, nofollow">
 
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{{ asset('images/favicon.png') }}">
+    <link rel="shortcut icon" href="{{ asset('favicon.ico') }}">
+    <link rel="apple-touch-icon" href="{{ asset('images/favicon.png') }}">
+
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -34,13 +39,15 @@
         <!-- Left: Logo, Live Status & Topic -->
         <div class="flex items-center gap-3 sm:gap-4 overflow-hidden">
             <a href="{{ route('student.dashboard') }}"
-               class="flex items-center gap-2 group shrink-0"
+               class="flex items-center gap-2.5 group shrink-0"
                title="ড্যাশবোর্ডে ফিরে যান">
-                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white font-black flex items-center justify-center text-base sm:text-lg shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform">
-                    আ
+                <div class="bg-white rounded-xl px-2 py-1 shadow-sm group-hover:scale-105 transition-transform">
+                    <img src="{{ asset('images/AmarBanglaAcademy.png') }}"
+                         alt="আমার বাংলা একাডেমি"
+                         class="h-7 sm:h-8 w-auto object-contain">
                 </div>
                 <div class="hidden md:block leading-tight">
-                    <span class="text-xs font-black tracking-tight text-white block">আমার বাংলা একাডেমি</span>
+                    <span class="sr-only">আমার বাংলা একাডেমি</span>
                     <span class="text-[10px] text-emerald-400 font-bold uppercase tracking-wider block">লাইভ ক্লাসরুম</span>
                 </div>
             </a>

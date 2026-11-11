@@ -84,4 +84,33 @@ class LmsLandingTest extends TestCase
         $response2->assertStatus(200);
         $response2->assertSee('অনলাইন এক্সাম');
     }
+
+    public function test_logo_and_favicon_assets_exist_and_render_across_pages(): void
+    {
+        $this->assertFileExists(public_path('images/AmarBanglaAcademy.png'));
+        $this->assertFileExists(public_path('images/favicon.png'));
+        $this->assertFileExists(public_path('favicon.ico'));
+        $this->assertGreaterThan(0, filesize(public_path('favicon.ico')));
+
+        // Direct fallback route for /storage/AmarBanglaAcademy.png works
+        $storageLogo = $this->get('/storage/AmarBanglaAcademy.png');
+        $storageLogo->assertStatus(200);
+        $storageLogo->assertHeader('content-type', 'image/png');
+
+        // Public landing page includes logo and favicon tags
+        $home = $this->get('/');
+        $home->assertStatus(200);
+        $home->assertSee('images/AmarBanglaAcademy.png', false);
+        $home->assertSee('images/favicon.png', false);
+        $home->assertSee('favicon.ico', false);
+
+        // Login pages include logo and favicon tags
+        foreach (['/login', '/admin/login'] as $url) {
+            $res = $this->get($url);
+            $res->assertStatus(200);
+            $res->assertSee('images/AmarBanglaAcademy.png', false);
+            $res->assertSee('images/favicon.png', false);
+            $res->assertSee('favicon.ico', false);
+        }
+    }
 }

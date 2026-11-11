@@ -109,6 +109,9 @@ class AdminPanelTest extends TestCase
         $response->assertSee('৳999');
         $response->assertSee('openStudentModal(' . $payment->id . ')', false);
         $response->assertSee('studentDetailModal');
+        $response->assertSee('images/AmarBanglaAcademy.png', false);
+        $response->assertSee('images/favicon.png', false);
+        $response->assertSee('favicon.ico', false);
     }
 
     public function test_admin_can_search_students(): void

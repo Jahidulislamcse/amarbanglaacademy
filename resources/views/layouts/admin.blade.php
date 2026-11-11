@@ -7,6 +7,11 @@
 
     <title>@yield('title', 'এডমিন পোর্টাল - আমার বাংলা একাডেমি')</title>
 
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{{ asset('images/favicon.png') }}">
+    <link rel="shortcut icon" href="{{ asset('favicon.ico') }}">
+    <link rel="apple-touch-icon" href="{{ asset('images/favicon.png') }}">
+
     <!-- Google Fonts: Hind Siliguri (Bangla) & Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -74,22 +79,22 @@
            class="fixed inset-y-0 left-0 z-50 w-64 lg:w-72 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-300 border-r border-slate-800 flex flex-col transition-transform duration-300 ease-in-out shrink-0">
 
         <!-- Sidebar Brand Header -->
-        <div class="h-16 lg:h-20 px-5 flex items-center justify-between border-b border-slate-800/80">
-            <a href="{{ route('admin.students') }}" class="flex items-center gap-3 group">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 text-white flex items-center justify-center font-bold text-xl shadow-md shadow-emerald-600/30">
-                    আ
+        <div class="h-16 lg:h-20 px-4 flex items-center justify-between gap-2 border-b border-slate-800/80">
+            <a href="{{ route('admin.students') }}" class="flex items-center gap-2.5 group min-w-0">
+                <div class="bg-white rounded-xl px-2 py-1 shadow-sm shrink-0 group-hover:scale-[1.02] transition-transform">
+                    <img src="{{ asset('images/AmarBanglaAcademy.png') }}"
+                         alt="আমার বাংলা একাডেমি"
+                         class="h-7 sm:h-8 w-auto object-contain">
                 </div>
-                <div class="leading-tight">
-                    <span class="text-base font-extrabold text-white tracking-tight group-hover:text-emerald-400 transition block">
-                        আমার বাংলা একাডেমি
-                    </span>
-                    <span class="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5 mt-0.5">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                        Executive LMS Admin
+                <div class="leading-tight min-w-0">
+                    <span class="sr-only">আমার বাংলা একাডেমি</span>
+                    <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
+                        <span class="truncate">Executive LMS Admin</span>
                     </span>
                 </div>
             </a>
-            <button @click="sidebarOpen = false" class="lg:hidden text-slate-400 hover:text-white p-1 rounded-lg">
+            <button @click="sidebarOpen = false" class="lg:hidden text-slate-400 hover:text-white p-1 rounded-lg shrink-0">
                 <i class="fa-solid fa-xmark text-lg"></i>
             </button>
         </div>

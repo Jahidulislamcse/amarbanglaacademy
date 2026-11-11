@@ -13,6 +13,18 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
+// Serve academy logo cleanly if requested directly via /storage/AmarBanglaAcademy.png
+Route::get('/storage/AmarBanglaAcademy.png', function () {
+    $path = storage_path('AmarBanglaAcademy.png');
+    if (file_exists($path)) {
+        return response()->file($path, [
+            'Content-Type' => 'image/png',
+            'Cache-Control' => 'public, max-age=86400',
+        ]);
+    }
+    abort(404);
+});
+
 // LMS Landing Page (Flagship Course Showcase, Curriculum, Instructors, Fees, Supports)
 Route::get('/', [LmsController::class, 'index'])->name('home');
 
