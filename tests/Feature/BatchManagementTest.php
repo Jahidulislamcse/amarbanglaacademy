@@ -111,6 +111,12 @@ class BatchManagementTest extends TestCase
         $this->assertEquals($initialLessonsCount, $this->course->lessons()->count());
         $this->assertEquals($initialInstructorsCount, $this->course->instructors()->count());
 
+        // Revisit /admin/batches when an open batch exists to verify open banner & checkout link render cleanly
+        $openIndexResponse = $this->actingAs($this->admin)->get(route('admin.batches.index'));
+        $openIndexResponse->assertStatus(200);
+        $openIndexResponse->assertSee('চেকআউট দেখুন');
+        $openIndexResponse->assertSee(route('courses.checkout', ['slug' => $this->course->slug, 'batch' => $batch2->id]), false);
+
         // Landing & Checkout dynamically reflect 2nd Batch
         $landing = $this->get('/');
         $landing->assertStatus(200);

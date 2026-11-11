@@ -80,8 +80,11 @@
                 </div>
             </div>
 
+            @php
+                $checkoutSlug = $openBatch->course?->slug ?? $primaryCourse?->slug ?? 'journalism-law-presentation';
+            @endphp
             <div class="flex items-center gap-2.5 shrink-0 flex-wrap">
-                <a href="{{ route('checkout') }}" target="_blank"
+                <a href="{{ route('courses.checkout', ['slug' => $checkoutSlug, 'batch' => $openBatch->id]) }}" target="_blank"
                    class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold border border-white/20 transition">
                     <i class="fa-solid fa-arrow-up-right-from-square"></i>
                     <span>চেকআউট দেখুন</span>
