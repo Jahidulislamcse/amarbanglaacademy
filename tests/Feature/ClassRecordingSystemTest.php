@@ -144,6 +144,16 @@ class ClassRecordingSystemTest extends TestCase
         // Has custom HTML5 scrubber controls
         $response->assertSee('scrubber-track');
         $response->assertSee('btn-play-toggle');
+
+        // Unified formal portal slide-over sidebar & mobile playlist jump
+        $response->assertSee('পোর্টাল মেনু খুলুন');
+        $response->assertSee('ড্যাশবোর্ড ওভারভিউ');
+        $response->assertSee('ক্লাস শিডিউল');
+        $response->assertSee('হাজিরা ও উপস্থিতি');
+        $response->assertSee('id="recording-playlist"', false);
+        $response->assertSee('প্লেলিস্ট');
+        $response->assertSee('পোর্টাল থেকে লগআউট');
+        $this->assertStringNotContainsString("\u{FFFD}", $response->getContent());
     }
 
     public function test_unauthenticated_user_cannot_access_student_recording(): void

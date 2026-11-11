@@ -1,184 +1,53 @@
-<!DOCTYPE html>
-<html lang="bn" class="scroll-smooth">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
+@extends('layouts.student')
 
-    <title>স্টুডেন্ট এলএমএস পোর্টাল - আমার বাংলা একাডেমি</title>
+@section('title', 'স্টুডেন্ট এলএমএস পোর্টাল - আমার বাংলা একাডেমি')
 
-    <!-- Google Fonts: Hind Siliguri & Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+@section('content')
+@php
+    $activeMeeting = $currentMeeting ?? $course?->currentOrNextMeeting($enrollment?->batch_id);
+    $isLiveNow = isset($isLiveNow)
+        ? (bool) $isLiveNow
+        : (($activeMeeting && $activeMeeting->is_live_now) || ($course?->is_live_now));
+    $liveTopic = $activeMeeting?->title ?: ($course?->live_class_topic ?? ($course?->bangla_title ?? 'সাংবাদিকতা, আইন ও উপস্থাপনা'));
+    $liveSchedule = $activeMeeting?->formatted_schedule ?: ($studentBatch?->formatted_schedule ?? ($course?->live_schedule_text ?? 'রাত ৯:০০ টা'));
+    $liveMeetingId = $activeMeeting?->meeting_id ?: $course?->live_meeting_id;
+    $liveMeetingPasscode = $activeMeeting?->meeting_passcode ?: $course?->live_meeting_passcode;
+    $batchDisplayName = $studentBatch?->name ?? $course?->batch_no ?? '১ম ব্যাচ';
+@endphp
 
-    <!-- Font Awesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<div class="space-y-5 sm:space-y-6">
 
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        emerald: {
-                            50: '#ecfdf5',
-                            100: '#d1fae5',
-                            500: '#10b981',
-                            600: '#059669',
-                            700: '#047857',
-                            800: '#065f46',
-                            900: '#064e3b',
-                        }
-                    },
-                    fontFamily: {
-                        sans: ['"Hind Siliguri"', '"Inter"', 'sans-serif'],
-                        bangla: ['"Hind Siliguri"', 'sans-serif'],
-                    }
-                }
-            }
-        }
-    </script>
+    <!-- ==================== SECTION 1: OVERVIEW & LIVE CLASS ==================== -->
+    <section id="overview" class="scroll-mt-20 sm:scroll-mt-24 space-y-5 sm:space-y-6">
 
-    <!-- Alpine.js -->
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.3/dist/cdn.min.js"></script>
-
-    <style>
-        body { font-family: 'Hind Siliguri', 'Inter', sans-serif; }
-    </style>
-</head>
-<body class="bg-slate-100 text-slate-800 antialiased font-bangla min-h-screen flex flex-col" x-data="{
-    activeTab: 'live',
-    openModule: 1
-}">
-
-    @php
-        $activeMeeting = $currentMeeting ?? $course?->currentOrNextMeeting($enrollment?->batch_id);
-        $isLiveNow = isset($isLiveNow)
-            ? (bool) $isLiveNow
-            : (($activeMeeting && $activeMeeting->is_live_now) || ($course?->is_live_now));
-        $liveTopic = $activeMeeting?->title ?: ($course?->live_class_topic ?? ($course?->bangla_title ?? 'সাংবাদিকতা, আইন ও উপস্থাপনা'));
-        $liveSchedule = $activeMeeting?->formatted_schedule ?: ($studentBatch?->formatted_schedule ?? ($course?->live_schedule_text ?? 'রাত ৯:০০ টা'));
-        $liveMeetingId = $activeMeeting?->meeting_id ?: $course?->live_meeting_id;
-        $liveMeetingPasscode = $activeMeeting?->meeting_passcode ?: $course?->live_meeting_passcode;
-        $batchDisplayName = $studentBatch?->name ?? $course?->batch_no ?? '১ম ব্যাচ';
-    @endphp
-
-    <!-- Top Student Header -->
-    <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16 sm:h-20">
-                
-                <!-- Brand & Portal Badge -->
-                <div class="flex items-center gap-3">
-                    <a href="{{ route('student.dashboard') }}" class="flex items-center gap-3 group">
-                        <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-tr from-emerald-700 to-emerald-500 text-white flex items-center justify-center font-bold text-xl shadow-sm">
-                            আ
-                        </div>
-                        <div class="leading-tight">
-                            <span class="text-base sm:text-lg font-bold text-slate-900 group-hover:text-emerald-700 transition">আমার বাংলা একাডেমি</span>
-                            <div class="flex items-center gap-1.5 flex-wrap">
-                                <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                                <span class="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">শিক্ষার্থী পোর্টাল</span>
-                                <span class="text-[11px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">{{ $batchDisplayName }}</span>
-                            </div>
-                        </div>
-                    </a>
+        <!-- Compact Mobile Student Welcome & Batch Strip (< sm) -->
+        <div class="sm:hidden bg-white rounded-2xl border border-slate-200 p-3.5 shadow-sm flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2.5 min-w-0">
+                <div class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-extrabold text-sm shrink-0">
+                    {{ !empty($user->name) ? mb_strtoupper(mb_substr($user->name, 0, 1, 'UTF-8'), 'UTF-8') : 'শ' }}
                 </div>
-
-                <!-- Right Actions: Student Info & Logout -->
-                <div class="flex items-center gap-2 sm:gap-4">
-                    @if($isLiveNow)
-                        <a href="{{ route('student.live-class') }}" target="_blank"
-                           class="inline-flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl shadow-sm animate-pulse transition">
-                            <span class="w-2 h-2 rounded-full bg-white animate-ping"></span>
-                            <i class="fa-solid fa-video"></i>
-                            <span>লাইভ ক্লাসে যোগ দিন</span>
-                        </a>
-                    @else
-                        <div class="hidden sm:inline-flex items-center gap-1.5 bg-amber-50 border border-amber-200/80 text-amber-900 text-xs font-medium px-3 py-1.5 rounded-xl select-none" title="ক্লাস শুরুর সময়ে লিংক সক্রিয় হবে">
-                            <i class="fa-regular fa-clock text-amber-600 text-xs"></i>
-                            <span>পরবর্তী ক্লাস: <strong class="text-amber-950 font-bold">{{ $liveSchedule }}</strong></span>
-                        </div>
-                    @endif
-
-                    <!-- User Card -->
-                    <div class="flex items-center gap-2.5 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl">
-                        <div class="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold">
-                            {{ strtoupper(substr($user->name, 0, 1)) }}
-                        </div>
-                        <div class="hidden md:flex flex-col text-left leading-tight">
-                            <span class="text-xs font-bold text-slate-900">{{ $user->name }}</span>
-                            <span class="text-[10px] text-slate-500 font-mono">{{ $user->phone ?? $user->email }}</span>
-                        </div>
+                <div class="min-w-0">
+                    <div class="text-xs font-extrabold text-slate-900 truncate">{{ $user->name }}</div>
+                    <div class="text-[11px] text-slate-500 font-medium truncate">
+                        {{ $course?->bangla_title ?? 'সাংবাদিকতা, আইন ও উপস্থাপনা' }}
                     </div>
-
-                    <!-- Logout Button -->
-                    <form method="POST" action="{{ route('student.logout') }}" class="inline">
-                        @csrf
-                        <button type="submit" title="লগআউট" class="inline-flex items-center gap-1.5 text-xs font-semibold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 px-3 py-2 rounded-xl transition">
-                            <i class="fa-solid fa-right-from-bracket"></i>
-                            <span class="hidden sm:inline">লগআউট</span>
-                        </button>
-                    </form>
                 </div>
-
             </div>
+            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 shrink-0">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                {{ $batchDisplayName }}
+            </span>
         </div>
-    </header>
-
-    <!-- Flash Message Container -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 w-full">
-        @if(session('success'))
-            <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center justify-between shadow-xs mb-3">
-                <div class="flex items-center gap-2.5">
-                    <i class="fa-solid fa-circle-check text-emerald-600 text-lg"></i>
-                    <span class="text-xs sm:text-sm font-semibold">{{ session('success') }}</span>
-                </div>
-                <button onclick="this.parentElement.remove()" class="text-emerald-500 hover:text-emerald-700 p-1">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-        @endif
-
-        @if(session('info'))
-            <div class="p-4 rounded-2xl bg-blue-50 border border-blue-200 text-blue-800 flex items-center justify-between shadow-xs mb-3">
-                <div class="flex items-center gap-2.5">
-                    <i class="fa-solid fa-circle-info text-blue-600 text-lg"></i>
-                    <span class="text-xs sm:text-sm font-semibold">{{ session('info') }}</span>
-                </div>
-                <button onclick="this.parentElement.remove()" class="text-blue-500 hover:text-blue-700 p-1">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-        @endif
-
-        @if(session('error'))
-            <div class="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 flex items-center justify-between shadow-xs mb-3">
-                <div class="flex items-center gap-2.5">
-                    <i class="fa-solid fa-circle-exclamation text-rose-600 text-lg"></i>
-                    <span class="text-xs sm:text-sm font-semibold">{{ session('error') }}</span>
-                </div>
-                <button onclick="this.parentElement.remove()" class="text-rose-500 hover:text-rose-700 p-1">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-        @endif
-    </div>
-
-    <!-- Main Content Container -->
-    <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-7 w-full space-y-6">
 
         <!-- 0. CLASS SCHEDULE NOTICE BANNER -->
-        <div class="bg-gradient-to-r from-emerald-50 via-teal-50 to-blue-50 border-2 border-emerald-500/30 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div class="flex items-start sm:items-center gap-3.5">
-                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-emerald-600 text-white flex items-center justify-center text-lg shrink-0 shadow-md shadow-emerald-600/20">
+        <div class="bg-gradient-to-r from-emerald-50 via-teal-50 to-blue-50 border-2 border-emerald-500/30 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div class="flex items-start sm:items-center gap-3 sm:gap-3.5">
+                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-emerald-600 text-white flex items-center justify-center text-base sm:text-lg shrink-0 shadow-md shadow-emerald-600/20">
                     <i class="fa-solid fa-bullhorn animate-bounce"></i>
                 </div>
-                <div>
+                <div class="min-w-0">
                     <div class="flex items-center gap-2 flex-wrap">
-                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-600 text-white shadow-xs">
+                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-600 text-white shadow-sm">
                             <i class="fa-solid fa-bell text-[10px]"></i>
                             <span>ক্লাস শিডিউল নোটিশ</span>
                         </span>
@@ -186,27 +55,27 @@
                             লাইভ ক্লাসের সাপ্তাহিক সময়সূচি
                         </span>
                     </div>
-                    <p class="text-xs sm:text-sm text-slate-800 font-semibold mt-1">
+                    <p class="text-xs sm:text-sm text-slate-800 font-semibold mt-1 leading-relaxed">
                         আমাদের সকল লাইভ ক্লাস <span class="text-emerald-900 font-extrabold underline decoration-emerald-500 decoration-2">প্রতি বৃহস্পতি, শুক্র ও শনিবার</span> রাত ৯:০০ টায় অনুষ্ঠিত হবে।
                     </p>
                 </div>
             </div>
 
             <!-- Days Badges -->
-            <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap self-start md:self-center pl-13 md:pl-0">
-                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold bg-white text-emerald-900 border border-emerald-200 shadow-2xs">
+            <div class="grid grid-cols-2 sm:flex items-center gap-2 flex-wrap shrink-0">
+                <span class="inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold bg-white text-emerald-900 border border-emerald-200 shadow-sm">
                     <i class="fa-regular fa-calendar-check text-emerald-600 text-xs"></i>
                     <span>বৃহস্পতিবার</span>
                 </span>
-                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold bg-white text-emerald-900 border border-emerald-200 shadow-2xs">
+                <span class="inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold bg-white text-emerald-900 border border-emerald-200 shadow-sm">
                     <i class="fa-regular fa-calendar-check text-emerald-600 text-xs"></i>
                     <span>শুক্রবার</span>
                 </span>
-                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold bg-white text-emerald-900 border border-emerald-200 shadow-2xs">
+                <span class="inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold bg-white text-emerald-900 border border-emerald-200 shadow-sm">
                     <i class="fa-regular fa-calendar-check text-emerald-600 text-xs"></i>
                     <span>শনিবার</span>
                 </span>
-                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold bg-emerald-700 text-white shadow-xs">
+                <span class="inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-700 text-white shadow-sm">
                     <i class="fa-regular fa-clock text-xs"></i>
                     <span>রাত ৯:০০ টা</span>
                 </span>
@@ -214,11 +83,11 @@
         </div>
 
         <!-- 1. LIVE CLASSROOM HERO SECTION (Direct Meeting Redirect Feature) -->
-        <div class="bg-gradient-to-br from-slate-900 via-emerald-950 to-slate-950 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden border border-emerald-900/60">
+        <div class="bg-gradient-to-br from-slate-900 via-emerald-950 to-slate-950 rounded-2xl sm:rounded-3xl p-5 sm:p-7 lg:p-8 text-white shadow-xl relative overflow-hidden border border-emerald-900/60">
             <!-- Decorative Background Accent -->
             <div class="absolute -right-16 -top-16 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
-            <div class="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+            <div class="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-center">
                 <!-- Left text -->
                 <div class="lg:col-span-8 space-y-3">
                     <div class="flex items-center gap-2 flex-wrap">
@@ -236,19 +105,19 @@
                         <span class="text-xs text-slate-300 font-medium">প্ল্যাটফর্ম: {{ $course?->live_platform ?? 'Zoom & Google Meet' }}</span>
                     </div>
 
-                    <h2 class="text-xl sm:text-2xl lg:text-3xl font-extrabold leading-snug">
+                    <h2 class="text-lg sm:text-2xl lg:text-3xl font-extrabold leading-snug">
                         {{ $liveTopic }}
                     </h2>
 
                     <!-- Prominent Class Schedule Box when not live -->
                     @if(!$isLiveNow)
-                        <div class="inline-flex items-center gap-3 p-3 sm:px-4 sm:py-2.5 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-amber-200">
+                        <div class="inline-flex items-center gap-3 p-3 sm:px-4 sm:py-2.5 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-amber-200 w-full sm:w-auto">
                             <div class="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center text-base shrink-0">
                                 <i class="fa-regular fa-calendar-check"></i>
                             </div>
-                            <div>
+                            <div class="min-w-0">
                                 <span class="text-[11px] text-amber-300/80 block font-medium">পরবর্তী ক্লাসের সময়সূচি:</span>
-                                <strong class="text-sm sm:text-base text-amber-200 font-bold block">
+                                <strong class="text-sm sm:text-base text-amber-200 font-bold block truncate">
                                     {{ $liveSchedule }}
                                 </strong>
                             </div>
@@ -265,15 +134,15 @@
 
                     <!-- Meeting Details Badges if available when live -->
                     @if($isLiveNow && ($liveMeetingId || $liveMeetingPasscode))
-                        <div class="flex items-center gap-3 pt-1 text-xs font-mono flex-wrap">
+                        <div class="flex items-center gap-2.5 sm:gap-3 pt-1 text-xs font-mono flex-wrap">
                             @if($liveMeetingId)
-                                <div class="bg-white/10 px-3 py-1 rounded-xl border border-white/15 flex items-center gap-2">
+                                <div class="bg-white/10 px-3 py-1.5 rounded-xl border border-white/15 flex items-center gap-2">
                                     <span class="text-slate-400 font-sans">মিটিং আইডি:</span>
                                     <strong class="text-white select-all">{{ $liveMeetingId }}</strong>
                                 </div>
                             @endif
                             @if($liveMeetingPasscode)
-                                <div class="bg-white/10 px-3 py-1 rounded-xl border border-white/15 flex items-center gap-2">
+                                <div class="bg-white/10 px-3 py-1.5 rounded-xl border border-white/15 flex items-center gap-2">
                                     <span class="text-slate-400 font-sans">পাসকোড:</span>
                                     <strong class="text-white select-all">{{ $liveMeetingPasscode }}</strong>
                                 </div>
@@ -298,11 +167,11 @@
                         </span>
                     @else
                         <!-- Disabled Button before Scheduled Time / when not live -->
-                        <div class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-slate-800/90 text-slate-400 font-bold text-sm sm:text-base px-6 py-4 rounded-2xl border border-slate-700/80 cursor-not-allowed select-none shadow-inner">
-                            <i class="fa-solid fa-lock text-slate-500"></i>
+                        <div class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-slate-800/90 text-slate-400 font-bold text-sm sm:text-base px-5 sm:px-6 py-3.5 sm:py-4 rounded-2xl border border-slate-700/80 cursor-not-allowed select-none shadow-inner text-center">
+                            <i class="fa-solid fa-lock text-slate-500 shrink-0"></i>
                             <span>ক্লাস শুরুর সময়ে লিংক সক্রিয় হবে</span>
                         </div>
-                        <div class="w-full text-center lg:text-right mt-2 space-y-0.5">
+                        <div class="w-full text-center lg:text-right mt-2.5 space-y-0.5">
                             <span class="text-[11px] text-amber-300 font-semibold block">
                                 <i class="fa-solid fa-clock text-[10px] mr-1"></i>
                                 শিডিউল: {{ $liveSchedule }}
@@ -325,10 +194,10 @@
         </div>
 
         <!-- 2. STUDENT STATS & BATCH INFO -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div class="grid grid-cols-1 min-[380px]:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <!-- Enrolled Course -->
-            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3">
-                <div class="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg shrink-0">
+            <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3">
+                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-base sm:text-lg shrink-0">
                     <i class="fa-solid fa-book-open-reader"></i>
                 </div>
                 <div class="min-w-0">
@@ -340,32 +209,32 @@
             </div>
 
             <!-- Batch & Schedule -->
-            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3">
-                <div class="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-lg shrink-0">
+            <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3">
+                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-base sm:text-lg shrink-0">
                     <i class="fa-solid fa-calendar-days"></i>
                 </div>
                 <div class="min-w-0">
                     <div class="text-[11px] font-semibold text-slate-500">ক্লাসের দিন ও সময়</div>
-                    <div class="text-xs sm:text-sm font-bold text-slate-900">
+                    <div class="text-xs sm:text-sm font-bold text-slate-900 leading-snug">
                         প্রতি বৃহস্পতি, শুক্র ও শনিবার
                     </div>
-                    <div class="text-[10px] text-emerald-700 font-semibold mt-0.5">রাত ৯:০০ টা ({{ $batchDisplayName }})</div>
+                    <div class="text-[10px] text-emerald-700 font-semibold mt-0.5 truncate">রাত ৯:০০ টা ({{ $batchDisplayName }})</div>
                 </div>
             </div>
 
             <!-- Total Classes / Attendance -->
-            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3">
-                <div class="w-11 h-11 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-lg shrink-0">
+            <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3">
+                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-base sm:text-lg shrink-0">
                     <i class="fa-solid fa-clipboard-user"></i>
                 </div>
                 <div class="min-w-0 flex-1">
-                    <div class="flex items-center justify-between">
-                        <span class="text-[11px] font-semibold text-slate-500">আমার উপস্থিতি</span>
+                    <div class="flex items-center justify-between gap-1">
+                        <span class="text-[11px] font-semibold text-slate-500 truncate">আমার উপস্থিতি</span>
                         <span class="text-xs font-black {{ ($attendanceStats['percentage'] ?? 100) >= 80 ? 'text-emerald-600' : 'text-amber-600' }}">
                             {{ $attendanceStats['percentage'] ?? 100 }}%
                         </span>
                     </div>
-                    <div class="text-xs font-bold text-slate-900 mt-0.5">
+                    <div class="text-xs font-bold text-slate-900 mt-0.5 truncate">
                         @if(($attendanceStats['total_sessions'] ?? 0) > 0)
                             {{ $attendanceStats['present_count'] }}/{{ $attendanceStats['total_sessions'] }} টি ক্লাসে উপস্থিত
                         @else
@@ -380,8 +249,8 @@
             </div>
 
             <!-- Enrollment Status -->
-            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3">
-                <div class="w-11 h-11 rounded-xl bg-green-50 text-green-600 flex items-center justify-center text-lg shrink-0">
+            <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3">
+                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-green-50 text-green-600 flex items-center justify-center text-base sm:text-lg shrink-0">
                     <i class="fa-solid fa-circle-check"></i>
                 </div>
                 <div class="min-w-0">
@@ -389,29 +258,96 @@
                     <div class="text-xs sm:text-sm font-bold text-green-700 flex items-center gap-1">
                         <span>সক্রিয় শিক্ষার্থী</span>
                     </div>
+                    <div class="text-[10px] text-slate-500 font-medium mt-0.5 truncate">{{ $batchDisplayName }}</div>
                 </div>
             </div>
         </div>
+    </section>
 
-        <!-- 3. CLASS SCHEDULE & MEETINGS TIMELINE (তারিখ ও সময়ভিত্তিক ক্লাস শিডিউল ক্যালেন্ডার) -->
-        @if(isset($scheduledMeetings) && count($scheduledMeetings) > 0)
-            <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-7 space-y-4">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100">
-                    <div>
-                        <h3 class="font-bold text-lg text-slate-900 flex items-center gap-2">
-                            <i class="fa-solid fa-calendar-days text-emerald-600"></i>
-                            <span>ক্লাসের তারিখ ও সময়সূচি (Class Schedule Calendar)</span>
-                        </h3>
-                        <p class="text-xs text-slate-500 mt-0.5">
-                            লাইভ ক্লাস অনুষ্ঠিত হবে প্রতি বৃহস্পতি, শুক্র ও শনিবার রাত ৯:০০ টায়
-                        </p>
-                    </div>
-                    <span class="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 self-start sm:self-auto">
-                        নির্ধারিত ক্লাস: {{ count($scheduledMeetings) }}টি
-                    </span>
+    <!-- ==================== SECTION 2: CLASS SCHEDULE & MEETINGS ==================== -->
+    <section id="schedule" class="scroll-mt-20 sm:scroll-mt-24">
+        <div class="bg-white rounded-2xl sm:rounded-3xl border border-slate-200 shadow-sm p-4 sm:p-6 lg:p-7 space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100">
+                <div>
+                    <h3 class="font-bold text-base sm:text-lg text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-calendar-days text-emerald-600"></i>
+                        <span>ক্লাসের তারিখ ও সময়সূচি (Class Schedule Calendar)</span>
+                    </h3>
+                    <p class="text-xs text-slate-500 mt-0.5">
+                        লাইভ ক্লাস অনুষ্ঠিত হবে প্রতি বৃহস্পতি, শুক্র ও শনিবার রাত ৯:০০ টায়
+                    </p>
+                </div>
+                <span class="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 self-start sm:self-auto shrink-0">
+                    নির্ধারিত ক্লাস: {{ isset($scheduledMeetings) ? count($scheduledMeetings) : 0 }}টি
+                </span>
+            </div>
+
+            @if(isset($scheduledMeetings) && count($scheduledMeetings) > 0)
+                <!-- Mobile Card List (< sm) -->
+                <div class="sm:hidden space-y-3">
+                    @foreach($scheduledMeetings as $m)
+                        @php $isThisMeetingLive = $m->is_live_now; @endphp
+                        <div class="p-3.5 rounded-2xl border {{ $isThisMeetingLive ? 'border-rose-300 bg-rose-50/40' : 'border-slate-200 bg-slate-50/70' }} space-y-2.5">
+                            <div class="flex items-start justify-between gap-2">
+                                <div>
+                                    <div class="text-xs font-extrabold text-slate-900">
+                                        {{ $m->starts_at ? $m->starts_at->format('d M, Y') : 'N/A' }}
+                                        <span class="font-normal text-slate-500">({{ $m->starts_at ? $m->starts_at->isoFormat('dddd') : '' }})</span>
+                                    </div>
+                                    <div class="text-[11px] font-bold text-emerald-700 mt-0.5 flex items-center gap-1">
+                                        <i class="fa-regular fa-clock text-[10px]"></i>
+                                        <span>{{ $m->starts_at ? $m->starts_at->format('h:i A') : 'N/A' }}</span>
+                                        @if($m->schedule_text)
+                                            <span class="text-amber-700 font-medium">&bull; {{ $m->schedule_text }}</span>
+                                        @endif
+                                    </div>
+                                </div>
+                                @if($isThisMeetingLive)
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700 animate-pulse shrink-0">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span>
+                                        লাইভ চলছে
+                                    </span>
+                                @elseif($m->starts_at && $m->starts_at->isPast())
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-200/80 text-slate-700 shrink-0">
+                                        সম্পন্ন
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 shrink-0">
+                                        আসন্ন ক্লাস
+                                    </span>
+                                @endif
+                            </div>
+
+                            <div class="font-bold text-sm text-slate-900 leading-snug">
+                                {{ $m->title }}
+                            </div>
+
+                            <div class="pt-1">
+                                @if($isThisMeetingLive)
+                                    <a href="{{ route('student.live-class') }}" target="_blank"
+                                       class="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-sm transition">
+                                        <i class="fa-solid fa-video text-[11px]"></i>
+                                        <span>যুক্ত হন</span>
+                                    </a>
+                                @elseif($m->hasRecording())
+                                    <a href="{{ route('student.recordings.watch', $m->id) }}"
+                                       class="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition">
+                                        <i class="fa-solid fa-circle-play text-[11px]"></i>
+                                        <span>রেকর্ডিং দেখুন</span>
+                                    </a>
+                                @else
+                                    <div class="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-slate-200/70 text-slate-500 font-semibold text-xs">
+                                        <i class="fa-solid fa-lock text-[10px]"></i>
+                                        <span>নির্ধারিত সময়ে সক্রিয় হবে</span>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    @endforeach
                 </div>
 
-                <div class="overflow-x-auto">
+                <!-- Desktop & Tablet Table (>= sm) -->
+                <div class="hidden sm:block overflow-x-auto">
                     <table class="w-full text-left border-collapse text-xs sm:text-sm">
                         <thead>
                             <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[11px]">
@@ -424,9 +360,7 @@
                         </thead>
                         <tbody class="divide-y divide-slate-100">
                             @foreach($scheduledMeetings as $m)
-                                @php
-                                    $isThisMeetingLive = $m->is_live_now;
-                                @endphp
+                                @php $isThisMeetingLive = $m->is_live_now; @endphp
                                 <tr class="hover:bg-slate-50/70 transition {{ $isThisMeetingLive ? 'bg-red-50/30' : '' }}">
                                     <td class="py-3 px-3 sm:px-4 whitespace-nowrap">
                                         <div class="font-bold text-slate-800">
@@ -467,13 +401,13 @@
                                     <td class="py-3 px-3 sm:px-4 text-right whitespace-nowrap">
                                         @if($isThisMeetingLive)
                                             <a href="{{ route('student.live-class') }}" target="_blank"
-                                               class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-xs transition animate-pulse">
+                                               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-sm transition animate-pulse">
                                                 <i class="fa-solid fa-video text-[10px]"></i>
                                                 <span>যুক্ত হন</span>
                                             </a>
                                         @elseif($m->hasRecording())
                                             <a href="{{ route('student.recordings.watch', $m->id) }}"
-                                               class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition">
+                                               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition">
                                                 <i class="fa-solid fa-circle-play text-[10px]"></i>
                                                 <span>রেকর্ডিং দেখুন</span>
                                             </a>
@@ -489,32 +423,46 @@
                         </tbody>
                     </table>
                 </div>
-            </div>
-        @endif
-
-        <!-- CLASS RECORDINGS ARCHIVE SECTION (ক্লাস রেকর্ডিং ও ভিডিও লেকচার) -->
-        @if(isset($recordings) && count($recordings) > 0)
-            <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-7 space-y-4">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg font-bold">
-                            <i class="fa-solid fa-circle-play"></i>
-                        </div>
-                        <div>
-                            <h3 class="font-bold text-lg text-slate-900">
-                                ক্লাস রেকর্ডিং ও ভিডিও লেকচার
-                            </h3>
-                            <p class="text-xs text-slate-500 mt-0.5">
-                                পূর্ববর্তী সকল ক্লাসের পূর্ণাঙ্গ রেকর্ডিং (সুরক্ষিত আনব্র্যান্ডেড প্লেয়ার)
-                            </p>
-                        </div>
+            @else
+                <div class="p-6 rounded-2xl bg-slate-50 border border-slate-200/80 text-center">
+                    <div class="w-11 h-11 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto text-lg mb-2">
+                        <i class="fa-regular fa-calendar"></i>
                     </div>
-                    <span class="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 self-start sm:self-auto">
-                        উপলব্ধ রেকর্ডিং: {{ count($recordings) }}টি
-                    </span>
+                    <p class="text-xs sm:text-sm font-bold text-slate-800">
+                        নতুন ক্লাস শিডিউল শীঘ্রই প্রকাশ করা হবে
+                    </p>
+                    <p class="text-[11px] text-slate-500 mt-1 max-w-md mx-auto">
+                        নিয়মিত ক্লাস প্রতি বৃহস্পতি, শুক্র ও শনিবার রাত ৯:০০ টায় অনুষ্ঠিত হয়। নতুন তারিখ যুক্ত হলে এখানে দেখতে পাবেন।
+                    </p>
                 </div>
+            @endif
+        </div>
+    </section>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <!-- ==================== SECTION 3: CLASS RECORDINGS ARCHIVE ==================== -->
+    <section id="recordings" class="scroll-mt-20 sm:scroll-mt-24">
+        <div class="bg-white rounded-2xl sm:rounded-3xl border border-slate-200 shadow-sm p-4 sm:p-6 lg:p-7 space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg font-bold shrink-0">
+                        <i class="fa-solid fa-circle-play"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-base sm:text-lg text-slate-900">
+                            ক্লাস রেকর্ডিং ও ভিডিও লেকচার
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-0.5">
+                            পূর্ববর্তী সকল ক্লাসের পূর্ণাঙ্গ রেকর্ডিং (সুরক্ষিত আনব্র্যান্ডেড প্লেয়ার)
+                        </p>
+                    </div>
+                </div>
+                <span class="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 self-start sm:self-auto shrink-0">
+                    উপলব্ধ রেকর্ডিং: {{ isset($recordings) ? count($recordings) : 0 }}টি
+                </span>
+            </div>
+
+            @if(isset($recordings) && count($recordings) > 0)
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5 sm:gap-4">
                     @foreach($recordings as $index => $rec)
                         <div class="p-4 bg-slate-50 hover:bg-emerald-50/20 rounded-2xl border border-slate-200 hover:border-emerald-300 transition flex flex-col justify-between space-y-3 group">
                             <div>
@@ -534,13 +482,13 @@
                                 @endif
                             </div>
 
-                            <div class="flex items-center justify-between pt-3 border-t border-slate-200/80">
-                                <span class="text-[11px] text-slate-500 font-mono">
+                            <div class="flex items-center justify-between pt-3 border-t border-slate-200/80 gap-2">
+                                <span class="text-[11px] text-slate-500 font-mono truncate">
                                     <i class="fa-regular fa-clock text-emerald-600 mr-1 text-[10px]"></i>
                                     {{ $rec->recording_duration ?: 'পূর্ণ ক্লাস' }}
                                 </span>
                                 <a href="{{ route('student.recordings.watch', $rec->id) }}"
-                                   class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition group-hover:scale-105">
+                                   class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition group-hover:scale-105 shrink-0">
                                     <i class="fa-solid fa-play text-[10px]"></i>
                                     <span>ভিডিও দেখুন</span>
                                 </a>
@@ -548,36 +496,50 @@
                         </div>
                     @endforeach
                 </div>
-            </div>
-        @endif
-
-        <!-- 4. OFFICIAL WHATSAPP BATCH GROUP CARD -->
-        <div class="p-5 rounded-2xl bg-gradient-to-r from-emerald-50 via-teal-50 to-green-50 border border-emerald-200 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div class="flex items-center gap-3.5">
-                <div class="w-12 h-12 rounded-2xl bg-green-500 text-white flex items-center justify-center text-2xl shadow-sm shrink-0">
-                    <i class="fa-brands fa-whatsapp"></i>
-                </div>
-                <div>
-                    <h3 class="font-extrabold text-sm sm:text-base text-slate-900">
-                        {{ $batchDisplayName }}-এর অফিসিয়াল WhatsApp গ্রুপে যুক্ত থাকুন
-                    </h3>
-                    <p class="text-xs text-slate-600 mt-0.5">
-                        সকল জরুরি নোটিশ, ক্লাসের লিংক, রেকর্ডিং এবং ট্রেইনারদের সাথে সরাসরি প্রশ্নোত্তর এই গ্রুপে পরিচালিত হয়।
+            @else
+                <div class="p-6 rounded-2xl bg-slate-50 border border-slate-200/80 text-center">
+                    <div class="w-11 h-11 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto text-lg mb-2">
+                        <i class="fa-solid fa-film"></i>
+                    </div>
+                    <p class="text-xs sm:text-sm font-bold text-slate-800">
+                        এখনো কোনো ক্লাস রেকর্ডিং প্রকাশিত হয়নি
+                    </p>
+                    <p class="text-[11px] text-slate-500 mt-1 max-w-md mx-auto">
+                        প্রতিটি লাইভ ক্লাস সম্পন্ন হওয়ার পর রেকর্ডিং এখানে যুক্ত করা হবে, যা আপনি যেকোনো সময় দেখতে পারবেন।
                     </p>
                 </div>
-            </div>
-            <a href="https://chat.whatsapp.com/EeM7caaCmE79NR0BFdrwWh?s=sh&p=a&iam=2" target="_blank"
-               class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-sm shrink-0 transition">
-                <i class="fa-brands fa-whatsapp text-base"></i>
-                <span>গ্রুপে যুক্ত হন</span>
-            </a>
+            @endif
         </div>
+    </section>
 
-        <!-- 4. ATTENDANCE SUMMARY & BREAKDOWN SECTION (উপস্থিতি ও হাজিরা বিবরণী) -->
-        <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-7 space-y-6">
+    <!-- OFFICIAL WHATSAPP BATCH GROUP CARD -->
+    <div class="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-emerald-50 via-teal-50 to-green-50 border border-emerald-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div class="flex items-start sm:items-center gap-3.5">
+            <div class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-green-500 text-white flex items-center justify-center text-2xl shadow-sm shrink-0">
+                <i class="fa-brands fa-whatsapp"></i>
+            </div>
+            <div>
+                <h3 class="font-extrabold text-sm sm:text-base text-slate-900">
+                    {{ $batchDisplayName }}-এর অফিসিয়াল WhatsApp গ্রুপে যুক্ত থাকুন
+                </h3>
+                <p class="text-xs text-slate-600 mt-0.5 leading-relaxed">
+                    সকল জরুরি নোটিশ, ক্লাসের লিংক, রেকর্ডিং এবং ট্রেইনারদের সাথে সরাসরি প্রশ্নোত্তর এই গ্রুপে পরিচালিত হয়।
+                </p>
+            </div>
+        </div>
+        <a href="https://chat.whatsapp.com/EeM7caaCmE79NR0BFdrwWh?s=sh&p=a&iam=2" target="_blank"
+           class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-sm shrink-0 transition">
+            <i class="fa-brands fa-whatsapp text-base"></i>
+            <span>গ্রুপে যুক্ত হন</span>
+        </a>
+    </div>
+
+    <!-- ==================== SECTION 4: ATTENDANCE SUMMARY & HISTORY ==================== -->
+    <section id="attendance" class="scroll-mt-20 sm:scroll-mt-24">
+        <div class="bg-white rounded-2xl sm:rounded-3xl border border-slate-200 shadow-sm p-4 sm:p-6 lg:p-7 space-y-5 sm:space-y-6">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
                 <div>
-                    <h3 class="font-bold text-lg text-slate-900 flex items-center gap-2">
+                    <h3 class="font-bold text-base sm:text-lg text-slate-900 flex items-center gap-2">
                         <i class="fa-solid fa-clipboard-check text-emerald-600"></i>
                         <span>আমার ক্লাসের হাজিরা ও উপস্থিতির হার</span>
                     </h3>
@@ -585,7 +547,7 @@
                         লাইভ ক্লাসে যোগ দিলে স্বয়ংক্রিয়ভাবে আপনার হাজিরা গণনা করা হয়।
                     </p>
                 </div>
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 self-start sm:self-auto">
                     <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold {{ ($attendanceStats['percentage'] ?? 100) >= 80 ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-amber-100 text-amber-800 border border-amber-200' }}">
                         <i class="fa-solid {{ ($attendanceStats['percentage'] ?? 100) >= 80 ? 'fa-circle-check text-emerald-600' : 'fa-circle-exclamation text-amber-600' }}"></i>
                         <span>উপস্থিতির হার: {{ $attendanceStats['percentage'] ?? 100 }}%</span>
@@ -595,30 +557,30 @@
 
             <!-- Attendance Stats Grid -->
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
+                <div class="bg-slate-50 p-3.5 sm:p-4 rounded-2xl border border-slate-200/80">
                     <div class="text-[11px] font-semibold text-slate-500">মোট ক্লাস সম্পন্ন</div>
-                    <div class="text-xl font-black text-slate-900 mt-1">
+                    <div class="text-lg sm:text-xl font-black text-slate-900 mt-1">
                         {{ $attendanceStats['total_sessions'] ?? 0 }} <span class="text-xs font-normal text-slate-500">টি</span>
                     </div>
                 </div>
 
-                <div class="bg-emerald-50/60 p-4 rounded-2xl border border-emerald-200/80">
+                <div class="bg-emerald-50/60 p-3.5 sm:p-4 rounded-2xl border border-emerald-200/80">
                     <div class="text-[11px] font-semibold text-emerald-800">উপস্থিত ছিলেন</div>
-                    <div class="text-xl font-black text-emerald-700 mt-1">
+                    <div class="text-lg sm:text-xl font-black text-emerald-700 mt-1">
                         {{ $attendanceStats['present_count'] ?? 0 }} <span class="text-xs font-normal text-emerald-600">টি</span>
                     </div>
                 </div>
 
-                <div class="bg-rose-50/60 p-4 rounded-2xl border border-rose-200/80">
+                <div class="bg-rose-50/60 p-3.5 sm:p-4 rounded-2xl border border-rose-200/80">
                     <div class="text-[11px] font-semibold text-rose-800">অনুপস্থিত</div>
-                    <div class="text-xl font-black text-rose-700 mt-1">
+                    <div class="text-lg sm:text-xl font-black text-rose-700 mt-1">
                         {{ $attendanceStats['absent_count'] ?? 0 }} <span class="text-xs font-normal text-rose-600">টি</span>
                     </div>
                 </div>
 
-                <div class="bg-purple-50/60 p-4 rounded-2xl border border-purple-200/80">
+                <div class="bg-purple-50/60 p-3.5 sm:p-4 rounded-2xl border border-purple-200/80">
                     <div class="text-[11px] font-semibold text-purple-800">উপস্থিতির শতকরা হার</div>
-                    <div class="text-xl font-black text-purple-700 mt-1">
+                    <div class="text-lg sm:text-xl font-black text-purple-700 mt-1">
                         {{ $attendanceStats['percentage'] ?? 100 }}%
                     </div>
                 </div>
@@ -626,7 +588,7 @@
 
             <!-- Progress Bar & Certificate Notice -->
             <div class="p-4 rounded-2xl bg-gradient-to-r from-emerald-50/60 to-teal-50/40 border border-emerald-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
-                <div class="flex items-center gap-2.5">
+                <div class="flex items-start sm:items-center gap-2.5">
                     <div class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
                         <i class="fa-solid fa-award"></i>
                     </div>
@@ -649,7 +611,43 @@
 
             <!-- Detailed Session Attendance History -->
             @if(count($sessions) > 0)
-                <div class="overflow-x-auto">
+                <!-- Mobile Session Cards (< sm) -->
+                <div class="sm:hidden space-y-2.5">
+                    @foreach($sessions as $sess)
+                        @php
+                            $myAttendance = $sess->attendances->first();
+                            $isPresent = $myAttendance && $myAttendance->isPresent();
+                        @endphp
+                        <div class="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2">
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="text-xs font-bold text-slate-800">
+                                    {{ $sess->session_date->format('d M, Y') }}
+                                    <span class="text-[10px] font-normal text-slate-400">({{ $sess->session_date->isoFormat('dddd') }})</span>
+                                </span>
+                                @if($isPresent)
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 shrink-0">
+                                        <i class="fa-solid fa-circle-check text-emerald-600 text-[10px]"></i>
+                                        <span>উপস্থিত</span>
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200 shrink-0">
+                                        <i class="fa-solid fa-circle-xmark text-rose-500 text-[10px]"></i>
+                                        <span>অনুপস্থিত</span>
+                                    </span>
+                                @endif
+                            </div>
+                            <div class="text-xs font-bold text-slate-900">{{ $sess->title }}</div>
+                            @if($isPresent)
+                                <div class="text-[11px] text-slate-500 font-mono">
+                                    যোগদান: {{ $myAttendance->attended_at ? $myAttendance->attended_at->format('h:i A') : 'ক্লাস টাইম' }}
+                                </div>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+
+                <!-- Desktop Attendance Table (>= sm) -->
+                <div class="hidden sm:block overflow-x-auto">
                     <table class="w-full text-left border-collapse text-xs sm:text-sm">
                         <thead>
                             <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[11px]">
@@ -712,12 +710,14 @@
                 </div>
             @endif
         </div>
+    </section>
 
-        <!-- 4. COURSE CURRICULUM & MODULE ACCORDION (12 MODULES) -->
-        <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-7 space-y-4">
+    <!-- ==================== SECTION 5: COURSE CURRICULUM & MODULES ==================== -->
+    <section id="curriculum" class="scroll-mt-20 sm:scroll-mt-24">
+        <div class="bg-white rounded-2xl sm:rounded-3xl border border-slate-200 shadow-sm p-4 sm:p-6 lg:p-7 space-y-4">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100">
                 <div>
-                    <h3 class="font-bold text-lg text-slate-900 flex items-center gap-2">
+                    <h3 class="font-bold text-base sm:text-lg text-slate-900 flex items-center gap-2">
                         <i class="fa-solid fa-list-check text-emerald-600"></i>
                         <span>কোর্স কারিকুলাম ও মডিউলসমূহ (১২টি লেকচার)</span>
                     </h3>
@@ -725,7 +725,7 @@
                         সাংবাদিকতা, আইন ও উপস্থাপনা কোর্সের সম্পূর্ণ সিলেবাস ও পাঠ্যসূচি
                     </p>
                 </div>
-                <span class="text-xs font-semibold px-3 py-1 rounded-full bg-slate-100 text-slate-700 self-start sm:self-auto">
+                <span class="text-xs font-semibold px-3 py-1 rounded-full bg-slate-100 text-slate-700 self-start sm:self-auto shrink-0">
                     মোট ১২টি লাইভ ক্লাস
                 </span>
             </div>
@@ -748,33 +748,35 @@
                 ];
             @endphp
 
-            <div class="space-y-3">
+            <div class="space-y-2.5 sm:space-y-3">
                 @foreach($defaultModules as $mod)
                     <div class="border border-slate-200 rounded-2xl overflow-hidden transition"
-                         :class="openModule === {{ $mod['order'] }} ? 'border-emerald-500 bg-emerald-50/20 shadow-xs' : 'bg-white hover:border-slate-300'">
+                         :class="openModule === {{ $mod['order'] }} ? 'border-emerald-500 bg-emerald-50/20 shadow-sm' : 'bg-white hover:border-slate-300'">
                         <button type="button"
                                 @click="openModule = (openModule === {{ $mod['order'] }} ? null : {{ $mod['order'] }})"
-                                class="w-full p-4 text-left flex items-center justify-between gap-3">
-                            <div class="flex items-center gap-3">
-                                <span class="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs"
+                                class="w-full p-3.5 sm:p-4 text-left flex items-center justify-between gap-3 cursor-pointer">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <span class="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs shrink-0"
                                       :class="openModule === {{ $mod['order'] }} ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-700'">
                                     {{ $mod['order'] }}
                                 </span>
-                                <div>
-                                    <h4 class="font-bold text-sm text-slate-900">{{ $mod['title'] }}</h4>
-                                    <span class="text-[11px] text-slate-500">{{ $mod['duration'] }}</span>
+                                <div class="min-w-0">
+                                    <h4 class="font-bold text-xs sm:text-sm text-slate-900 leading-snug">{{ $mod['title'] }}</h4>
+                                    <span class="text-[11px] text-slate-500 block mt-0.5">{{ $mod['duration'] }}</span>
                                 </div>
                             </div>
-                            <i class="fa-solid fa-chevron-down text-xs text-slate-400 transition-transform duration-200"
+                            <i class="fa-solid fa-chevron-down text-xs text-slate-400 transition-transform duration-200 shrink-0"
                                :class="openModule === {{ $mod['order'] }} ? 'rotate-180 text-emerald-600' : ''"></i>
                         </button>
-                        <div x-show="openModule === {{ $mod['order'] }}" x-collapse class="px-4 pb-4 pt-1 text-xs text-slate-600 border-t border-slate-100">
+                        <div x-show="openModule === {{ $mod['order'] }}"
+                             x-transition.opacity.duration.150ms
+                             class="px-3.5 sm:px-4 pb-4 pt-2 text-xs text-slate-600 border-t border-slate-100">
                             <p class="leading-relaxed">{{ $mod['desc'] }}</p>
-                            <div class="mt-3 flex items-center gap-2">
-                                <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                            <div class="mt-3 flex items-center gap-2 flex-wrap">
+                                <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
                                     <i class="fa-solid fa-video text-[10px]"></i> লাইভ ক্লাস অন্তর্ভুক্ত
                                 </span>
-                                <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded">
+                                <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg">
                                     <i class="fa-solid fa-file-lines text-[10px]"></i> লেকচার নোট দেওয়া হবে
                                 </span>
                             </div>
@@ -783,16 +785,18 @@
                 @endforeach
             </div>
         </div>
+    </section>
 
-        <!-- 5. STUDENT SUPPORT & GUIDELINES -->
+    <!-- ==================== SECTION 6: STUDENT SUPPORT & GUIDELINES ==================== -->
+    <section id="support" class="scroll-mt-20 sm:scroll-mt-24">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <!-- Guidelines -->
-            <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-3">
-                <h4 class="font-bold text-sm text-slate-900 flex items-center gap-2">
+            <div class="bg-white p-5 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-200 shadow-sm space-y-3">
+                <h4 class="font-bold text-sm sm:text-base text-slate-900 flex items-center gap-2">
                     <i class="fa-solid fa-circle-info text-emerald-600"></i>
                     <span>অনলাইন ক্লাসের গুরুত্বপূর্ণ নির্দেশনাবলী</span>
                 </h4>
-                <ul class="text-xs text-slate-600 space-y-2 list-disc list-inside leading-relaxed">
+                <ul class="text-xs sm:text-sm text-slate-600 space-y-2 list-disc list-inside leading-relaxed">
                     <li>ক্লাস শুরুর ৫ মিনিট আগেই জুম/মিট লিংকে জয়েন করুন।</li>
                     <li>ক্লাস চলাকালীন অডিও মিউট রাখুন; প্রশ্ন করার সময় Hand Raise করুন।</li>
                     <li>উচ্চারণ ও উপস্থাপনা অনুশীলনের সময় ক্যামেরা অন রাখা বাধ্যতামূলক।</li>
@@ -801,37 +805,29 @@
             </div>
 
             <!-- Helpline -->
-            <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-3">
-                <h4 class="font-bold text-sm text-slate-900 flex items-center gap-2">
+            <div class="bg-white p-5 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-200 shadow-sm space-y-3">
+                <h4 class="font-bold text-sm sm:text-base text-slate-900 flex items-center gap-2">
                     <i class="fa-solid fa-headset text-emerald-600"></i>
                     <span>যেকোনো প্রয়োজনে শিক্ষার্থী সাপোর্ট</span>
                 </h4>
-                <p class="text-xs text-slate-600 leading-relaxed">
+                <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">
                     লগইন সংক্রান্ত কোনো অসুবিধা হলে বা ক্লাসের লিংক না পেলে যেকোনো সময় সরাসরি আমাদের হেল্পলাইনে কল বা হোয়াটসঅ্যাপ করতে পারেন:
                 </p>
-                <div class="pt-1 flex items-center gap-2">
+                <div class="pt-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
                     <a href="https://wa.me/8801332549549" target="_blank"
-                       class="inline-flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs transition">
-                        <i class="fa-brands fa-whatsapp text-sm"></i>
+                       class="inline-flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-sm transition">
+                        <i class="fa-brands fa-whatsapp text-base"></i>
                         <span>হোয়াটসঅ্যাপ: ০১৩৩২-৫৪৯৫৪৯</span>
                     </a>
                     <a href="tel:01332549549"
-                       class="inline-flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs px-3.5 py-2 rounded-xl border border-slate-200 transition">
+                       class="inline-flex items-center justify-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl border border-slate-200 transition">
                         <i class="fa-solid fa-phone text-xs"></i>
                         <span>কল করুন</span>
                     </a>
                 </div>
             </div>
         </div>
+    </section>
 
-    </main>
-
-    <!-- Footer -->
-    <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500 mt-auto">
-        <div class="max-w-7xl mx-auto px-4">
-            আমার বাংলা একাডেমি শিক্ষার্থী পোর্টাল &copy; {{ date('Y') }} । সর্বস্বত্ব সংরক্ষিত।
-        </div>
-    </footer>
-
-</body>
-</html>
+</div>
+@endsection

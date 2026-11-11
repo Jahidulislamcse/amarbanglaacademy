@@ -270,4 +270,69 @@ class StudentAuthAndLmsTest extends TestCase
         $dashboardResponse->assertSee('আজ রাত ৯:০০ টা');
         $dashboardResponse->assertDontSee('লাইভ ক্লাসে যোগ দিন');
     }
+
+    public function test_student_dashboard_renders_formal_header_sidebar_simple_menu_and_mobile_navigation(): void
+    {
+        $studentUser = User::create([
+            'name' => 'রাকিবুল ইসলাম',
+            'email' => 'rakib.portal@example.com',
+            'phone' => '01314818999',
+            'username' => 'rakib999',
+            'password' => Hash::make('AB#2026#999'),
+            'role' => 'student',
+        ]);
+
+        Enrollment::create([
+            'user_id' => $studentUser->id,
+            'course_id' => $this->course->id,
+            'student_name' => 'রাকিবুল ইসলাম',
+            'student_email' => 'rakib.portal@example.com',
+            'student_phone' => '01314818999',
+            'status' => 'active',
+            'enrolled_at' => now(),
+        ]);
+
+        $this->course->update(['is_live_now' => false]);
+
+        $response = $this->actingAs($studentUser)->get(route('student.dashboard'));
+        $response->assertStatus(200);
+
+        // Formal Sidebar & Header Navigation
+        $response->assertSee('Student LMS Portal');
+        $response->assertSee('শিক্ষার্থী মেনু');
+        $response->assertSee('ড্যাশবোর্ড ওভারভিউ');
+        $response->assertSee('ক্লাস শিডিউল');
+        $response->assertSee('ক্লাস রেকর্ডিং');
+        $response->assertSee('হাজিরা ও উপস্থিতি');
+        $response->assertSee('কোর্স কারিকুলাম');
+        $response->assertSee('গাইডলাইন ও সহায়তা');
+        $response->assertSee('পোর্টাল থেকে লগআউট');
+
+        // Mobile Drawer Trigger & Bottom Navigation Dock
+        $response->assertSee('নেভিগেশন মেনু খুলুন');
+        $response->assertSee('মোবাইল দ্রুত মেনু');
+        $response->assertSee('ওভারভিউ');
+        $response->assertSee('শিডিউল');
+        $response->assertSee('রেকর্ডিং');
+        $response->assertSee('হাজিরা');
+
+        // Section Anchors Present Always
+        $response->assertSee('id="overview"', false);
+        $response->assertSee('id="schedule"', false);
+        $response->assertSee('id="recordings"', false);
+        $response->assertSee('id="attendance"', false);
+        $response->assertSee('id="curriculum"', false);
+        $response->assertSee('id="support"', false);
+
+        // Helpful Empty-State Cards When Schedule & Recordings Are Empty
+        $response->assertSee('নতুন ক্লাস শিডিউল শীঘ্রই প্রকাশ করা হবে');
+        $response->assertSee('এখনো কোনো ক্লাস রেকর্ডিং প্রকাশিত হয়নি');
+
+        // UTF-8 Safe First Initial (No Broken Replacement Character)
+        $this->assertStringNotContainsString("\u{FFFD}", $response->getContent());
+
+        // Live CTA must NOT appear anywhere while offline
+        $response->assertDontSee('লাইভ ক্লাসে যোগ দিন');
+        $response->assertDontSee('সরাসরি ক্লাসে যোগ দিন');
+    }
 }
