@@ -282,12 +282,12 @@
             <table class="w-full text-left border-collapse text-xs sm:text-sm">
                 <thead>
                     <tr class="bg-slate-50/80 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[11px]">
-                        <th class="py-2.5 px-3 sm:px-4">তারিখ ও সময়</th>
-                        <th class="py-2.5 px-3 sm:px-4">ক্লাসের বিষয় ও ব্যাচ</th>
-                        <th class="py-2.5 px-3 sm:px-4">প্ল্যাটফর্ম</th>
-                        <th class="py-2.5 px-3 sm:px-4">রেকর্ডিং</th>
-                        <th class="py-2.5 px-3 sm:px-4 text-center">স্ট্যাটাস</th>
-                        <th class="py-2.5 px-3 sm:px-4 text-right">লাইভ ও অ্যাকশন</th>
+                        <th class="py-2 px-3 sm:px-4 w-44 whitespace-nowrap">তারিখ ও সময়</th>
+                        <th class="py-2 px-3 sm:px-4">ক্লাসের বিষয় ও ব্যাচ</th>
+                        <th class="py-2 px-3 sm:px-4 w-24 whitespace-nowrap">প্ল্যাটফর্ম</th>
+                        <th class="py-2 px-3 sm:px-4 w-32 whitespace-nowrap">রেকর্ডিং</th>
+                        <th class="py-2 px-3 sm:px-4 w-20 whitespace-nowrap text-center">স্ট্যাটাস</th>
+                        <th class="py-2 px-3 sm:px-4 w-36 whitespace-nowrap text-right">লাইভ ও অ্যাকশন</th>
                     </tr>
                 </thead>
                 <tbody id="meetingsTableBody" class="divide-y divide-slate-100">
@@ -299,107 +299,99 @@
                             class="hover:bg-slate-50/70 transition {{ $meeting->is_live_now ? 'bg-red-50/20' : '' }}"
                             :class="getMeeting({{ $meeting->id }})?.is_live_now ? 'bg-red-50/25' : ''">
 
-                            <!-- Date & Time (Smart combined column) -->
-                            <td class="py-2.5 px-3 sm:px-4 whitespace-nowrap">
-                                <div class="flex items-center gap-2">
-                                    <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex flex-col items-center justify-center font-bold shrink-0 border border-emerald-100">
-                                        <span class="text-[9px] uppercase leading-none font-semibold">{{ $mStarts ? $mStarts->format('M') : 'N/A' }}</span>
-                                        <span class="text-xs leading-none font-black mt-0.5">{{ $mStarts ? $mStarts->format('d') : '--' }}</span>
-                                    </div>
-                                    <div>
-                                        <div class="font-bold text-slate-900 text-xs flex items-center gap-1.5">
-                                            <span>{{ $mStarts ? $mStarts->format('d M, Y') : 'N/A' }}</span>
-                                            @if($mStarts)
-                                                <span class="text-[10px] font-normal text-slate-500">({{ $mStarts->isoFormat('dddd') }})</span>
-                                            @endif
-                                        </div>
-                                        <div class="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
-                                            <i class="fa-regular fa-clock text-emerald-600 text-[10px]"></i>
-                                            <span class="font-semibold text-slate-700">{{ $mStarts ? $mStarts->format('h:i A') : 'N/A' }}</span>
-                                            @if($meeting->schedule_text)
-                                                <span class="text-[10px] text-amber-700 bg-amber-50 px-1 rounded border border-amber-200/60 font-medium ml-1">{{ $meeting->schedule_text }}</span>
-                                            @endif
-                                        </div>
-                                    </div>
+                            <!-- Date & Time (Clean compact 2-line) -->
+                            <td class="py-1.5 px-3 sm:px-4 whitespace-nowrap">
+                                <div class="font-bold text-slate-800 text-xs">
+                                    {{ $mStarts ? $mStarts->format('d M, Y') : 'N/A' }}
+                                    @if($mStarts)
+                                        <span class="text-[10px] font-normal text-slate-400">({{ $mStarts->isoFormat('dddd') }})</span>
+                                    @endif
+                                </div>
+                                <div class="text-[11px] text-slate-500 font-medium flex items-center gap-1 mt-0.5">
+                                    <i class="fa-regular fa-clock text-emerald-600 text-[10px]"></i>
+                                    <span>{{ $mStarts ? $mStarts->format('h:i A') : 'N/A' }}</span>
                                 </div>
                             </td>
 
-                            <!-- Topic & Batch -->
-                            <td class="py-2.5 px-3 sm:px-4">
-                                <div class="font-bold text-slate-900 text-xs sm:text-sm line-clamp-1">
-                                    {{ $meeting->title }}
-                                </div>
-                                <div class="flex items-center gap-1.5 flex-wrap mt-0.5">
-                                    <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold {{ $meeting->batch ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-slate-100 text-slate-600 border border-slate-200' }}">
+                            <!-- Topic & Batch (Absorbs available space, zero awkward wrapping) -->
+                            <td class="py-1.5 px-3 sm:px-4">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="font-bold text-slate-900 text-xs sm:text-sm">{{ $meeting->title }}</span>
+                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold whitespace-nowrap {{ $meeting->batch ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-slate-100 text-slate-600 border border-slate-200' }}">
                                         {{ $meeting->batch?->name ?? 'সকল ব্যাচ' }}
                                     </span>
                                     @if($meeting->meeting_id || $meeting->meeting_passcode)
-                                        <span class="text-[10px] text-slate-400 font-mono inline-flex items-center gap-1">
+                                        <span class="text-[10px] text-slate-400 font-mono inline-flex items-center gap-1 whitespace-nowrap">
                                             @if($meeting->meeting_id) ID: {{ $meeting->meeting_id }} @endif
                                             @if($meeting->meeting_passcode) • PW: {{ $meeting->meeting_passcode }} @endif
+                                        </span>
+                                    @endif
+                                    @if($meeting->schedule_text)
+                                        <span class="text-[10px] text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/60 font-medium max-w-[240px] truncate" title="{{ $meeting->schedule_text }}">
+                                            {{ $meeting->schedule_text }}
                                         </span>
                                     @endif
                                 </div>
                             </td>
 
                             <!-- Platform & Link -->
-                            <td class="py-2.5 px-3 sm:px-4 whitespace-nowrap">
+                            <td class="py-1.5 px-3 sm:px-4 whitespace-nowrap">
                                 <a href="{{ $meeting->meeting_url }}" target="_blank"
-                                   class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition border {{ str_contains(strtolower($meeting->meeting_url ?? ''), 'zoom') ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100' : (str_contains(strtolower($meeting->meeting_url ?? ''), 'meet.google') ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100') }}">
+                                   class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-semibold transition border {{ str_contains(strtolower($meeting->meeting_url ?? ''), 'zoom') ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100' : (str_contains(strtolower($meeting->meeting_url ?? ''), 'meet.google') ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100') }}">
                                     @if(str_contains(strtolower($meeting->meeting_url ?? ''), 'zoom'))
-                                        <i class="fa-solid fa-video text-blue-500 text-[11px]"></i>
+                                        <i class="fa-solid fa-video text-blue-500 text-[10px]"></i>
                                         <span>Zoom</span>
                                     @elseif(str_contains(strtolower($meeting->meeting_url ?? ''), 'meet.google'))
-                                        <i class="fa-solid fa-chalkboard-user text-emerald-600 text-[11px]"></i>
+                                        <i class="fa-solid fa-chalkboard-user text-emerald-600 text-[10px]"></i>
                                         <span>Meet</span>
                                     @else
-                                        <i class="fa-solid fa-link text-slate-500 text-[11px]"></i>
+                                        <i class="fa-solid fa-link text-slate-500 text-[10px]"></i>
                                         <span>লিংক</span>
                                     @endif
-                                    <i class="fa-solid fa-arrow-up-right-from-square text-[9px] opacity-70"></i>
+                                    <i class="fa-solid fa-arrow-up-right-from-square text-[8px] opacity-70"></i>
                                 </a>
                             </td>
 
                             <!-- Recording -->
-                            <td class="py-2.5 px-3 sm:px-4 whitespace-nowrap" id="recording-cell-{{ $meeting->id }}">
+                            <td class="py-1.5 px-3 sm:px-4 whitespace-nowrap" id="recording-cell-{{ $meeting->id }}">
                                 @if($meeting->hasRecording())
-                                    <div class="flex items-center gap-1.5">
-                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                    <div class="flex items-center gap-1">
+                                        <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
                                             <i class="fa-solid fa-circle-play text-emerald-600 text-[9px]"></i>
-                                            <span>রেকর্ড সক্রিয়</span>
+                                            <span>রেকর্ড প্রস্তুত</span>
                                         </span>
                                         <a href="{{ route('student.recordings.watch', $meeting->id) }}" target="_blank"
                                            class="p-1 text-emerald-700 hover:text-emerald-900 transition"
-                                           title="সুরক্ষিত প্লেয়ারে প্রিভিউ দেখুন">
-                                            <i class="fa-solid fa-arrow-up-right-from-square text-[11px]"></i>
+                                           title="প্লেয়ার প্রিভিউ">
+                                            <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
                                         </a>
                                         <button type="button"
                                                 @click="openRecordingById({{ $meeting->id }})"
                                                 class="p-1 text-slate-400 hover:text-emerald-700 transition"
-                                                title="রেকর্ডিং পরিবর্তন করুন">
-                                            <i class="fa-solid fa-pen text-[11px]"></i>
+                                                title="রেকর্ডিং পরিবর্তন">
+                                            <i class="fa-solid fa-pen text-[10px]"></i>
                                         </button>
                                     </div>
                                     @if($meeting->recording_duration)
-                                        <div class="text-[9px] text-slate-400 font-mono mt-0.5">
+                                        <div class="text-[9px] text-slate-400 font-mono">
                                             {{ $meeting->recording_duration }}
                                         </div>
                                     @endif
                                 @else
                                     <button type="button"
                                             @click="openRecordingById({{ $meeting->id }})"
-                                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition"
+                                            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition"
                                             title="ভিডিও রেকর্ডিং পোস্ট করুন">
-                                        <i class="fa-solid fa-video text-[10px] text-emerald-600"></i>
+                                        <i class="fa-solid fa-video text-[9px] text-emerald-600"></i>
                                         <span>+ রেকর্ডিং</span>
                                     </button>
                                 @endif
                             </td>
 
                             <!-- Status -->
-                            <td class="py-2.5 px-3 sm:px-4 text-center whitespace-nowrap">
+                            <td class="py-1.5 px-3 sm:px-4 text-center whitespace-nowrap">
                                 <span x-show="getMeeting({{ $meeting->id }})?.is_live_now" style="{{ $meeting->is_live_now ? '' : 'display:none;' }}"
-                                      class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-red-100 text-red-700 border border-red-200 animate-pulse">
+                                      class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-red-100 text-red-700 border border-red-200 animate-pulse">
                                     <span class="w-1.5 h-1.5 rounded-full bg-red-600"></span>
                                     LIVE NOW
                                 </span>
@@ -411,19 +403,19 @@
                                 <span x-show="!getMeeting({{ $meeting->id }})?.is_live_now && {{ $meeting->starts_at && !$meeting->starts_at->isPast() ? 'true' : 'false' }}"
                                       style="{{ !$meeting->is_live_now && $meeting->starts_at && !$meeting->starts_at->isPast() ? '' : 'display:none;' }}"
                                       class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                                    শিডিউল করা
+                                    শিডিউল
                                 </span>
                             </td>
 
                             <!-- Actions -->
-                            <td class="py-2.5 px-3 sm:px-4 text-right whitespace-nowrap">
-                                <div class="flex items-center justify-end gap-1.5">
+                            <td class="py-1.5 px-3 sm:px-4 text-right whitespace-nowrap">
+                                <div class="flex items-center justify-end gap-1">
                                     <button type="button"
                                             @click="toggleLive({{ $meeting->id }})"
                                             :class="getMeeting({{ $meeting->id }})?.is_live_now ? 'bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200' : 'bg-red-600 hover:bg-red-700 text-white shadow-xs'"
-                                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold border transition {{ $meeting->is_live_now ? 'bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200' : 'bg-red-600 hover:bg-red-700 text-white shadow-xs' }}">
+                                            class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold border transition {{ $meeting->is_live_now ? 'bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200' : 'bg-red-600 hover:bg-red-700 text-white shadow-xs' }}">
                                         <span x-show="getMeeting({{ $meeting->id }})?.is_live_now" style="{{ $meeting->is_live_now ? '' : 'display:none;' }}" class="inline-flex items-center gap-1">
-                                            <i class="fa-solid fa-stop text-[10px]"></i>
+                                            <i class="fa-solid fa-stop text-[9px]"></i>
                                             <span>লাইভ বন্ধ</span>
                                         </span>
                                         <span x-show="!getMeeting({{ $meeting->id }})?.is_live_now" style="{{ $meeting->is_live_now ? 'display:none;' : '' }}" class="inline-flex items-center gap-1">
@@ -434,14 +426,14 @@
 
                                     <button type="button"
                                             @click="openEditById({{ $meeting->id }})"
-                                            class="p-1.5 text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition"
+                                            class="p-1 text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 rounded transition"
                                             title="সম্পাদনা করুন">
                                         <i class="fa-regular fa-pen-to-square text-xs"></i>
                                     </button>
 
                                     <button type="button"
                                             @click="deleteMeeting({{ $meeting->id }}, '{{ addslashes($meeting->title) }}')"
-                                            class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                                            class="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition"
                                             title="মুছে ফেলুন">
                                         <i class="fa-regular fa-trash-can text-xs"></i>
                                     </button>
@@ -1132,64 +1124,59 @@ function liveMeetingsManager(config) {
 
             let credsChip = '';
             if (m.meeting_id || m.meeting_passcode) {
-                credsChip = `<span class="text-[10px] text-slate-400 font-mono inline-flex items-center gap-1">`;
+                credsChip = `<span class="text-[10px] text-slate-400 font-mono inline-flex items-center gap-1 whitespace-nowrap">`;
                 if (m.meeting_id) credsChip += `ID: ${this.escapeHtml(m.meeting_id)}`;
                 if (m.meeting_passcode) credsChip += ` • PW: ${this.escapeHtml(m.meeting_passcode)}`;
                 credsChip += `</span>`;
             }
 
+            let scheduleChip = '';
+            if (m.schedule_text) {
+                scheduleChip = `<span class="text-[10px] text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/60 font-medium max-w-[240px] truncate" title="${this.escapeHtml(m.schedule_text)}">${this.escapeHtml(m.schedule_text)}</span>`;
+            }
+
             return `
-                <td class="py-2.5 px-3 sm:px-4 whitespace-nowrap">
-                    <div class="flex items-center gap-2">
-                        <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex flex-col items-center justify-center font-bold shrink-0 border border-emerald-100">
-                            <span class="text-[9px] uppercase leading-none font-semibold">${this.escapeHtml(m.month_short)}</span>
-                            <span class="text-xs leading-none font-black mt-0.5">${this.escapeHtml(m.day_num)}</span>
-                        </div>
-                        <div>
-                            <div class="font-bold text-slate-900 text-xs flex items-center gap-1.5">
-                                <span>${this.escapeHtml(m.date_formatted)}</span>
-                                ${m.day_name ? `<span class="text-[10px] font-normal text-slate-500">(${this.escapeHtml(m.day_name)})</span>` : ''}
-                            </div>
-                            <div class="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
-                                <i class="fa-regular fa-clock text-emerald-600 text-[10px]"></i>
-                                <span class="font-semibold text-slate-700">${this.escapeHtml(m.time_formatted)}</span>
-                                ${m.schedule_text ? `<span class="text-[10px] text-amber-700 bg-amber-50 px-1 rounded border border-amber-200/60 font-medium ml-1">${this.escapeHtml(m.schedule_text)}</span>` : ''}
-                            </div>
-                        </div>
+                <td class="py-1.5 px-3 sm:px-4 whitespace-nowrap">
+                    <div class="font-bold text-slate-800 text-xs">
+                        ${this.escapeHtml(m.date_formatted)}
+                        ${m.day_name ? `<span class="text-[10px] font-normal text-slate-400">(${this.escapeHtml(m.day_name)})</span>` : ''}
+                    </div>
+                    <div class="text-[11px] text-slate-500 font-medium flex items-center gap-1 mt-0.5">
+                        <i class="fa-regular fa-clock text-emerald-600 text-[10px]"></i>
+                        <span>${this.escapeHtml(m.time_formatted)}</span>
                     </div>
                 </td>
-                <td class="py-2.5 px-3 sm:px-4">
-                    <div class="font-bold text-slate-900 text-xs sm:text-sm line-clamp-1">
-                        ${this.escapeHtml(m.title)}
-                    </div>
-                    <div class="flex items-center gap-1.5 flex-wrap mt-0.5">
-                        <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold ${m.batch_id ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-slate-100 text-slate-600 border border-slate-200'}">
+                <td class="py-1.5 px-3 sm:px-4">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="font-bold text-slate-900 text-xs sm:text-sm">${this.escapeHtml(m.title)}</span>
+                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold whitespace-nowrap ${m.batch_id ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-slate-100 text-slate-600 border border-slate-200'}">
                             ${this.escapeHtml(m.batch_name)}
                         </span>
                         ${credsChip}
+                        ${scheduleChip}
                     </div>
                 </td>
-                <td class="py-2.5 px-3 sm:px-4 whitespace-nowrap">
+                <td class="py-1.5 px-3 sm:px-4 whitespace-nowrap">
                     ${platformHtml}
                 </td>
-                <td class="py-2.5 px-3 sm:px-4 whitespace-nowrap" id="recording-cell-${m.id}">
+                <td class="py-1.5 px-3 sm:px-4 whitespace-nowrap" id="recording-cell-${m.id}">
                     ${recHtml}
                 </td>
-                <td class="py-2.5 px-3 sm:px-4 text-center whitespace-nowrap">
+                <td class="py-1.5 px-3 sm:px-4 text-center whitespace-nowrap">
                     ${statusHtml}
                 </td>
-                <td class="py-2.5 px-3 sm:px-4 text-right whitespace-nowrap">
-                    <div class="flex items-center justify-end gap-1.5">
+                <td class="py-1.5 px-3 sm:px-4 text-right whitespace-nowrap">
+                    <div class="flex items-center justify-end gap-1">
                         ${toggleBtnHtml}
                         <button type="button"
                                 @click="openEditById(${m.id})"
-                                class="p-1.5 text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition"
+                                class="p-1 text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 rounded transition"
                                 title="সম্পাদনা করুন">
                             <i class="fa-regular fa-pen-to-square text-xs"></i>
                         </button>
                         <button type="button"
                                 @click="deleteMeeting(${m.id}, '${this.escapeJs(m.title)}')"
-                                class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                                class="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition"
                                 title="মুছে ফেলুন">
                             <i class="fa-regular fa-trash-can text-xs"></i>
                         </button>
