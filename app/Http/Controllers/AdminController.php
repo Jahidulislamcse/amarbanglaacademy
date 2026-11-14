@@ -880,7 +880,16 @@ class AdminController extends Controller
             );
         }
 
-        return back()->with('success', "তারিখ ও সময়ভিত্তিক মিটিং সফলভাবে শিডিউল করা হয়েছে! ({$meeting->formatted_schedule})");
+        $msg = "তারিখ ও সময়ভিত্তিক মিটিং সফলভাবে শিডিউল করা হয়েছে! ({$meeting->formatted_schedule})";
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => $msg,
+                'meeting' => $meeting->fresh(['batch']),
+            ]);
+        }
+
+        return back()->with('success', $msg);
     }
 
     /**
@@ -991,7 +1000,16 @@ class AdminController extends Controller
             $course->update(['is_live_now' => $hasAnyLiveMeeting]);
         }
 
-        return back()->with('success', "মিটিংটি সফলভাবে হালনাগাদ (সম্পাদনা) করা হয়েছে!");
+        $msg = "মিটিংটি সফলভাবে হালনাগাদ (সম্পাদনা) করা হয়েছে!";
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => $msg,
+                'meeting' => $meeting->fresh(['batch']),
+            ]);
+        }
+
+        return back()->with('success', $msg);
     }
 
     /**
@@ -1017,13 +1035,22 @@ class AdminController extends Controller
             'status' => 'completed',
         ]);
 
-        return back()->with('success', "ক্লাস রেকর্ডিং সফলভাবে সংরক্ষিত ও প্রকাশ করা হয়েছে! (\"{$meeting->title}\")");
+        $msg = "ক্লাস রেকর্ডিং সফলভাবে সংরক্ষিত ও প্রকাশ করা হয়েছে! (\"{$meeting->title}\")";
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => $msg,
+                'meeting' => $meeting->fresh(['batch']),
+            ]);
+        }
+
+        return back()->with('success', $msg);
     }
 
     /**
      * Remove Recording from a Class Meeting
      */
-    public function removeRecording(LiveMeeting $meeting)
+    public function removeRecording(Request $request, LiveMeeting $meeting)
     {
         $meeting->update([
             'recording_url' => null,
@@ -1031,13 +1058,22 @@ class AdminController extends Controller
             'has_recording' => false,
         ]);
 
-        return back()->with('success', "ক্লাস রেকর্ডিং সফলভাবে সরিয়ে নেওয়া হয়েছে।");
+        $msg = "ক্লাস রেকর্ডিং সফলভাবে সরিয়ে নেওয়া হয়েছে।";
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => $msg,
+                'meeting' => $meeting->fresh(['batch']),
+            ]);
+        }
+
+        return back()->with('success', $msg);
     }
 
     /**
      * Toggle Live Status for a Scheduled Meeting
      */
-    public function toggleMeetingLive(LiveMeeting $meeting)
+    public function toggleMeetingLive(Request $request, LiveMeeting $meeting)
     {
         $course = $meeting->course;
 
@@ -1091,13 +1127,22 @@ class AdminController extends Controller
             $msg = "🔴 '{$meeting->title}' লাইভ মিটিং শুরু করা হয়েছে! শিক্ষার্থীদের ড্যাশবোর্ডে সরাসরি জয়েন বাটন সক্রিয় হয়ে গেছে।";
         }
 
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => $msg,
+                'is_live_now' => (bool) $meeting->is_live_now,
+                'meeting' => $meeting->fresh(['batch']),
+            ]);
+        }
+
         return back()->with('success', $msg);
     }
 
     /**
      * Delete a Scheduled Meeting
      */
-    public function destroyMeeting(LiveMeeting $meeting)
+    public function destroyMeeting(Request $request, LiveMeeting $meeting)
     {
         $course = $meeting->course;
         $wasLive = $meeting->is_live_now;
@@ -1110,7 +1155,16 @@ class AdminController extends Controller
             $course->update(['is_live_now' => $hasAnyLiveMeeting]);
         }
 
-        return back()->with('success', 'মিটিংটি সফলভাবে মুছে ফেলা হয়েছে।');
+        $msg = 'মিটিংটি সফলভাবে মুছে ফেলা হয়েছে।';
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => $msg,
+                'id' => $meeting->id,
+            ]);
+        }
+
+        return back()->with('success', $msg);
     }
 
     /**

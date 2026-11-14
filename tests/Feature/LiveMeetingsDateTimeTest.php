@@ -210,4 +210,76 @@ class LiveMeetingsDateTimeTest extends TestCase
         $response->assertSee('লাইভ ক্লাস ও মিটিং রুম কন্ট্রোল (তারিখ ও সময়ভিত্তিক শিডিউল)');
         $response->assertSee('+ নতুন মিটিং শিডিউল করুন');
     }
+
+    public function test_meeting_actions_support_json_ajax_requests_without_page_reload(): void
+    {
+        // 1. Store via AJAX
+        $createRes = $this->actingAs($this->admin)->postJson(route('admin.meetings.store'), [
+            'title' => 'এজ্যাক্স ক্লাস ১: ইন্ট্রোডাকশন',
+            'meeting_url' => 'https://us05web.zoom.us/j/999111222',
+            'scheduled_date' => '2026-11-20',
+            'scheduled_time' => '21:00',
+        ]);
+        $createRes->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+            ]);
+        $meetingId = $createRes->json('meeting.id');
+        $this->assertNotNull($meetingId);
+
+        // 2. Toggle Live via AJAX
+        $toggleRes = $this->actingAs($this->admin)->postJson(route('admin.meetings.toggle-live', $meetingId));
+        $toggleRes->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'is_live_now' => true,
+            ]);
+
+        // 3. Update Meeting via AJAX
+        $updateRes = $this->actingAs($this->admin)->putJson(route('admin.meetings.update', $meetingId), [
+            'title' => 'এজ্যাক্স ক্লাস ১: আপডেট শিরোনাম',
+            'meeting_url' => 'https://meet.google.com/xyz-123-abc',
+            'scheduled_date' => '2026-11-20',
+            'scheduled_time' => '21:30',
+        ]);
+        $updateRes->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'meeting' => [
+                    'title' => 'এজ্যাক্স ক্লাস ১: আপডেট শিরোনাম',
+                ],
+            ]);
+
+        // 4. Update Recording via AJAX
+        $recRes = $this->actingAs($this->admin)->postJson(route('admin.meetings.recording.update', $meetingId), [
+            'recording_url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+            'recording_duration' => '১ ঘণ্টা ৩০ মিনিট',
+        ]);
+        $recRes->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'meeting' => [
+                    'has_recording' => true,
+                ],
+            ]);
+
+        // 5. Remove Recording via AJAX
+        $delRecRes = $this->actingAs($this->admin)->deleteJson(route('admin.meetings.recording.destroy', $meetingId));
+        $delRecRes->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'meeting' => [
+                    'has_recording' => false,
+                ],
+            ]);
+
+        // 6. Delete Meeting via AJAX
+        $deleteRes = $this->actingAs($this->admin)->deleteJson(route('admin.meetings.destroy', $meetingId));
+        $deleteRes->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'id' => $meetingId,
+            ]);
+        $this->assertDatabaseMissing('live_meetings', ['id' => $meetingId]);
+    }
 }
